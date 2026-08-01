@@ -291,7 +291,6 @@ and second endings, repeat signs and repeat counts.
 | Unison bend | Two notes bent to one pitch needs a bend that spans strings, not one anchored to a note |
 | Vibrato bar dive / scoop / dip | Needs a pitch-contour sub-model, not a technique flag |
 | D.S., D.C., Coda, Fine | The segno and coda glyphs are drawn and exported; the navigation markup that would place them is not built |
-| Repeat-measure sign | Not built |
 | Rhy. Fig., Riff, Fill, tacet labels | Available as free text via `"…"`, not as first-class labels |
 
 ## Visual requirements

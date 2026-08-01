@@ -7,3 +7,6 @@ tests/**/diff/
 # `exclude` in typst.toml governs the package bundle, not the repository, so
 # this is what keeps it out of git.
 research/
+
+# Working notes, not part of the package.
+NEXT.md
