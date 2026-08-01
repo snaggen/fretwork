@@ -159,6 +159,29 @@
     "but less than a bend, which climbs further and carries a label",
   )
   eq(over("q 5/6h7 0/6 0/6 0/6"), 0pt, "a slur low on the staff needs none at all")
+
+  // An ornate repeat sign's serifs reach past the staff at both ends, so the
+  // lane has to reserve room for them too.
+  let ornate = theme(staff-space: 3mm, repeat-style: "ornate")
+  let ornate-system(src) = {
+    let part = parse(src)
+    let widths = part.measures.map(m => m.events.map(ev => tabstaff.event-metrics(ornate, ev)))
+    layout-part(ornate, part, widths, 120mm, ornate.tab-mark-width).first()
+  }
+  ok(
+    tabstaff.overflow-above(ornate, ornate-system("|: q 0/6 0/6 0/6 0/6 :|")) > 0pt,
+    "an ornate repeat reserves room above the staff",
+  )
+  eq(
+    tabstaff.overflow-above(ornate, ornate-system("q 0/6 0/6 0/6 0/6")),
+    0pt,
+    "…but only where there is a repeat to draw",
+  )
+  ok(
+    tabstaff.overflow-below(ornate, ornate-system("|: q 0/6 0/6 0/6 0/6 :|"))
+      > tabstaff.overflow-below(thm, system("|: q 0/6 0/6 0/6 0/6 :|")),
+    "and room below, which the plain style does not need",
+  )
 }
 
 #report("layout")

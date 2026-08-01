@@ -324,7 +324,9 @@ Looking good is a stated goal, so it is specified as testable requirements.
    without the proportions drifting.
 5. **`TAB` is stacked vertically** at the start of every system.
 6. **Barlines are heavier than string lines**; closing and repeat forms use the
-   conventional thin-then-thick pair.
+   conventional thin-then-thick pair. `theme(repeat-style: "ornate")` gives the
+   repeat signs the flared serifs of an engraved one, curling inwards over the
+   music as on the T.N.T. sheet; `"plain"` is the default.
 7. **A system never breaks across a page.**
 8. **Slurs are drawn as tapered arcs, and their height follows their span.**
    A slur is a filled lens — swelling in the middle, coming to a point at each

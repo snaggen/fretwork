@@ -22,9 +22,16 @@
   // Both hide the line behind the digits; the patch matches the look of the
   // JustinGuitar sheets, breaking the lines also works on a tinted page.
   mask: "gap",
+  // "plain" is the bare thick-thin-and-dots repeat sign. "ornate" adds the
+  // flared serifs of an engraved one, as on the T.N.T. sheet.
+  repeat-style: "plain",
 ) = {
   let sp = staff-space
   assert(mask in ("gap", "box"), message: "theme: mask must be \"gap\" or \"box\"")
+  assert(
+    repeat-style in ("plain", "ornate"),
+    message: "theme: repeat-style must be \"plain\" or \"ornate\"",
+  )
 
   (
     staff-space: sp,
@@ -33,6 +40,7 @@
     color: color,
     faint: faint,
     mask: mask,
+    repeat-style: repeat-style,
 
     // --- rules ---
     // String lines are hairlines; barlines must read as heavier than them.

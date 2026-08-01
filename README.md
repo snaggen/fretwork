@@ -145,6 +145,19 @@ Each test is a Typst document whose assertions panic on failure, so the
 compiler's exit status is the result. `tests/errors/` holds fixtures that must
 *fail*, each declaring the message it expects.
 
+## Themes
+
+Everything derives from one unit, so `theme(staff-space: 3.2mm)` rescales a sheet
+without its proportions drifting. `mask: "box"` prints fret numbers on an opaque
+patch instead of breaking the string lines, and `repeat-style: "ornate"` gives
+repeat signs the flared serifs of an engraved one.
+
+```typst
+#tab(theme: theme(staff-space: 3.2mm, repeat-style: "ornate"), ```
+|: q 0/6 3/6 5/6 3/6 :|
+```)
+```
+
 ## Scope
 
 Version 0.1 is tablature only — no notation staff, chord diagrams or lyrics. The

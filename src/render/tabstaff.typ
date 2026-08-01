@@ -162,21 +162,65 @@
     .join()
 }
 
+/// How far an ornate repeat sign's serifs reach beyond the staff.
+#let repeat-serif-reach(theme) = 1.2 * theme.staff-space
+
+/// One flared serif of an engraved repeat sign.
+///
+/// It springs from the heavy bar and curls *inwards*, over the music: to the
+/// right on a repeat that opens, to the left on one that closes. Thick where it
+/// meets the bar, tapering to a point.
+///
+/// `x` is the bar's inner edge, `y` the staff line it grows from. `dir` is +1 to
+/// curl right, `up` whether it grows above the staff or below it.
+#let _repeat-serif(theme, x, y, dir, up) = {
+  let sp = theme.staff-space
+  let v = if up { -1.0 } else { 1.0 }
+  let px(d) = x + dir * d * sp
+  let py(d) = y + v * d * sp
+
+  place(top + left, dx: 0pt, dy: 0pt, curve(
+    fill: theme.color,
+    stroke: none,
+    // Broad where it meets the bar, running out almost level to the tip…
+    curve.move((px(0), py(0.88))),
+    curve.cubic((px(0.34), py(1.00)), (px(0.70), py(1.07)), (px(0.98), py(1.10))),
+    // …then a long hollow sweep back down to the staff, which is what turns the
+    // wedge into a horn.
+    curve.cubic((px(0.56), py(0.74)), (px(0.28), py(0.40)), (px(0), py(0.02))),
+    curve.close(mode: "straight"),
+  ))
+}
+
 /// A barline of the given kind, as `(width, body)`.
 ///
 /// Barlines are drawn heavier than string lines so the metre reads at a glance,
 /// and the closing and repeat forms use the conventional thin-then-thick pair.
+/// With `theme(repeat-style: "ornate")` the repeat signs also get the flared
+/// serifs of an engraved one.
 #let barline(theme, h, kind) = {
   let sp = theme.staff-space
   let thin = theme.barline
   let heavy = theme.heavy-barline
   let gap = 0.28 * sp
+  let ornate = theme.repeat-style == "ornate"
 
+  // The serifs grow from the heavy bar's inner edge, at both ends of the staff.
+  let serifs(x, dir) = if not ornate { none } else {
+    _repeat-serif(theme, x, 0pt, dir, true) + _repeat-serif(theme, x, h, dir, false)
+  }
+
+  let overhang = if ornate { 0.22 * sp } else { 0pt }
   let bar(x, w) = place(
     top + left,
     dx: x,
-    dy: 0pt,
-    rect(width: w, height: h, fill: theme.color, stroke: none),
+    dy: if w == heavy { -overhang } else { 0pt },
+    rect(
+      width: w,
+      height: if w == heavy { h + 2 * overhang } else { h },
+      fill: theme.color,
+      stroke: none,
+    ),
   )
   let dots(x) = {
     let d = g.repeat-dots(sp, h, fill: theme.color)
@@ -193,12 +237,18 @@
   } else if kind == "repeat-start" {
     (
       width: heavy + gap + thin + gap + dots-w,
-      body: bar(0pt, heavy) + bar(heavy + gap, thin) + dots(heavy + gap + thin + gap),
+      body: (
+        bar(0pt, heavy)
+          + bar(heavy + gap, thin)
+          + dots(heavy + gap + thin + gap)
+          + serifs(heavy, 1)
+      ),
     )
   } else if kind == "repeat-end" {
+    let heavy-x = dots-w + gap + thin + gap
     (
-      width: dots-w + gap + thin + gap + heavy,
-      body: dots(0pt) + bar(dots-w + gap, thin) + bar(dots-w + gap + thin + gap, heavy),
+      width: heavy-x + heavy,
+      body: dots(0pt) + bar(dots-w + gap, thin) + bar(heavy-x, heavy) + serifs(heavy-x, -1),
     )
   } else {
     panic("tabstaff: unknown barline kind '" + kind + "'")
@@ -340,6 +390,13 @@
   }
 }
 
+/// Whether the system carries a repeat sign drawn with serifs.
+#let _has-repeat(theme, system) = {
+  theme.repeat-style == "ornate" and system
+    .measures
+    .any(m => m.measure.start-repeat or m.measure.end-repeat)
+}
+
 /// How far the drawing reaches above the top string line.
 ///
 /// Bends and slurs are anchored to their own string, so how much room they need
@@ -351,7 +408,7 @@
 /// Must be called from a context: the bend label is measured.
 #let overflow-above(theme, system) = {
   let sp = theme.staff-space
-  let over = 0pt
+  let over = if _has-repeat(theme, system) { repeat-serif-reach(theme) } else { 0pt }
   for pe in system.measures.map(m => m.events).flatten() {
     for n in pe.event.notes {
       let y = string-y(theme, n.string)
@@ -379,7 +436,12 @@
 /// the count row rides up into the numbers.
 ///
 /// Must be called from a context: the fret label is measured.
-#let overflow-below(theme) = measure(fret-label(theme, 0)).height / 2 + 0.15 * theme.staff-space
+#let overflow-below(theme, system) = {
+  let below = measure(fret-label(theme, 0)).height / 2 + 0.15 * theme.staff-space
+  if _has-repeat(theme, system) {
+    calc.max(below, repeat-serif-reach(theme))
+  } else { below }
+}
 
 /// The vertical TAB mark that opens every system.
 ///
@@ -580,7 +642,7 @@
     bars.push(place(top + left, dx: m.end - b.width, dy: 0pt, b.body))
   }
 
-  box(width: width, height: overflow + h + overflow-below(theme), place(top + left, dy: overflow, box(
+  box(width: width, height: overflow + h + overflow-below(theme, system), place(top + left, dy: overflow, box(
     width: width,
     height: h,
     {

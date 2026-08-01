@@ -256,6 +256,26 @@ them on an opaque patch instead, as the published sheets do.
 #note[Frets 0 to 24 keep their columns straight because the numbers are set with
   tabular figures and each one's line gap follows its measured width.]
 
+Repeat signs come in two styles. `"plain"` is the bare thick-thin-and-dots form;
+`"ornate"` adds the flared serifs of an engraved one, as on the T.N.T. sheet.
+
+#block(breakable: false, grid(
+  columns: (1fr, 1fr),
+  column-gutter: 8mm,
+  [
+    #note[`repeat-style: "plain"`]
+    #tab(theme: theme(staff-space: 2.6mm), ```
+    |: q 0/6 3/6 5/6 3/6 :|
+    ```)
+  ],
+  [
+    #note[`repeat-style: "ornate"`]
+    #tab(theme: theme(staff-space: 2.6mm, repeat-style: "ornate"), ```
+    |: q 0/6 3/6 5/6 3/6 :|
+    ```)
+  ],
+))
+
 = Round-tripping
 
 An annotated ASCII tab is as complete as one written by hand, so it can be

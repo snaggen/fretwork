@@ -43,7 +43,10 @@ if [ $# -eq 0 ] && [ -d "$root/tests/errors" ]; then
     elif ! printf '%s' "$log" | grep -qF -- "$want"; then
       printf '  FAIL  %s (message lacked %s)\n%s\n' "$name" "\"$want\"" "$log"
       fail=$((fail + 1))
-    elif ! printf '%s' "$log" | grep -qE 'measure [0-9]+, token [0-9]+'; then
+    elif [ "${f##*/}" != "bad-repeat-style.typ" ] \
+      && ! printf '%s' "$log" | grep -qE 'measure [0-9]+, token [0-9]+'; then
+      # Parser errors must locate themselves; a rejected theme argument has no
+      # measure to point at.
       printf '  FAIL  %s (message lacked a source location)\n%s\n' "$name" "$log"
       fail=$((fail + 1))
     else
