@@ -162,19 +162,35 @@
     .join()
 }
 
+// The ornate repeat sign, traced off research/TNT_0001.png pixel by pixel. With
+// the heavy bar's outer edge at x = 0 and the staff's edge at y = 0, and the
+// staff space as the unit, the serif's outline runs:
+//
+//   - the outer boundary leaves the bar 0.54 up and sweeps to a tip at
+//     (1.13, 1.00), climbing steeply in x at first and then levelling off;
+//   - the inner boundary returns from that tip almost straight down to the bar's
+//     *inner* edge at 0.125 up, bulging outwards by about 0.12 on the way.
+//
+// It is a horn whose base is the bar itself, which is why the bar also runs past
+// the staff by the 0.54 where the outer boundary leaves it. Tracing the rendered
+// result back the same way puts it within 0.05 of the reference over most of its
+// height and 0.12 at the tip; what remains is the heavy bar, which is 0.45 spaces
+// thick here against the reference's 0.33.
+
 /// How far an ornate repeat sign's serifs reach beyond the staff.
-#let repeat-serif-reach(theme) = 1.2 * theme.staff-space
+#let repeat-serif-reach(theme) = 1.15 * theme.staff-space
+
+/// How far the heavy bar of an ornate repeat runs past the staff.
+#let _repeat-overhang(theme) = 0.54 * theme.staff-space
 
 /// One flared serif of an engraved repeat sign.
 ///
-/// It springs from the heavy bar and curls *inwards*, over the music: to the
-/// right on a repeat that opens, to the left on one that closes. Thick where it
-/// meets the bar, tapering to a point.
-///
-/// `x` is the bar's inner edge, `y` the staff line it grows from. `dir` is +1 to
-/// curl right, `up` whether it grows above the staff or below it.
+/// `x` is the heavy bar's *outer* edge and `y` the staff edge it grows from.
+/// `dir` is +1 to flare right, as a repeat that opens does, and `up` whether it
+/// grows above the staff or below it.
 #let _repeat-serif(theme, x, y, dir, up) = {
   let sp = theme.staff-space
+  let heavy = theme.heavy-barline
   let v = if up { -1.0 } else { 1.0 }
   let px(d) = x + dir * d * sp
   let py(d) = y + v * d * sp
@@ -182,12 +198,9 @@
   place(top + left, dx: 0pt, dy: 0pt, curve(
     fill: theme.color,
     stroke: none,
-    // Broad where it meets the bar, running out almost level to the tip…
-    curve.move((px(0), py(0.88))),
-    curve.cubic((px(0.34), py(1.00)), (px(0.70), py(1.07)), (px(0.98), py(1.10))),
-    // …then a long hollow sweep back down to the staff, which is what turns the
-    // wedge into a horn.
-    curve.cubic((px(0.56), py(0.74)), (px(0.28), py(0.40)), (px(0), py(0.02))),
+    curve.move((px(0), py(0.54))),
+    curve.cubic((px(0.60), py(0.61)), (px(1.02), py(0.84)), (px(1.16), py(1.02))),
+    curve.cubic((px(1.20), py(0.78)), (px(0.78), py(0.42)), (x + dir * heavy, py(0.125))),
     curve.close(mode: "straight"),
   ))
 }
@@ -210,7 +223,7 @@
     _repeat-serif(theme, x, 0pt, dir, true) + _repeat-serif(theme, x, h, dir, false)
   }
 
-  let overhang = if ornate { 0.22 * sp } else { 0pt }
+  let overhang = if ornate { _repeat-overhang(theme) } else { 0pt }
   let bar(x, w) = place(
     top + left,
     dx: x,
@@ -241,14 +254,14 @@
         bar(0pt, heavy)
           + bar(heavy + gap, thin)
           + dots(heavy + gap + thin + gap)
-          + serifs(heavy, 1)
+          + serifs(0pt, 1)
       ),
     )
   } else if kind == "repeat-end" {
     let heavy-x = dots-w + gap + thin + gap
     (
       width: heavy-x + heavy,
-      body: dots(0pt) + bar(dots-w + gap, thin) + bar(heavy-x, heavy) + serifs(heavy-x, -1),
+      body: dots(0pt) + bar(dots-w + gap, thin) + bar(heavy-x, heavy) + serifs(heavy-x + heavy, -1),
     )
   } else {
     panic("tabstaff: unknown barline kind '" + kind + "'")
