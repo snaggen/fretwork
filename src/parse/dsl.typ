@@ -595,3 +595,119 @@
     anacrusis: anacrusis,
   )
 }
+
+// ---------------------------------------------------------------------------
+// Writer
+// ---------------------------------------------------------------------------
+
+/// The suffix that writes a technique back out.
+#let _technique-suffix(t) = {
+  if t.kind == "hammer" { "h" + str(t.fret) } else if t.kind == "pull" {
+    "p" + str(t.fret)
+  } else if t.kind == "slide" {
+    (if t.legato { "s" } else { "S" }) + str(t.fret)
+  } else if t.kind == "bend" {
+    let mark = if t.pre and t.release {
+      "Br"
+    } else if t.pre { "B" } else if t.release { "br" } else { "b" }
+    let size = if r.eq(t.amount, r.rat(1)) { "" } else { "(" + r.str-of(t.amount) + ")" }
+    mark + size
+  } else if t.kind == "vibrato" {
+    if t.wide { "V" } else { "v" }
+  } else if t.kind == "harmonic" {
+    if t.style == "natural" { "*" } else if t.style == "pinch" { "PH" } else { "HH" }
+  } else if t.kind == "stroke" {
+    if t.dir == "down" { "n" } else { "u" }
+  } else if t.kind == "tie" { "~" } else if t.kind == "ghost" {
+    "g"
+  } else if t.kind == "accent" { ">" } else if t.kind == "marcato" {
+    "^"
+  } else if t.kind == "staccato" { "!" } else if t.kind == "tenuto" {
+    "-"
+  } else if t.kind == "tap" { "T" } else { "" }
+}
+
+#let _write-note(n) = {
+  let fret = if n.fret == m.MUTED { "x" } else { str(n.fret) }
+  fret + "/" + str(n.string) + n.techniques.map(_technique-suffix).join()
+}
+
+/// Write one event, without its note value.
+#let _write-event(ev, strings) = {
+  if ev.kind == "rest" { return "r" }
+  if ev.notes.len() == 0 { return "r" }
+  if ev.notes.len() == strings and ev.notes.all(n => n.fret == m.MUTED) { return "x" }
+  if ev.notes.len() == 1 { return _write-note(ev.notes.first()) }
+  "(" + ev.notes.map(_write-note).join(" ") + ")"
+}
+
+/// The DSL token for a note value, e.g. `e.` for a dotted eighth.
+#let _write-duration(value) = {
+  let d = m.decompose(value)
+  if d == none { return none }
+  let token = m.duration-token(d.base)
+  if token == none { return none }
+  token + "." * d.dots
+}
+
+/// The group names an event belongs to, outermost first.
+#let _group-names(ev) = {
+  let names = ev.spans
+  if ev.tuplet != none { names = names + (str(ev.tuplet.count),) }
+  names
+}
+
+/// Serialise a part back to DSL source.
+///
+/// Round-tripping matters because it is how an annotated ASCII tab graduates to
+/// the native syntax: import it, print it, keep the result.
+#let write(part) = {
+  let strings = string-count(part.tuning)
+  let lines = ()
+  let duration = none
+  let open = ()
+
+  for measure in part.measures {
+    let parts = ()
+    if measure.start-repeat { parts.push("|:") }
+
+    for ev in measure.events {
+      // Close the groups this event has left, innermost first, then open the
+      // ones it has entered.
+      let want = _group-names(ev)
+      while open.len() > 0 and (open.len() > want.len() or open != want.slice(0, open.len())) {
+        parts.push("}")
+        let _ = open.pop()
+      }
+      for name in want.slice(open.len()) {
+        parts.push("{" + name + ":")
+        open.push(name)
+      }
+
+      if ev.chord != none { parts.push("@" + ev.chord) }
+      if ev.text != none { parts.push("\"" + ev.text + "\"") }
+      if ev.duration != none and ev.duration != duration {
+        let token = _write-duration(ev.duration)
+        if token != none {
+          parts.push(token)
+          duration = ev.duration
+        }
+      }
+      parts.push(_write-event(ev, strings))
+    }
+
+    while open.len() > 0 {
+      parts.push("}")
+      let _ = open.pop()
+    }
+
+    parts.push(if measure.end-repeat {
+      ":|"
+    } else if measure.end == "final" { "|." } else if measure.end == "double" {
+      "||"
+    } else { "|" })
+    lines.push(parts.join(" "))
+  }
+
+  lines.join("\n")
+}

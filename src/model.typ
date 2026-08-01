@@ -128,6 +128,7 @@
   chord: none,
   techniques: (),
   text: none,
+  column-span: none,
 ) = {
   assert(
     duration == none or r.is-rat(duration),
@@ -144,6 +145,10 @@
     techniques: techniques,
     // Free playing instruction printed above the staff, e.g. "Harm.".
     text: text,
+    // How wide this event was in its source, relative to a typical event.
+    // Set by the ASCII importer so a tab with no note values is still spaced
+    // the way its author laid it out, instead of evenly.
+    column-span: column-span,
   )
 }
 
