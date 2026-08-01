@@ -427,6 +427,12 @@ outside the staff, so `tabstaff.typ` reports how far with `overflow-above` and
 `overflow-below`, and the staff's lane reserves exactly that much instead of
 relying on the box not clipping.
 
+Every closed vector path is closed with `curve.close(mode: "straight")`. Typst's
+default is `"smooth"`, which rejoins the last point to the first with a
+tangent-matched curve; since the two coincide in all of these shapes, the default
+grows a spike out of the figure — visible as a slur that appeared to start before
+its note.
+
 Durations are exact rationals rather than floats. Tuplets introduce thirds and
 fifths a binary float cannot represent, and both bar-length validation and beam
 grouping compare durations for equality.

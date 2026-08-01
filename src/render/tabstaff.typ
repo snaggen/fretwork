@@ -228,7 +228,7 @@
     curve.move((x0, ends)),
     curve.cubic((x0 + span * 0.3, outer), (x0 + span * 0.7, outer), (x1, ends)),
     curve.cubic((x0 + span * 0.7, inner), (x0 + span * 0.3, inner), (x0, ends)),
-    curve.close(),
+    curve.close(mode: "straight"),
   ))
 }
 
@@ -269,7 +269,7 @@
       (x + 0.07 * sp, y + d * 0.40 * sp),
       (x + 0.20 * sp, y + d * 0.55 * sp),
     ),
-    curve.close(),
+    curve.close(mode: "straight"),
   ))
 }
 

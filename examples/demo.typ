@@ -98,6 +98,21 @@ Hammer-on, pull-off, legato slide, shift slide:
 q 5/3h7 7/3p5 5/3s7 5/3S7 |.
 ```)
 
+A slur springs from the top centre of a lone number. Several in a row, across
+strings, keep clear of one another and of the line above:
+
+#tab(```
+e 5/3h7 7/3p5 5/2h7 7/2p5 5/1h7 7/1p5 5/3h7 7/3p5
+| e 2/6h4 4/6p2 3/5h5 5/5p3 12/1h14 14/1p12 7/4h9 9/4p7 |.
+```)
+
+Stacked numbers cannot attach at the top — the arc would run into the number
+above — so a chord ties from the sides instead:
+
+#tab(```
+h (5/3 5/2 5/1)~ (7/3 7/2 7/1)~ | w (7/3 7/2 7/1) |.
+```)
+
 Bend, half-step bend, bend and release, pre-bend, pre-bend and release. A
 pre-bend is already bent when the string is struck, so its arrow is straight —
 the curve is what shows the pitch rising after the attack.

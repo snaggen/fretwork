@@ -10,6 +10,11 @@
 // that size with the drawing inside, so callers position it by its top-left
 // corner and know its extent without measuring.
 
+// Closed paths are always closed with `mode: "straight"`. Typst's default is
+// "smooth", which joins the last point back to the first with a tangent-matched
+// curve — when the two coincide, as they do in every shape here, that produces a
+// spike sticking out of the figure.
+
 /// Wrap a drawing in a box of known size.
 ///
 /// Every element inside `body` must be positioned with `_draw` or `_blob`.
@@ -147,7 +152,7 @@
     curve.cubic((0.78 * sp, 0.38 * sp), (0.96 * sp, 1.00 * sp), (0.30 * sp, h)),
     // Inner edge back to the stem, hollowed out so the flag tapers.
     curve.cubic((0.52 * sp, 1.05 * sp), (0.38 * sp, 0.58 * sp), (0pt, 0.48 * sp)),
-    curve.close(),
+    curve.close(mode: "straight"),
   )
   _glyph(w, h, _draw(if down { scale(y: -100%, origin: center + horizon, shape) } else { shape }))
 }
@@ -249,7 +254,7 @@
     curve.line((0.61 * sp, 0.33 * sp)),
     curve.line((0.33 * sp, 0.61 * sp)),
     curve.line((0.05 * sp, 0.33 * sp)),
-    curve.close(),
+    curve.close(mode: "straight"),
   )),
 )
 
