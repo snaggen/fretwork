@@ -2,7 +2,7 @@
 //
 //   #import "@local/tablature:0.1.0": *
 //
-//   #show: song.with(title: "T.N.T.", tempo: 127)
+//   #show: song.with(title: "Twelve Past Nine", tempo: 132)
 //   #section("Main Riff")
 //   #tab(```
 //   |: q (2/5 2/4 0/6)  q x  e 0/3 3/6 0/6 0/6 :|

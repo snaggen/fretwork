@@ -48,12 +48,12 @@ they are vectors, not glyphs.
 #import "@local/tablature:0.1.0": *
 
 #show: song.with(
-  title: "T.N.T.",
-  words: "Angus Young, Malcolm Young and Bon Scott",
-  music: "Angus Young, Malcolm Young and Bon Scott",
-  copyright: "Copyright © 1975 J. Albert & Son Pty., Ltd.",
-  tempo: 127,
-  tempo-words: "Moderate Rock",
+  title: "Twelve Past Nine",
+  words: "A. Guitarist",
+  music: "A. Guitarist",
+  copyright: "© 2026 A. Guitarist",
+  tempo: 132,
+  tempo-words: "Driving Rock",
 )
 
 #section("Main Riff")
@@ -127,11 +127,11 @@ imported tab is worth keeping.
 ## Examples
 
 ```sh
-typst compile --root . examples/demo.typ     # a tour of everything
-typst compile --root . examples/tnt.typ      # a full song sheet
-typst compile --root . examples/ascii.typ    # ASCII import, enriched in stages
-typst compile --root . examples/bends.typ    # bend arrows on every string
-typst compile --root . examples/glyphs.typ   # every vector glyph, three sizes
+typst compile --root . examples/demo.typ       # a tour of everything
+typst compile --root . examples/songsheet.typ # a complete song sheet
+typst compile --root . examples/ascii.typ     # ASCII import, enriched in stages
+typst compile --root . examples/bends.typ     # bend arrows on every string
+typst compile --root . examples/glyphs.typ    # every vector glyph, three sizes
 ```
 
 ## Tests

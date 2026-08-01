@@ -1,4 +1,5 @@
-// Bend arrows, checked against page 1 of research/GuitarNotationLegend.pdf.
+// Bend arrows, checked against the bend cells of the Hal Leonard
+// Guitar Notation Legend.
 //
 // The arrow is anchored to the fret number it belongs to, so the same bend must
 // sit at the same distance above its number whichever string that is — and the

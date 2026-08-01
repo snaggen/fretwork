@@ -19,10 +19,10 @@
 // staff spaces measured from the string's own line. Keeping the numbers in one
 // place is what lets the reserved height match what is actually drawn.
 //
-// The figures come from the Hal Leonard legend, read off a 300 dpi rasterisation
-// of research/GuitarNotationLegend.pdf rather than judged by eye. Its hammer-on
-// slur leaves the note line 0.74 spaces up — just clear of the digit's cap — and
-// peaks 1.36 up across a span of 5.4.
+// The figures were read off a 300 dpi rasterisation of the Hal Leonard Guitar
+// Notation Legend rather than judged by eye. Its hammer-on slur leaves the note
+// line 0.74 spaces up — just clear of the digit's cap — and peaks 1.36 up across
+// a span of 5.4.
 #let _SLUR-TAIL = 0.74 // where a slur or tie leaves the note line
 #let _SLUR-RISE-MAX = 0.62 // how much further a long one climbs
 #let _SLUR-RISE-MIN = 0.22 // and the least a short one may
@@ -178,7 +178,7 @@
     .join()
 }
 
-// The ornate repeat sign, traced off research/TNT_0001.png pixel by pixel. With
+// The ornate repeat sign, traced pixel by pixel off a published rock tab. With
 // the heavy bar's outer edge at x = 0 and the staff's edge at y = 0, and the
 // staff space as the unit, the serif's outline runs:
 //
@@ -550,7 +550,7 @@
       // A slur springs from the top *centre* of a lone number, as the legend
       // sets it. That is impossible when numbers are stacked in a chord — the
       // arc would run into the one above — so a chord attaches at the sides
-      // instead, which is what the T.N.T. sheet does with its tied chords.
+      // instead, which is what published sheets do with their tied chords.
       let stacked = pe.event.notes.len() > 1
       let cursor = pe.x + size.width / 2
       let from-fret = n.fret

@@ -1,5 +1,8 @@
 // A tour of everything the package can set.
 //
+// Self-contained: all the music here was written for this document, so the file
+// stands on its own and ships with the package.
+//
 // Compile with `typst compile --root . examples/demo.typ`.
 
 #import "/src/lib.typ": *
@@ -10,11 +13,14 @@
   text(size: 9.5pt, fill: luma(70), body),
 )
 
+#let src(code) = note(raw(code, lang: "typst"))
+
 #show: song.with(
   title: "tablature",
   subtitle: "A demonstration of the Typst package",
   words: "Mattias Eriksson",
   music: "Mattias Eriksson",
+  arranged: "Mattias Eriksson",
   source: "Package demo · v0.1.0",
   copyright: "Typeset with tablature · EUPL-1.2",
   tempo: 120,
@@ -23,9 +29,9 @@
 
 = A song sheet
 
-The page furniture above — source, title, credits, tempo indication, copyright
-footer — comes from a single `song` show rule. Below is a riff with chord names,
-palm muting and the count row a learner reads along with.
+Everything above the first stave — the source line, the title and subtitle, the
+writing credits, the tempo indication and the copyright footer — comes from a
+single `song` show rule. Continuation pages get a running head automatically.
 
 #section("Main Riff")
 
@@ -39,60 +45,72 @@ palm muting and the count row a learner reads along with.
   ```,
 )
 
+`#section` prints a heading, `count-in: true` adds the counting row a learner
+reads along with, `@E5` names a chord over the next event, and `{PM: … }`
+brackets a palm mute over whatever it wraps.
+
 = Note values
 
-Values are sticky, so only a change needs writing. Stems hang from beams grouped
-by the beat, and everything longer than a quarter carries a hollow head — with no
-notation staff underneath there is nothing else to tell a half note from a
-quarter.
+Values are sticky, so only a change needs writing: `w h q e s t` for whole down
+to thirty-second, with `.` for each augmentation dot. Beams are grouped by the
+beat, and a second beam covers only the notes fast enough to need it.
 
-#note[`w 0/6 | h 0/6 0/6 | q 0/6 0/6 0/6 0/6 | e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 | s ...`]
+#src("w 0/6 | h 0/6 0/6 | q 0/6 0/6 0/6 0/6 | e 0/6 …")
 
 #tab(```
 w 0/6 | h 0/6 0/6 | q 0/6 0/6 0/6 0/6
 | e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6
 | s 0/6 0/6 0/6 0/6 e 0/6 0/6 q 0/6 0/6
+| t 0/6 0/6 0/6 0/6 s 0/6 0/6 e 0/6 h 0/6 |.
 ```)
 
-Dots and rests, and a beat of sixteenths inside a beat of eighths — the second
-beam covers only the notes fast enough to need it.
+Dots and rests. Anything longer than a quarter carries a hollow head — with no
+notation stave underneath there is nothing else to tell a half note from a
+quarter.
 
-#note[`q. 0/6 e 2/6 h 3/6 | q 0/6 r 3/6 r | e 0/6 s 0/6 0/6 e 0/6 0/6 q 0/6`]
+#src("q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 h 3/6 | q 0/6 r 3/6 r |.")
 
 #tab(```
-q. 0/6 e 2/6 h 3/6 | q 0/6 r 3/6 r | e 0/6 s 0/6 0/6 e 0/6 0/6 q 0/6
+q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 h 3/6 | q 0/6 r 3/6 r
+| h r w r |.
 ```)
 
-Tuplets are groups with a numeric name.
-
-#note[`{3: e 0/6 2/6 3/6} {3: e 5/6 3/6 2/6} {5: s 0/6 2/6 3/6 5/6 3/6} q 0/6`]
+Tuplets are groups with a numeric name. `{3: … }` is three in the time of two;
+`{7/4: … }` states the ratio outright. Groups nest.
 
 #tab(```
 {3: e 0/6 2/6 3/6} {3: e 5/6 3/6 2/6} {5: s 0/6 2/6 3/6 5/6 3/6} q 0/6
-| {3: q 0/6 3/6 5/6} {3: q 3/6 5/6 7/6} |.
+| {3: q 0/6 3/6 5/6} {PM: {3: q 3/6 5/6 7/6}} |.
 ```)
 
 = Chords, dead strings and ties
 
-A chord is notes in one column. A tie carries a note into the next one on the
-same string, and `x` deadens a string — or all six at once.
+A chord is notes written in one column. `x` deadens a string, or all six at
+once. `~` ties a note into the next one on the same string.
 
-#note[`q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)`]
+#src("q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)")
 
 #tab(```
 q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)
 | q x x/5 (x/1 x/2 x/3) x |.
 ```)
 
+Fret numbers are set with tabular figures, and each one's gap in the string line
+follows its own measured width, so a bar mixing one- and two-digit frets keeps
+its columns straight.
+
+#tab(```
+q 10/6 12/5 e 11/4 9/3 7/2 5/1 q 24/1 0/6 |.
+```)
+
 #pagebreak()
 
 = Techniques
 
-The symbol set follows Hal Leonard's _Guitar Notation Legend_. Marks anchored to
-a string are drawn on the staff; marks that belong to the music as a whole get a
-lane above it, and a lane nobody uses costs no vertical space.
+Techniques are suffixes written after the string number. They chain, and a
+suffix after a closing parenthesis binds to every note of the chord.
 
-Hammer-on, pull-off, legato slide, shift slide:
+Hammer-on `h`, pull-off `p`, legato slide `s`, shift slide `S`:
 
 #tab(```
 q 5/3h7 7/3p5 5/3s7 5/3S7 |.
@@ -107,66 +125,81 @@ e 5/3h7 7/3p5 5/2h7 7/2p5 5/1h7 7/1p5 5/3h7 7/3p5
 ```)
 
 Stacked numbers cannot attach at the top — the arc would run into the number
-above — so a chord ties from the sides instead:
+above — so a chord ties from the sides, level with each digit's middle:
 
 #tab(```
 h (5/3 5/2 5/1)~ (7/3 7/2 7/1)~ | w (7/3 7/2 7/1) |.
 ```)
 
-Bend, half-step bend, bend and release, pre-bend, pre-bend and release. A
-pre-bend is already bent when the string is struck, so its arrow is straight —
-the curve is what shows the pitch rising after the attack.
+Bend `b`, half-step bend `b(1/2)`, bend and release `br`, pre-bend `B`,
+pre-bend and release `Br`, quarter-tone bend `b(1/4)`. A pre-bend is already
+bent when the string is struck, so its arrow is straight — the curve is what
+shows the pitch rising after the attack. Every arrow in a system ends at the
+same height.
 
 #tab(```
 q 7/3b 7/3b(1/2) 7/3br 7/3B | h 7/3Br 7/3b(1/4) |.
 ```)
 
-Vibrato, wide vibrato, natural harmonic, pinch harmonic:
+Vibrato `v`, wide vibrato `V`, natural harmonic `*`, pinch harmonic `PH`, harp
+harmonic `HH`:
 
 #tab(```
-q 7/3v 7/3V 12/3* 5/3PH |.
+q 7/3v 7/3V 12/3* 5/3PH | h 7/3HH 7/3v |.
 ```)
 
-Accent, marcato, staccato, tenuto; then downstroke, upstroke, tapping and a
-ghost note:
+Accent `>`, marcato `^`, staccato `!`, tenuto `-`; then downstroke `n`,
+upstroke `u`, tapping `T` and a ghost note `g`:
 
 #tab(```
 q 7/3> 7/3^ 7/3! 7/3- | q 7/3n 7/3u 7/3T 7/3g |.
 ```)
 
-Trill, tremolo picking and pick scrape print a word and then a wavy line for as
-long as they last; an arpeggio and a rake are wavy lines beside the chord:
+Trill `tr`, tremolo picking `TP` and pick scrape `PS` print a word and then a
+wavy line for as long as they last:
 
 #tab(```
 q 7/3tr9 e 7/3TP 7/3TP q 12/6PS 7/3v |.
 ```)
 
+An arpeggio `A` and a rake `R` are wavy lines beside the chord, spanning the
+strings they touch:
+
 #tab(```
 q (0/1 2/2 2/3 1/4)A h (3/1 3/2 0/3 0/4)R |.
 ```)
 
-Palm mute and let ring bracket whatever they are wrapped around, and a free
-instruction can be written in quotes:
+Palm mute `{PM: … }` and let ring `{LR: … }` bracket whatever they wrap, and a
+free instruction goes in quotes:
 
 #tab(```
 {PM: e 0/6 0/6 0/6 0/6} {LR: e (0/1 2/2 2/3) 0/6 0/6 0/6}
 | "w/ bar" h 7/3V q 5/3s12 5/3 |.
 ```)
 
-= Repeats and endings
+= Barlines, repeats and endings
+
+`|` single · `||` double · `|.` final · `|:` opens a repeat · `:|` closes one ·
+`:|x3` says how many times · `{V1: … }` and `{V2: … }` are first and second
+endings.
 
 #tab(```
 |: q 0/6 0/6 0/6 0/6
- | {V1: q 3/6 3/6 3/6 3/6 :|}
-   {V2: q 5/6 5/6 h 7/6 |.}
+ | {V1: q 3/6 3/6 3/6 3/6 :|x3}
+   {V2: q 5/6 5/6 h 7/6 ||}
+ | q 7/6 5/6 h 0/6 |.
 ```)
 
-= Another tuning
+#pagebreak()
 
-Tuning is a named argument on `tab`, and the sounding pitch of every note
-follows from it — which is exactly what a notation staff would need if one were
-added later, with no new syntax. Passing a tuning to `song` instead announces it
-in the sheet's header, since that one applies to the whole piece.
+= Tunings and capo
+
+Tuning is a named argument, and the sounding pitch of every note follows from
+it — which is exactly what a notation stave would need if one were added later,
+with no new syntax. Passing a tuning to `song` instead announces it in the
+sheet's header, since that one applies to the whole piece.
+
+#src("#tab(tuning: tunings.drop-d, ```…```)")
 
 #tab(
   tuning: tunings.drop-d,
@@ -176,10 +209,47 @@ in the sheet's header, since that one applies to the whole piece.
   ```,
 )
 
+Eleven tunings ship with the package — standard, drop D, a half and a whole step
+down, open G and open D, DADGAD, seven-string, four- and five-string bass, and
+ukulele — and `tuning` builds any other from a list of pitches. A staff of seven
+strings or of four needs nothing else said.
+
+#src("tuning(\"E4 B3 G3 D3 A2 E2 B1\", name: \"7-string\")")
+
+#tab(
+  tuning: tunings.seven-string,
+  ```
+  q (0/7 0/6) e 3/7 5/7 q (0/7 0/6) e 7/7 5/7 |.
+  ```,
+)
+
+#tab(
+  tuning: tunings.bass,
+  ```
+  q 0/4 e 3/4 5/4 q 0/4 e 7/4 5/4 h 0/4 |.
+  ```,
+)
+
+A capo transposes everything without changing a single fret number:
+
+#context {
+  let open = to-pitch(tunings.standard, 6, 0)
+  let capo = to-pitch(tunings.standard, 6, 0, capo: 3)
+  note[
+    `to-pitch(tunings.standard, 6, 0)` is #pitch-name(open) (MIDI #open); with
+    `capo: 3` the same note sounds #pitch-name(capo). The fifth fret of the
+    sixth string and the open fifth string agree, as they must:
+    #pitch-name(to-pitch(tunings.standard, 6, 5)) and
+    #pitch-name(to-pitch(tunings.standard, 5, 0)).
+  ]
+}
+
 = Importing ASCII tab
 
 A tab pasted from the web renders as it stands. It carries no rhythm, so there
-are no stems — the layout follows the source's own columns instead.
+are no stems — the layout follows the source's own columns instead. Techniques
+written inline are read: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )` for
+a ghost note.
 
 #ascii-tab(```
 e|-----------------|-----------------|
@@ -191,13 +261,16 @@ E|--------3--------|-----------------|
 ```)
 
 Everything missing can be supplied, a little at a time. Column-aligned
-annotation rows are the main way: `R:` note values, `C:` chord names, `PM:` a
-bracketed span. Each attaches to exactly the column it sits over.
+annotation rows are the main way, because each one attaches to exactly the
+column it sits over: `R:` note values, `C:` chord names, `S:` a section heading,
+`T:` a playing instruction, `PM:` and `LR:` bracketed spans.
 
 #ascii-tab(```
+S:   Second riff
 C:   E5          G5      A5
 R:   q   q   e e h       q
 PM:  --------
+T:                       let ring
 e|---0---2---3-5---------7--|
 B|---0---2---3-5---------7--|
 G|---1---2---4-6---------8--|
@@ -206,7 +279,9 @@ A|--------------------------|
 E|--------------------------|
 ```)
 
-When the rhythm is regular, one argument replaces the annotation row entirely:
+When the rhythm is regular, one argument replaces the annotation row: `even(…)`
+gives every event the same value, `fill` spreads each bar evenly across the time
+signature, and a string spends note values event by event.
 
 #ascii-tab(
   ```
@@ -220,6 +295,39 @@ When the rhythm is regular, one argument replaces the annotation row entirely:
   rhythm: even(1 / 8),
 )
 
+Facts about the whole piece are named arguments — `tuning`, `time`, `tempo`,
+`capo`, `anacrusis` — and `enrich` takes the parsed part and hands back a
+modified one, for whatever the other two do not cover.
+
+#ascii-tab(
+  ```
+  e|--------------|
+  B|--------------|
+  G|--------------|
+  D|--0---0---0---|
+  A|--0---0---0---|
+  E|--0---0---0---|
+  ```,
+  tuning: tunings.drop-d,
+  time: (3, 4),
+  rhythm: "q q q",
+)
+
+An annotated tab is as complete as one written by hand, so `ascii-to-dsl` prints
+it back as native source, ready to keep:
+
+#src(ascii-to-dsl(
+  "R:   q   q   e   e\n"
+    + "e|---0---2---3---5--|\n"
+    + "B|------------------|\n"
+    + "G|------------------|\n"
+    + "D|------------------|\n"
+    + "A|------------------|\n"
+    + "E|------------------|",
+))
+
+#pagebreak()
+
 = Themes
 
 Everything derives from one unit, `staff-space`, so a sheet rescales without its
@@ -229,13 +337,13 @@ proportions drifting.
   columns: (1fr, 1fr),
   column-gutter: 8mm,
   [
-    #note[`theme(staff-space: 2.2mm)`]
+    #src("theme(staff-space: 2.2mm)")
     #tab(theme: theme(staff-space: 2.2mm), ```
     q 0/6 3/6 5/6 3/6
     ```)
   ],
   [
-    #note[`theme(staff-space: 3.6mm)`]
+    #src("theme(staff-space: 3.6mm)")
     #tab(theme: theme(staff-space: 3.6mm), ```
     q 0/6 3/6 5/6 3/6
     ```)
@@ -244,7 +352,7 @@ proportions drifting.
 
 A string line must never run through a fret number. By default the lines are
 broken around the digits, which also works on a tinted page; `mask: "box"` puts
-them on an opaque patch instead, as the published sheets do.
+them on an opaque patch instead. The type and the ink colour are arguments too.
 
 #tab(
   theme: theme(mask: "box", color: rgb("#1b3a5c")),
@@ -253,35 +361,53 @@ them on an opaque patch instead, as the published sheets do.
   ```,
 )
 
-#note[Frets 0 to 24 keep their columns straight because the numbers are set with
-  tabular figures and each one's line gap follows its measured width.]
-
-Repeat signs come in two styles. `"plain"` is the bare thick-thin-and-dots form;
-`"ornate"` adds the flared serifs of an engraved one, as on the T.N.T. sheet.
+Repeat signs come in two styles: `"plain"` is the bare thick-thin-and-dots form,
+`"ornate"` adds the flared serifs of an engraved one.
 
 #block(breakable: false, grid(
   columns: (1fr, 1fr),
   column-gutter: 8mm,
   [
-    #note[`repeat-style: "plain"`]
+    #src("repeat-style: \"plain\"")
     #tab(theme: theme(staff-space: 2.6mm), ```
     |: q 0/6 3/6 5/6 3/6 :|
     ```)
   ],
   [
-    #note[`repeat-style: "ornate"`]
+    #src("repeat-style: \"ornate\"")
     #tab(theme: theme(staff-space: 2.6mm, repeat-style: "ornate"), ```
     |: q 0/6 3/6 5/6 3/6 :|
     ```)
   ],
 ))
 
-= Round-tripping
+= Building music in code
 
-An annotated ASCII tab is as complete as one written by hand, so it can be
-printed back out as native source and kept:
+The data model is public API, so a passage can be built without the DSL at all
+and handed to `render`. It is also what `enrich` receives.
 
-#note(raw(
-  ascii-to-dsl("R:   q   q   e   e\n" + "e|---0---2---3---5--|\n" + "B|------------------|\n" + "G|------------------|\n" + "D|------------------|\n" + "A|------------------|\n" + "E|------------------|"),
-  lang: "typst",
-))
+#src(
+  "model.measure(events: (\n"
+    + "  model.event(notes: (model.note(6, 0),), duration: model.durations.q),\n"
+    + "  …\n"
+    + "))",
+)
+
+#context {
+  let bar = model.measure(events: range(4).map(i => model.event(
+    notes: (model.note(6, i * 2),),
+    duration: model.durations.q,
+  )))
+  render(model.part(measures: (bar,)))
+}
+
+`validate` checks a part against its time signature and reports what disagrees.
+It is advisory rather than fatal: a pick-up bar is exempt, and an event with no
+note value is reported as unchecked rather than as wrong.
+
+#context {
+  let short = model.part(measures: (model.measure(events: (
+    model.event(notes: (model.note(6, 0),), duration: model.durations.h),
+  )),))
+  note[`model.validate(…)` → #raw(repr(model.validate(short)))]
+}

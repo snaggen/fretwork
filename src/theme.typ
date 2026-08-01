@@ -20,10 +20,10 @@
   faint: luma(90),
   // Draw fret numbers on an opaque patch instead of breaking the string lines.
   // Both hide the line behind the digits; the patch matches the look of the
-  // JustinGuitar sheets, breaking the lines also works on a tinted page.
+  // published sheets, breaking the lines also works on a tinted page.
   mask: "gap",
   // "plain" is the bare thick-thin-and-dots repeat sign. "ornate" adds the
-  // flared serifs of an engraved one, as on the T.N.T. sheet.
+  // flared serifs of an engraved one, as published rock tab uses.
   repeat-style: "plain",
 ) = {
   let sp = staff-space

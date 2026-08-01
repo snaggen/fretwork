@@ -1,6 +1,6 @@
 // Page furniture: the title block, section headings, running head and footer.
 //
-// The layout follows the published sheets in `research/`: the source or
+// The layout follows the convention of published guitar sheets: the source or
 // arranger small at the top left, the title large and centred, the writing
 // credits right-aligned beneath it, the tempo indication and first section
 // heading left-aligned above the music, and the copyright centred in the foot.
@@ -51,7 +51,7 @@
 /// Used as a show rule:
 ///
 /// ```typc
-/// show: song.with(title: "T.N.T.", music: "Angus Young", tempo: 127)
+/// show: song.with(title: "Twelve Past Nine", music: "A. Guitarist", tempo: 132)
 /// ```
 ///
 /// `words` and `music` name the writers; passing the same value to both prints
@@ -82,7 +82,7 @@
     paper: paper,
     margin: margin,
     // The running head repeats the identification on continuation pages only,
-    // as on page 4 of the Sultans Of Swing sheet.
+    // which is what multi-page published sheets do.
     header: context {
       if counter(page).get().first() <= 1 { return }
       set text(font: thm.font, size: thm.copyright-size, fill: thm.faint)

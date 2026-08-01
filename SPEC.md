@@ -38,12 +38,12 @@ compact string, because writing a riff as nested function calls is unbearable.
 #import "@preview/tablature:0.1.0": *
 
 #show: song.with(
-  title: "T.N.T.",
-  words: "Angus Young, Malcolm Young and Bon Scott",
-  music: "Angus Young, Malcolm Young and Bon Scott",
-  copyright: "Copyright © 1975 J. Albert & Son Pty., Ltd.",
-  tempo: 127,
-  tempo-words: "Moderate Rock",
+  title: "Twelve Past Nine",
+  words: "A. Guitarist",
+  music: "A. Guitarist",
+  copyright: "© 2026 A. Guitarist",
+  tempo: 132,
+  tempo-words: "Driving Rock",
 )
 
 #section("Main Riff")
@@ -305,9 +305,9 @@ Looking good is a stated goal, so it is specified as testable requirements.
    glyph width is already measured for spacing. `theme(mask: "box")` selects the
    opaque patch.
 
-   The gap hugs the digit: measured off the T.N.T. sheet it is about 0.8 staff
-   spaces wide for a digit of roughly 0.6, leaving some 0.1 either side. A wider
-   one reads as a hole in the staff rather than as room for a number.
+   The gap hugs the digit: measured off a published rock tab it is about 0.8
+   staff spaces wide for a digit of roughly 0.6, leaving some 0.1 either side. A
+   wider one reads as a hole in the staff rather than as room for a number.
 
    The **TAB mark is not covered by this rule.** The reference sheets run their
    string lines straight through it and let the letters sit on top; breaking them
@@ -326,7 +326,7 @@ Looking good is a stated goal, so it is specified as testable requirements.
 6. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair. `theme(repeat-style: "ornate")` gives the
    repeat signs the flared serifs of an engraved one, curling inwards over the
-   music as on the T.N.T. sheet; `"plain"` is the default.
+   music as engraved rock tab does; `"plain"` is the default.
 7. **A system never breaks across a page.**
 8. **Slurs are drawn as tapered arcs, and their height follows their span.**
    A slur is a filled lens — swelling in the middle, coming to a point at each
@@ -471,9 +471,10 @@ displacement in chords, and slurs.
 - **Round trip**: an annotated ASCII tab, written out as DSL and read back,
   must give the same model.
 - **Manual visual review**: `examples/demo.typ` is a tour of every feature and
-  `examples/tnt.typ` is compared against the reference sheet. Where a figure
-  above cites a measurement, it was taken off `research/` by rasterising the
-  page and reading the pixels, not by eye.
+  `examples/songsheet.typ` is a complete sheet to compare against published
+  guitar tab. Where a figure above cites a measurement, it was taken by
+  rasterising a published sheet and reading the pixels, not by eye. The sheets
+  themselves are not distributed with the package.
   This is the final acceptance criterion for "looks good"; no automated test
   captures it. `examples/glyphs.typ` shows every vector glyph at three sizes
   inside its declared metric box, so a glyph that overflows its own metrics is
