@@ -42,7 +42,7 @@
     // Clearance on either side of a fret number where the line breaks. Measured
     // off the reference sheets, where the gap hugs the digit closely — a wider
     // one reads as a hole in the staff rather than as room for the number.
-    gap-padding: 0.12 * sp,
+    gap-padding: 0.08 * sp,
 
     // --- rhythm ---
     // Stems hang from the beams down towards the staff.

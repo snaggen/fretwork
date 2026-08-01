@@ -19,26 +19,43 @@
 // staff spaces measured from the string's own line. Keeping the numbers in one
 // place is what lets the reserved height match what is actually drawn.
 //
-// The slur figures are taken off the Hal Leonard legend: its hammer-on slur
-// leaves the note line 0.30 spaces up and peaks 1.35 spaces up over a span of
-// about six and a half spaces.
-#let _TAIL-RISE = 0.55 // where a bend arrow starts above its fret number
-#let _BEND-RISE = 1.50 // how far that arrow then climbs
-#let _SLUR-TAIL = 0.30 // where a slur or tie leaves the note line
-#let _SLUR-APEX-MAX = 1.35 // how high a long one is allowed to peak
-#let _SLUR-APEX-MIN = 0.75 // and how flat a short one stays
+// The figures come from the Hal Leonard legend, read off a 300 dpi rasterisation
+// of research/GuitarNotationLegend.pdf rather than judged by eye. Its hammer-on
+// slur leaves the note line 0.74 spaces up — just clear of the digit's cap — and
+// peaks 1.36 up across a span of 5.4.
+#let _SLUR-TAIL = 0.74 // where a slur or tie leaves the note line
+#let _SLUR-RISE-MAX = 0.62 // how much further a long one climbs
+#let _SLUR-RISE-MIN = 0.22 // and the least a short one may
+#let _SLUR-SLOPE = 0.115 // rise per unit of span, between those bounds
 #let _SLUR-WEIGHT = 0.11 // thickness at the middle, tapering to nothing at the ends
+
+// A bend arrow leaves the side of its fret number rather than the top.
+#let _BEND-TAIL = 0.42 // how far above the note line it starts
+#let _BEND-MIN-RISE = 1.6 // the shortest arrow drawn, for notes near the top line
+#let _BEND-CLEARANCE = 0.5 // how far above the staff a longer one ends
 
 /// How high a slur peaks above the note line, for a given horizontal span.
 ///
-/// The height follows the span rather than being fixed. A long slur rises to
-/// the reference height and crosses the line above it at a clear angle; a short
-/// one stays flat enough to sit inside the string spacing. A fixed height does
-/// one of the two badly: at 1.15 spaces it ran almost tangent to the line one
-/// space up and read as merging with it.
+/// The height follows the span rather than being fixed. A long slur rises to the
+/// reference height and crosses the line above it at a clear angle; a short one
+/// stays flat enough to sit inside the string spacing. A fixed height does one
+/// of the two badly: at 1.15 spaces it ran almost tangent to the line one space
+/// up and read as merging with it.
 #let slur-apex(theme, span) = {
   let sp = theme.staff-space
-  calc.max(_SLUR-APEX-MIN * sp, calc.min(_SLUR-APEX-MAX * sp, _SLUR-TAIL * sp + span * 0.22))
+  let rise = calc.max(_SLUR-RISE-MIN * sp, calc.min(_SLUR-RISE-MAX * sp, span * _SLUR-SLOPE))
+  _SLUR-TAIL * sp + rise
+}
+
+/// Where a bend arrow's head sits, as a y in staff coordinates.
+///
+/// Arrows end just above the staff rather than a fixed distance above their own
+/// note, so that within a system they all reach the same height — which is how
+/// the reference sets them. Notes near the top line would give an arrow too
+/// short to read, so there is a floor on the length.
+#let bend-head-y(theme, y) = {
+  let sp = theme.staff-space
+  calc.min(y - _BEND-MIN-RISE * sp, -_BEND-CLEARANCE * sp)
 }
 
 /// Vertical extent of the staff: string 1 sits at y = 0.
@@ -256,44 +273,46 @@
   ))
 }
 
-/// A bend arrow, rising from just above the fret number it belongs to.
+/// A bend arrow, leaving the side of the fret number it belongs to.
 ///
-/// Anchoring to the note's own string rather than to a lane above the staff is
-/// what the published sheets do, and it is the only way the arrow stays a fixed
-/// distance from its number whatever else the system contains.
+/// A release is drawn as a *continuation of the same stroke* — up to the
+/// arrowhead, then on and down to a second one — rather than as two arrows side
+/// by side. That is how the legend sets it, and it reads as one gesture, which
+/// is what a bend and release is.
 ///
-/// `alloc` is the horizontal room the event was given. The lean and the release
-/// spacing are both capped by it, so a bend in a bar of sixteenths tightens up
-/// instead of running into the next event.
-///
-/// A pre-bend is already bent when the string is struck, so it gets a straight
-/// vertical arrow rather than a curved one — the curve is what shows the pitch
-/// rising after the attack.
-#let _bend-arrow(theme, x, y, bend, alloc) = {
+/// `alloc` is the horizontal room the event was given; the reach of the release
+/// is capped by it so a bend in a bar of sixteenths tightens up rather than
+/// running into the next event.
+#let _bend-arrow(theme, x, half-width, y, bend, alloc) = {
   let sp = theme.staff-space
-  let tail-y = y - _TAIL-RISE * sp
-  let peak-y = y - (_TAIL-RISE + _BEND-RISE) * sp
-  let head-base = peak-y + 0.5 * sp
-  let tip-x = if bend.pre { x } else { x + calc.min(1.0 * sp, alloc * 0.4) }
+  let tail-x = x + half-width + 0.08 * sp
+  let tail-y = y - _BEND-TAIL * sp
+  let head-y = bend-head-y(theme, y)
+  let head-base = head-y + 0.55 * sp
+  let tip-x = tail-x + calc.min(0.9 * sp, alloc * 0.35)
+  let stroke = (paint: theme.color, thickness: 0.085 * sp, cap: "round")
 
+  // Up to the arrowhead. A pre-bend is already bent when the string is struck,
+  // so it gets a straight arrow; the curve is what shows the pitch rising after
+  // the attack.
   place(top + left, dx: 0pt, dy: 0pt, curve(
-    stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
-    curve.move((x, tail-y)),
+    stroke: stroke,
+    curve.move((tail-x, tail-y)),
     if bend.pre {
       curve.line((tip-x, head-base))
     } else {
       curve.cubic(
-        (x + (tip-x - x) * 0.75, tail-y),
-        (tip-x, tail-y - (tail-y - peak-y) * 0.45),
+        (tail-x + (tip-x - tail-x) * 0.8, tail-y),
+        (tip-x, tail-y - (tail-y - head-y) * 0.55),
         (tip-x, head-base),
       )
     },
   ))
-  _arrowhead(theme, tip-x, peak-y)
+  _arrowhead(theme, tip-x, head-y)
 
   let label = bend-label(theme, bend.amount)
   let size = measure(label)
-  // Centred on the tip, but never allowed past the event's own allocation.
+  // Centred over the arrowhead, but never past the event's own allocation.
   let label-x = calc.min(
     tip-x - size.width / 2,
     x + alloc - theme.min-event-gap / 2 - size.width,
@@ -301,20 +320,20 @@
   place(
     top + left,
     dx: calc.max(label-x, x - 0.3 * sp),
-    dy: peak-y - size.height - 0.2 * sp,
+    dy: head-y - size.height - 0.22 * sp,
     label,
   )
 
-  // A release returns to the original pitch: a mirrored arrow back down.
   if bend.release {
-    let back-x = tip-x + calc.min(0.9 * sp, alloc * 0.35)
+    // The stroke carries on from beside the arrowhead, over and down.
+    let back-x = tip-x + calc.max(1.2 * sp, calc.min(2.6 * sp, alloc * 0.55))
     place(top + left, dx: 0pt, dy: 0pt, curve(
-      stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
-      curve.move((tip-x, peak-y)),
+      stroke: stroke,
+      curve.move((tip-x + 0.16 * sp, head-y + 0.05 * sp)),
       curve.cubic(
-        (back-x, peak-y),
-        (back-x, peak-y + (tail-y - peak-y) * 0.55),
-        (back-x, tail-y - 0.5 * sp),
+        (tip-x + (back-x - tip-x) * 0.55, head-y),
+        (back-x, head-y + (tail-y - head-y) * 0.35),
+        (back-x, tail-y - 0.55 * sp),
       ),
     ))
     _arrowhead(theme, back-x, tail-y, down: true)
@@ -338,8 +357,8 @@
       let y = string-y(theme, n.string)
       let bend = get-technique(n, "bend")
       if bend != none {
-        let reach = (_TAIL-RISE + _BEND-RISE) * sp + measure(bend-label(theme, bend.amount)).height
-        over = calc.max(over, reach + 0.25 * sp - y)
+        let head = bend-head-y(theme, y)
+        over = calc.max(over, -head + measure(bend-label(theme, bend.amount)).height + 0.3 * sp)
       }
       if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
         over = calc.max(over, slur-apex(theme, pe.alloc) + 0.15 * sp - y)
@@ -429,8 +448,14 @@
       let y = string-y(theme, n.string)
       labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
 
+      // A slur springs from the top *centre* of a lone number, as the legend
+      // sets it. That is impossible when numbers are stacked in a chord — the
+      // arc would run into the one above — so a chord attaches at the sides
+      // instead, which is what the T.N.T. sheet does with its tied chords.
+      let stacked = pe.event.notes.len() > 1
       let cursor = pe.x + size.width / 2
       let from-fret = n.fret
+      let from-x = if stacked { cursor } else { pe.x }
       for target in link-targets(n) {
         let tbody = fret-label(theme, target.fret)
         let tsize = measure(tbody)
@@ -439,12 +464,14 @@
         connectors.push((
           kind: target.kind,
           legato: target.legato,
-          from: cursor,
-          to: tx - tsize.width / 2,
+          from: from-x,
+          to: if stacked { tx - tsize.width / 2 } else { tx },
+          edge: (cursor, tx - tsize.width / 2),
           y: y,
           rising: target.fret > from-fret,
         ))
         cursor = tx + tsize.width / 2
+        from-x = tx
         from-fret = target.fret
       }
 
@@ -453,18 +480,23 @@
       // conventional way of showing a note held across the break.
       if n.techniques.any(t => t.kind == "tie") {
         let target-x = none
+        let target-edge = none
         for j in range(i + 1, placed.len()) {
           let later = placed.at(j).event.notes.filter(o => o.string == n.string)
           if later.len() > 0 {
-            target-x = placed.at(j).x - measure(fret-label(theme, later.first().fret)).width / 2
+            let half = measure(fret-label(theme, later.first().fret)).width / 2
+            target-x = placed.at(j).x
+            target-edge = placed.at(j).x - half
             break
           }
         }
+        let trail = cursor + 1.6 * theme.staff-space
         connectors.push((
           kind: "tie",
           legato: true,
-          from: cursor,
-          to: if target-x != none { target-x } else { cursor + 1.6 * theme.staff-space },
+          from: if stacked { cursor } else { pe.x },
+          to: if target-x != none { if stacked { target-edge } else { target-x } } else { trail },
+          edge: (cursor, if target-edge != none { target-edge } else { trail }),
           y: y,
           rising: false,
         ))
@@ -472,7 +504,14 @@
 
       let bend = get-technique(n, "bend")
       if bend != none {
-        connectors.push((kind: "bend", from: pe.x, y: y, bend: bend, alloc: pe.alloc))
+        connectors.push((
+          kind: "bend",
+          from: pe.x,
+          half-width: size.width / 2,
+          y: y,
+          bend: bend,
+          alloc: pe.alloc,
+        ))
       }
     }
   }
@@ -552,7 +591,7 @@
       // they reach above the top string line is reserved by `overflow-above`.
       for c in connectors {
         if c.kind == "bend" {
-          _bend-arrow(theme, c.from, c.y, c.bend, c.alloc)
+          _bend-arrow(theme, c.from, c.half-width, c.y, c.bend, c.alloc)
         } else if c.kind == "slide" {
           _slide-line(theme, c.from, c.to, c.y, c.rising)
           if c.legato { _slur(theme, c.from, c.to, c.y) }
