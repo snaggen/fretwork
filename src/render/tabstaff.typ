@@ -18,9 +18,28 @@
 // Vertical geometry shared by the drawing code and by `overflow-above`, in
 // staff spaces measured from the string's own line. Keeping the numbers in one
 // place is what lets the reserved height match what is actually drawn.
-#let _TAIL-RISE = 0.55 // clearance between a fret number and what sits above it
-#let _BEND-RISE = 1.50 // how far a bend arrow climbs from there
-#let _SLUR-RISE = 1.15 // apex of a slur or tie
+//
+// The slur figures are taken off the Hal Leonard legend: its hammer-on slur
+// leaves the note line 0.30 spaces up and peaks 1.35 spaces up over a span of
+// about six and a half spaces.
+#let _TAIL-RISE = 0.55 // where a bend arrow starts above its fret number
+#let _BEND-RISE = 1.50 // how far that arrow then climbs
+#let _SLUR-TAIL = 0.30 // where a slur or tie leaves the note line
+#let _SLUR-APEX-MAX = 1.35 // how high a long one is allowed to peak
+#let _SLUR-APEX-MIN = 0.75 // and how flat a short one stays
+#let _SLUR-WEIGHT = 0.11 // thickness at the middle, tapering to nothing at the ends
+
+/// How high a slur peaks above the note line, for a given horizontal span.
+///
+/// The height follows the span rather than being fixed. A long slur rises to
+/// the reference height and crosses the line above it at a clear angle; a short
+/// one stays flat enough to sit inside the string spacing. A fixed height does
+/// one of the two badly: at 1.15 spaces it ran almost tangent to the line one
+/// space up and read as merging with it.
+#let slur-apex(theme, span) = {
+  let sp = theme.staff-space
+  calc.max(_SLUR-APEX-MIN * sp, calc.min(_SLUR-APEX-MAX * sp, _SLUR-TAIL * sp + span * 0.22))
+}
 
 /// Vertical extent of the staff: string 1 sits at y = 0.
 #let height(theme, strings) = (strings - 1) * theme.staff-space
@@ -61,7 +80,11 @@
 }
 
 /// Gap between a note and a fret it is linked to.
-#let _link-gap(theme) = 0.85 * theme.staff-space
+///
+/// Wide enough for the slur joining them to read as an arc. Published sheets set
+/// the two numbers of a hammer-on a whole event apart, because there they are
+/// separate events; here they share one, so this is the compromise.
+#let _link-gap(theme) = 1.15 * theme.staff-space
 
 /// Width an event's fret numbers occupy.
 ///
@@ -169,16 +192,26 @@
 ///
 /// Hal Leonard prints the same slur for both: which one it is follows from
 /// whether the pitch rises or falls, so no letter is needed.
+/// Drawn as a filled lens rather than a stroked curve, so it swells in the
+/// middle and tapers to a point at each end the way an engraved slur does. A
+/// constant-thickness stroke reads as a wire.
 #let _slur(theme, x0, x1, y) = {
   let sp = theme.staff-space
+  let span = x1 - x0
+  let ends = y - _SLUR-TAIL * sp
+  // A cubic peaks at three quarters of its control offset, so the controls sit
+  // higher than the apex they produce.
+  let lift = (slur-apex(theme, span) - _SLUR-TAIL * sp) * 4 / 3
+  let outer = ends - lift
+  let inner = outer + _SLUR-WEIGHT * sp * 4 / 3
+
   place(top + left, dx: 0pt, dy: 0pt, curve(
-    stroke: (paint: theme.color, thickness: 0.08 * sp, cap: "round"),
-    curve.move((x0, y - _TAIL-RISE * sp)),
-    curve.cubic(
-      (x0 + (x1 - x0) * 0.3, y - _SLUR-RISE * sp),
-      (x0 + (x1 - x0) * 0.7, y - _SLUR-RISE * sp),
-      (x1, y - _TAIL-RISE * sp),
-    ),
+    fill: theme.color,
+    stroke: none,
+    curve.move((x0, ends)),
+    curve.cubic((x0 + span * 0.3, outer), (x0 + span * 0.7, outer), (x1, ends)),
+    curve.cubic((x0 + span * 0.7, inner), (x0 + span * 0.3, inner), (x0, ends)),
+    curve.close(),
   ))
 }
 
@@ -309,7 +342,7 @@
         over = calc.max(over, reach + 0.25 * sp - y)
       }
       if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
-        over = calc.max(over, _SLUR-RISE * sp + 0.15 * sp - y)
+        over = calc.max(over, slur-apex(theme, pe.alloc) + 0.15 * sp - y)
       }
     }
   }
@@ -444,24 +477,24 @@
     }
   }
 
-  // 2. String lines, broken around the numbers that sit on them — and around
-  //    the TAB mark, which the same rule applies to.
+  // 2. String lines, broken around the numbers that sit on them. The TAB mark
+  //    is not one of them: the reference sheets run their lines straight through
+  //    it and let the letters sit over the top, and breaking them there leaves
+  //    the outermost lines looking clipped.
   let mark = tab-mark(theme, strings)
-  let mark-gap = (start: 0.3 * sp, end: mark.width + 0.25 * sp)
   let lines = ()
   for s in range(1, strings + 1) {
     let y = string-y(theme, s)
     let gaps = if theme.mask == "gap" {
       _merge(
-        (mark-gap,)
-          + labels
-            .filter(l => l.string == s)
-            .map(l => (
-              start: l.x - l.w / 2 - theme.gap-padding,
-              end: l.x + l.w / 2 + theme.gap-padding,
-            )),
+        labels
+          .filter(l => l.string == s)
+          .map(l => (
+            start: l.x - l.w / 2 - theme.gap-padding,
+            end: l.x + l.w / 2 + theme.gap-padding,
+          )),
       )
-    } else { (mark-gap,) }
+    } else { () }
     lines.push(_line-with-gaps(theme, y, width, gaps))
   }
 

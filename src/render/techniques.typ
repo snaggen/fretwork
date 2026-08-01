@@ -213,25 +213,34 @@
           let x0 = run.first().x - 0.2 * sp
           let x1 = run.last().x + 0.3 * sp
           place(top + left, dx: x0, dy: y, text-body)
-          // A dashed rule from the end of the label to the last event, closed
-          // by a downward tick, marks how far the instruction reaches.
-          if x1 > x0 + label-w + 0.3 * sp {
+          // A dashed rule from the end of the label to the last event marks how
+          // far the instruction reaches, closed by a tick that crosses the rule
+          // rather than merely hanging off it. Dash and gap are both about a
+          // third of a staff space, as on the reference sheets, and the rule
+          // meets the label near its baseline rather than at its top.
+          let rule-y = y + 0.5 * sp
+          let rule-x = x0 + label-w + 0.3 * sp
+          if x1 > rule-x {
             place(
               top + left,
-              dx: x0 + label-w + 0.3 * sp,
-              dy: y + 0.5 * sp,
+              dx: rule-x,
+              dy: rule-y,
               line(
-                length: x1 - x0 - label-w - 0.3 * sp,
-                stroke: (paint: theme.color, thickness: 0.07 * sp, dash: "dashed"),
+                length: x1 - rule-x,
+                stroke: (
+                  paint: theme.color,
+                  thickness: 0.07 * sp,
+                  dash: (array: (0.30 * sp, 0.30 * sp), phase: 0pt),
+                ),
               ),
             )
             place(
               top + left,
               dx: x1,
-              dy: y + 0.5 * sp,
+              dy: rule-y - 0.28 * sp,
               line(
                 angle: 90deg,
-                length: 0.45 * sp,
+                length: 1.05 * sp,
                 stroke: (paint: theme.color, thickness: 0.07 * sp),
               ),
             )

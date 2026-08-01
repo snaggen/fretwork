@@ -288,7 +288,15 @@ Looking good is a stated goal, so it is specified as testable requirements.
    the lines as segments with a computed gap instead. The result looks the same,
    also survives a tinted page background, and costs nothing extra because the
    glyph width is already measured for spacing. `theme(mask: "box")` selects the
-   opaque patch. The same rule applies to the TAB mark.
+   opaque patch.
+
+   The gap hugs the digit: measured off the T.N.T. sheet it is about 0.8 staff
+   spaces wide for a digit of roughly 0.6, leaving some 0.1 either side. A wider
+   one reads as a hole in the staff rather than as room for a number.
+
+   The **TAB mark is not covered by this rule.** The reference sheets run their
+   string lines straight through it and let the letters sit on top; breaking them
+   there leaves the outermost lines looking clipped.
 2. **Optical, not proportional, spacing.** Event width grows as
    `duration ^ 0.6`, with a floor set by the measured glyph width so a `12`
    claims more room than a `0`. Proportional spacing would strand long notes in
@@ -303,12 +311,23 @@ Looking good is a stated goal, so it is specified as testable requirements.
 6. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair.
 7. **A system never breaks across a page.**
-8. **A bend arrow rises from the fret number it belongs to**, not from a fixed
+8. **Slurs are drawn as tapered arcs, and their height follows their span.**
+   A slur is a filled lens — swelling in the middle, coming to a point at each
+   end — because a constant-thickness stroke reads as a wire. The Hal Leonard
+   legend leaves the note line 0.30 staff spaces up and peaks 1.35 up over a
+   span of about six and a half; a short slur is held flatter so it stays inside
+   the string spacing. A fixed height does one of the two badly: at 1.15 spaces
+   it runs almost tangent to the line one space above and reads as merging with
+   it.
+9. **A bracketed span is closed by a tick that crosses its rule**, not one that
+   merely hangs off it, and the dashed rule meets its label near the baseline
+   rather than at the cap. Dash and gap are each about 0.3 staff spaces.
+10. **A bend arrow rises from the fret number it belongs to**, not from a fixed
    height above the staff. The same bend must sit the same distance above its
    number whichever string it is on, and adding an accent elsewhere in the
    system must not move it. A pre-bend is already bent when struck, so its
    arrow is straight where an ordinary bend's curves.
-9. **Two-digit frets are centred on their column** and get a correspondingly
+11. **Two-digit frets are centred on their column** and get a correspondingly
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
 
@@ -429,7 +448,9 @@ displacement in chords, and slurs.
 - **Round trip**: an annotated ASCII tab, written out as DSL and read back,
   must give the same model.
 - **Manual visual review**: `examples/demo.typ` is a tour of every feature and
-  `examples/tnt.typ` is compared against the reference sheet.
+  `examples/tnt.typ` is compared against the reference sheet. Where a figure
+  above cites a measurement, it was taken off `research/` by rasterising the
+  page and reading the pixels, not by eye.
   This is the final acceptance criterion for "looks good"; no automated test
   captures it. `examples/glyphs.typ` shows every vector glyph at three sizes
   inside its declared metric box, so a glyph that overflows its own metrics is
