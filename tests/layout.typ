@@ -160,6 +160,22 @@
   )
   eq(over("q 5/6h7 0/6 0/6 0/6"), 0pt, "a slur low on the staff needs none at all")
 
+  // A slur leaving a number's side is held far lower than one springing over its
+  // top, so that it stays inside its own string's space.
+  let span = 4 * thm.staff-space
+  ok(
+    tabstaff.slur-apex(thm, span, side: true) < tabstaff.slur-apex(thm, span),
+    "a side-attached slur peaks lower than a top-attached one",
+  )
+  ok(
+    tabstaff.slur-apex(thm, span, side: true) < thm.staff-space,
+    "…and below the line one space up, which is what it has to clear",
+  )
+  ok(
+    over("q (5/1 5/2)~ 0/6 0/6 0/6") < over("q 5/1~ 0/6 0/6 0/6"),
+    "so a tied chord reserves less room above the staff than a tied lone note",
+  )
+
   // An ornate repeat sign's serifs reach past the staff at both ends, so the
   // lane has to reserve room for them too.
   let ornate = theme(staff-space: 3mm, repeat-style: "ornate")

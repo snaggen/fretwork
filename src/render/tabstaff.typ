@@ -29,6 +29,15 @@
 #let _SLUR-SLOPE = 0.115 // rise per unit of span, between those bounds
 #let _SLUR-WEIGHT = 0.11 // thickness at the middle, tapering to nothing at the ends
 
+// A slur leaving a number's *side* — which is what stacked numbers in a chord
+// force — starts level with the digit's middle rather than above its cap, so it
+// is obvious which number it belongs to. It then stays low and flat, inside its
+// own string's space, where a taller arc would reach the number above.
+#let _SLUR-SIDE-TAIL = 0.08
+#let _SLUR-SIDE-RISE-MAX = 0.42
+#let _SLUR-SIDE-RISE-MIN = 0.18
+#let _SLUR-SIDE-SLOPE = 0.09
+
 // A bend arrow leaves the side of its fret number rather than the top.
 #let _BEND-TAIL = 0.42 // how far above the note line it starts
 #let _BEND-MIN-RISE = 1.6 // the shortest arrow drawn, for notes near the top line
@@ -41,8 +50,15 @@
 /// stays flat enough to sit inside the string spacing. A fixed height does one
 /// of the two badly: at 1.15 spaces it ran almost tangent to the line one space
 /// up and read as merging with it.
-#let slur-apex(theme, span) = {
+#let slur-apex(theme, span, side: false) = {
   let sp = theme.staff-space
+  if side {
+    let rise = calc.max(
+      _SLUR-SIDE-RISE-MIN * sp,
+      calc.min(_SLUR-SIDE-RISE-MAX * sp, span * _SLUR-SIDE-SLOPE),
+    )
+    return _SLUR-SIDE-TAIL * sp + rise
+  }
   let rise = calc.max(_SLUR-RISE-MIN * sp, calc.min(_SLUR-RISE-MAX * sp, span * _SLUR-SLOPE))
   _SLUR-TAIL * sp + rise
 }
@@ -275,13 +291,14 @@
 /// Drawn as a filled lens rather than a stroked curve, so it swells in the
 /// middle and tapers to a point at each end the way an engraved slur does. A
 /// constant-thickness stroke reads as a wire.
-#let _slur(theme, x0, x1, y) = {
+#let _slur(theme, x0, x1, y, side: false) = {
   let sp = theme.staff-space
   let span = x1 - x0
-  let ends = y - _SLUR-TAIL * sp
+  let tail = if side { _SLUR-SIDE-TAIL } else { _SLUR-TAIL }
+  let ends = y - tail * sp
   // A cubic peaks at three quarters of its control offset, so the controls sit
   // higher than the apex they produce.
-  let lift = (slur-apex(theme, span) - _SLUR-TAIL * sp) * 4 / 3
+  let lift = (slur-apex(theme, span, side: side) - tail * sp) * 4 / 3
   let outer = ends - lift
   let inner = outer + _SLUR-WEIGHT * sp * 4 / 3
 
@@ -431,7 +448,8 @@
         over = calc.max(over, -head + measure(bend-label(theme, bend.amount)).height + 0.3 * sp)
       }
       if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
-        over = calc.max(over, slur-apex(theme, pe.alloc) + 0.15 * sp - y)
+        let side = pe.event.notes.len() > 1
+        over = calc.max(over, slur-apex(theme, pe.alloc, side: side) + 0.15 * sp - y)
       }
       if n.techniques.any(t => t.kind == "rake") {
         over = calc.max(over, 0.45 * sp + theme.technique-size * 1.3 - y)
@@ -548,6 +566,7 @@
           from: from-x,
           to: if stacked { tx - tsize.width / 2 } else { tx },
           edge: (cursor, tx - tsize.width / 2),
+          side: stacked,
           y: y,
           rising: target.fret > from-fret,
         ))
@@ -578,6 +597,7 @@
           from: if stacked { cursor } else { pe.x },
           to: if target-x != none { if stacked { target-edge } else { target-x } } else { trail },
           edge: (cursor, if target-edge != none { target-edge } else { trail }),
+          side: stacked,
           y: y,
           rising: false,
         ))
@@ -712,10 +732,12 @@
         if c.kind == "bend" {
           _bend-arrow(theme, c.from, c.half-width, c.y, c.bend, c.alloc)
         } else if c.kind == "slide" {
-          _slide-line(theme, c.from, c.to, c.y, c.rising)
-          if c.legato { _slur(theme, c.from, c.to, c.y) }
+          // The slide line runs between the numbers' facing edges; the slur over
+          // them attaches wherever the event's shape allows.
+          _slide-line(theme, c.edge.at(0), c.edge.at(1), c.y, c.rising)
+          if c.legato { _slur(theme, c.from, c.to, c.y, side: c.side) }
         } else {
-          _slur(theme, c.from, c.to, c.y)
+          _slur(theme, c.from, c.to, c.y, side: c.side)
         }
       }
     },
