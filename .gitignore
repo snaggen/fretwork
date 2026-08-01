@@ -1,0 +1,5 @@
+*.pdf
+*.png
+!research/*.png
+tests/**/out/
+tests/**/diff/

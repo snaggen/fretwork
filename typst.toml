@@ -1,0 +1,12 @@
+[package]
+name = "tablature"
+version = "0.1.0"
+entrypoint = "src/lib.typ"
+authors = ["Mattias Eriksson <snaggen@tuta.com>"]
+license = "EUPL-1.2"
+description = "Publication-quality guitar tablature: rhythm stems, technique symbols and ASCII tab import."
+repository = "https://github.com/snaggen/tablature"
+keywords = ["guitar", "tablature", "tab", "music", "notation"]
+categories = ["visualization"]
+compiler = "0.13.0"
+exclude = ["research", "examples", "tests", "SPEC.md"]
