@@ -1,9 +1,13 @@
 // Playing techniques drawn above the staff.
 //
-// The lane is built from sub-rows that appear only when something needs them:
-// articulations sit closest to the staff, then vibrato, free text, and
-// bracketed spans at the top. An empty row costs no vertical space, so a plain
-// riff stays as compact as it would be with no technique support at all.
+// Marks pack sideways rather than into fixed lanes: each sits as close to the
+// staff as it fits, and things stack only where they are actually in each
+// other's way. A palm mute in one bar and an instruction in the next therefore
+// share a level, and a plain riff costs no vertical space at all.
+//
+// Marks of one kind move together, so every palm mute in a system stays at one
+// height. When two kinds do collide the order decides, closest to the staff
+// first: articulations, vibrato, trills and scrapes, free text, spans.
 //
 // The division of labour with `tabstaff.typ` is by what a mark is positioned
 // against: anything anchored to a *string* — the second number of a hammer-on,
@@ -58,219 +62,262 @@
 
 #let _ARTICULATIONS = ("accent", "marcato", "staccato", "tenuto", "stroke")
 
-#let _has-articulation(placed) = placed.any(pe => pe.event.notes.any(n => n
-  .techniques
-  .any(t => t.kind in _ARTICULATIONS)))
-
-#let _has(placed, kind) = placed.any(pe => _event-techniques(pe.event, kind).len() > 0)
-
 /// Marks that print as a word followed by a wavy line running over the event.
 #let _WAVY-LABELS = (trill: "tr", scrape: "P.S.")
-#let _has-text(placed) = placed.any(pe => pe.event.text != none)
 
-/// The sub-rows present in this system, bottom to top, with their heights.
-#let _rows(theme, placed) = {
+/// Vertical clearance between two levels of marks.
+#let _LEVEL-GAP = 0.15
+
+/// A vibrato squiggle, drawn from its left edge with `y` at its top.
+#let _vibrato-mark(theme, x, y, w, wide) = {
+  let wave = g.wavy(theme.staff-space, w, amp: if wide { 0.30 } else { 0.18 }, fill: theme.color)
+  place(top + left, dx: x, dy: y, wave.body)
+}
+
+/// A short label, set in the technique face.
+#let _label(theme, body, italic: false) = text(
+  font: theme.font,
+  size: theme.technique-size,
+  style: if italic { "italic" } else { "normal" },
+  fill: theme.color,
+  top-edge: "cap-height",
+  bottom-edge: "baseline",
+  body,
+)
+
+/// Every mark the lane has to place.
+///
+/// A mark records the horizontal room it needs and how to draw itself at a
+/// given top edge. They come back grouped by kind, ordered by how close to the
+/// staff the kind wants to sit — which is the order the packer tries them in.
+///
+/// Must be called from a context: labels are measured.
+#let _marks(theme, placed) = {
   let sp = theme.staff-space
-  let rows = ()
-  if _has-articulation(placed) { rows.push((name: "artic", height: 0.85 * sp)) }
-  if _has(placed, "vibrato") { rows.push((name: "vibrato", height: 0.75 * sp)) }
-  if _has(placed, "trill") or _has(placed, "scrape") or _has(placed, "harmonic") or _has-text(placed) {
-    rows.push((name: "text", height: theme.technique-size * 1.3))
-  }
-  if _span-names(placed).len() > 0 { rows.push((name: "span", height: 1.15 * sp)) }
-  rows
-}
+  let groups = ()
 
-#let height(theme, system) = {
-  let rows = _rows(theme, _flatten(system))
-  if rows.len() == 0 { return 0pt }
-  rows.fold(0pt, (acc, row) => acc + row.height)
-}
-
-/// Top edge of a named row, measured from the top of the lane.
-#let _row-top(rows, name, total) = {
-  // Rows were collected bottom-up, so stack them from the bottom of the lane.
-  let y = total
-  for row in rows {
-    y -= row.height
-    if row.name == name { return y }
-  }
-  none
-}
-
-/// A vibrato squiggle of the given width.
-#let _vibrato(theme, x, y, w, wide) = {
-  let sp = theme.staff-space
-  let wave = g.wavy(sp, w, amp: if wide { 0.30 } else { 0.18 }, fill: theme.color)
-  place(top + left, dx: x, dy: y - wave.height / 2, wave.body)
-}
-
-/// Draw the technique lane for one placed system.
-#let draw(theme, system, width) = {
-  let sp = theme.staff-space
-  let placed = _flatten(system)
-  let rows = _rows(theme, placed)
-  let total = height(theme, system)
-
-  box(width: width, height: total, {
-    // --- articulations, closest to the staff ---
-    let y = _row-top(rows, "artic", total)
-    if y != none {
-      for pe in placed {
-        for n in pe.event.notes {
-          for t in n.techniques {
-            let glyph = if t.kind == "accent" {
-              g.accent(sp, fill: theme.color)
-            } else if t.kind == "marcato" {
-              g.marcato(sp, fill: theme.color)
-            } else if t.kind == "staccato" {
-              g.staccato(sp, fill: theme.color)
-            } else if t.kind == "tenuto" {
-              g.tenuto(sp, fill: theme.color)
-            } else if t.kind == "stroke" and t.dir == "down" {
-              g.downstroke(sp, fill: theme.color)
-            } else if t.kind == "stroke" {
-              g.upstroke(sp, fill: theme.color)
-            } else { none }
-            if glyph == none { continue }
-            place(
-              top + left,
-              dx: pe.x - glyph.width / 2,
-              dy: y + (0.85 * sp - glyph.height) / 2,
-              glyph.body,
-            )
-            break
-          }
-        }
+  // --- articulations, one glyph per event ---
+  let artic = ()
+  for pe in placed {
+    for n in pe.event.notes {
+      let glyph = none
+      for t in n.techniques {
+        glyph = if t.kind == "accent" {
+          g.accent(sp, fill: theme.color)
+        } else if t.kind == "marcato" {
+          g.marcato(sp, fill: theme.color)
+        } else if t.kind == "staccato" {
+          g.staccato(sp, fill: theme.color)
+        } else if t.kind == "tenuto" {
+          g.tenuto(sp, fill: theme.color)
+        } else if t.kind == "stroke" and t.dir == "down" {
+          g.downstroke(sp, fill: theme.color)
+        } else if t.kind == "stroke" {
+          g.upstroke(sp, fill: theme.color)
+        } else { none }
+        if glyph != none { break }
       }
+      if glyph == none { continue }
+      let x = pe.x - glyph.width / 2
+      artic.push((
+        x0: x,
+        x1: x + glyph.width,
+        height: 0.85 * sp,
+        draw: y => place(top + left, dx: x, dy: y + (0.85 * sp - glyph.height) / 2, glyph.body),
+      ))
+      break
     }
+  }
+  if artic.len() > 0 { groups.push(artic) }
 
-    // --- vibrato ---
-    let y = _row-top(rows, "vibrato", total)
-    if y != none {
-      for pe in placed {
-        for t in _event-techniques(pe.event, "vibrato") {
-          _vibrato(theme, pe.x - 0.2 * sp, y + 0.4 * sp, calc.max(1.4 * sp, pe.alloc * 0.8), t.wide)
-          break
-        }
-      }
+  // --- vibrato ---
+  let vibrato = ()
+  for pe in placed {
+    for t in _event-techniques(pe.event, "vibrato") {
+      let w = calc.max(1.4 * sp, pe.alloc * 0.8)
+      let x = pe.x - 0.2 * sp
+      vibrato.push((
+        x0: x,
+        x1: x + w,
+        height: 0.75 * sp,
+        draw: y => _vibrato-mark(theme, x, y + 0.1 * sp, w, t.wide),
+      ))
+      break
     }
+  }
+  if vibrato.len() > 0 { groups.push(vibrato) }
 
-    // --- harmonics and free text ---
-    let y = _row-top(rows, "text", total)
-    if y != none {
-      for pe in placed {
-        // A trill or a pick scrape prints its word and then a wavy line for as
-        // long as it lasts.
-        for kind in _WAVY-LABELS.keys() {
-          let marks = _event-techniques(pe.event, kind)
-          if marks.len() == 0 { continue }
-          let word = text(
-            font: theme.font,
-            size: theme.technique-size,
-            style: if kind == "trill" { "italic" } else { "normal" },
-            fill: theme.color,
-            top-edge: "cap-height",
-            bottom-edge: "baseline",
-            _WAVY-LABELS.at(kind),
-          )
-          let word-w = measure(word).width
-          place(top + left, dx: pe.x - 0.2 * sp, dy: y, word)
-          let wave = g.wavy(
-            sp,
-            calc.max(1.2 * sp, pe.alloc - word-w - 0.5 * sp),
-            fill: theme.color,
-          )
+  // --- a trill or a pick scrape: a word, then a wavy line for as long as it lasts ---
+  let wavy = ()
+  for pe in placed {
+    for kind in _WAVY-LABELS.keys() {
+      if _event-techniques(pe.event, kind).len() == 0 { continue }
+      let word = _label(theme, _WAVY-LABELS.at(kind), italic: kind == "trill")
+      let word-w = measure(word).width
+      let wave = g.wavy(
+        sp,
+        calc.max(1.2 * sp, pe.alloc - word-w - 0.5 * sp),
+        fill: theme.color,
+      )
+      let x = pe.x - 0.2 * sp
+      wavy.push((
+        x0: x,
+        x1: x + word-w + 0.25 * sp + wave.width,
+        height: theme.technique-size * 1.3,
+        draw: y => {
+          place(top + left, dx: x, dy: y, word)
           place(
             top + left,
-            dx: pe.x - 0.2 * sp + word-w + 0.25 * sp,
+            dx: x + word-w + 0.25 * sp,
             dy: y + theme.technique-size * 0.25,
             wave.body,
           )
-        }
+        },
+      ))
+    }
+  }
+  if wavy.len() > 0 { groups.push(wavy) }
 
-        let harmonics = _event-techniques(pe.event, "harmonic")
-        let label = if pe.event.text != none {
-          pe.event.text
-        } else if harmonics.len() > 0 {
-          let style = harmonics.first().style
-          if style == "natural" { "Harm." } else if style == "pinch" { "P.H." } else { "H.H." }
-        } else { none }
-        if label == none { continue }
-        place(
-          top + left,
-          dx: pe.x - 0.2 * sp,
-          dy: y,
-          text(
-            font: theme.font,
-            size: theme.technique-size,
-            fill: theme.color,
-            top-edge: "cap-height",
-            bottom-edge: "baseline",
-            label,
-          ),
-        )
+  // --- harmonics and free instructions ---
+  let texts = ()
+  for pe in placed {
+    let harmonics = _event-techniques(pe.event, "harmonic")
+    let word = if pe.event.text != none {
+      pe.event.text
+    } else if harmonics.len() > 0 {
+      let style = harmonics.first().style
+      if style == "natural" { "Harm." } else if style == "pinch" { "P.H." } else { "H.H." }
+    } else { none }
+    if word == none { continue }
+    let body = _label(theme, word)
+    let x = pe.x - 0.2 * sp
+    texts.push((
+      x0: x,
+      x1: x + measure(body).width,
+      height: theme.technique-size * 1.3,
+      draw: y => place(top + left, dx: x, dy: y, body),
+    ))
+  }
+  if texts.len() > 0 { groups.push(texts) }
+
+  // --- bracketed spans ---
+  let spans = ()
+  for name in _span-names(placed) {
+    let body = _label(theme, SPAN-LABELS.at(name, default: name))
+    let label-w = measure(body).width
+    for run in _span-runs(placed, name) {
+      let x0 = run.first().x - 0.2 * sp
+      let x1 = run.last().x + 0.3 * sp
+      let rule-x = x0 + label-w + 0.3 * sp
+      spans.push((
+        x0: x0,
+        x1: calc.max(x1, rule-x),
+        height: 1.15 * sp,
+        draw: y => {
+          place(top + left, dx: x0, dy: y, body)
+          // A dashed rule to the last event, closed by a tick that crosses it
+          // rather than merely hanging off it. Dash and gap are each about a
+          // third of a staff space, and the rule meets the label near its
+          // baseline rather than at its cap.
+          if x1 > rule-x {
+            let rule-y = y + 0.5 * sp
+            place(top + left, dx: rule-x, dy: rule-y, line(
+              length: x1 - rule-x,
+              stroke: (
+                paint: theme.color,
+                thickness: 0.07 * sp,
+                dash: (array: (0.30 * sp, 0.30 * sp), phase: 0pt),
+              ),
+            ))
+            place(top + left, dx: x1, dy: rule-y - 0.28 * sp, line(
+              angle: 90deg,
+              length: 1.05 * sp,
+              stroke: (paint: theme.color, thickness: 0.07 * sp),
+            ))
+          }
+        },
+      ))
+    }
+  }
+  if spans.len() > 0 { groups.push(spans) }
+
+  groups
+}
+
+/// Pack groups of marks into as few levels as the horizontal room allows.
+///
+/// Published sheets pack sideways: a mark sits as close to the staff as it fits,
+/// and things only stack where they are actually in each other's way. Reserving
+/// a level per kind for the whole system instead makes a system taller than it
+/// needs to be whenever two marks are in different bars.
+///
+/// A whole group moves together, so every palm mute in a system stays at one
+/// height. Groups are offered the levels in the order `_marks` returns them, so
+/// when two do collide the closer-to-the-staff kind wins the lower level.
+#let _pack(groups) = {
+  let levels = ()
+  for group in groups {
+    let target = none
+    for (i, level) in levels.enumerate() {
+      let clear = group.all(m => level.all(o => m.x1 <= o.x0 or m.x0 >= o.x1))
+      if clear {
+        target = i
+        break
       }
     }
+    if target == none {
+      levels.push(group)
+    } else {
+      levels.at(target) = levels.at(target) + group
+    }
+  }
+  levels
+}
 
-    // --- bracketed spans, furthest from the staff ---
-    let y = _row-top(rows, "span", total)
-    if y != none {
-      for name in _span-names(placed) {
-        let label = SPAN-LABELS.at(name, default: name)
-        for run in _span-runs(placed, name) {
-          let text-body = text(
-            font: theme.font,
-            size: theme.technique-size,
-            fill: theme.color,
-            top-edge: "cap-height",
-            bottom-edge: "baseline",
-            label,
-          )
-          let label-w = measure(text-body).width
-          let x0 = run.first().x - 0.2 * sp
-          let x1 = run.last().x + 0.3 * sp
-          place(top + left, dx: x0, dy: y, text-body)
-          // A dashed rule from the end of the label to the last event marks how
-          // far the instruction reaches, closed by a tick that crosses the rule
-          // rather than merely hanging off it. Dash and gap are both about a
-          // third of a staff space, as on the reference sheets, and the rule
-          // meets the label near its baseline rather than at its top.
-          let rule-y = y + 0.5 * sp
-          let rule-x = x0 + label-w + 0.3 * sp
-          if x1 > rule-x {
-            place(
-              top + left,
-              dx: rule-x,
-              dy: rule-y,
-              line(
-                length: x1 - rule-x,
-                stroke: (
-                  paint: theme.color,
-                  thickness: 0.07 * sp,
-                  dash: (array: (0.30 * sp, 0.30 * sp), phase: 0pt),
-                ),
-              ),
-            )
-            place(
-              top + left,
-              dx: x1,
-              dy: rule-y - 0.28 * sp,
-              line(
-                angle: 90deg,
-                length: 1.05 * sp,
-                stroke: (paint: theme.color, thickness: 0.07 * sp),
-              ),
-            )
-          }
-        }
+/// The levels of a system, each with the height it needs.
+#let _levels(theme, system) = {
+  _pack(_marks(theme, _flatten(system))).map(level => (
+    marks: level,
+    height: level.fold(0pt, (acc, m) => calc.max(acc, m.height)),
+  ))
+}
+
+/// Total height of the lane.
+#let height(theme, system) = {
+  let levels = _levels(theme, system)
+  if levels.len() == 0 { return 0pt }
+  let gap = _LEVEL-GAP * theme.staff-space
+  levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
+}
+
+/// Draw the technique lane for one placed system.
+#let draw(theme, system, width, levels: none) = {
+  let levels = if levels != none { levels } else { _levels(theme, system) }
+  if levels.len() == 0 { return box(width: width, height: 0pt) }
+
+  let gap = _LEVEL-GAP * theme.staff-space
+  let total = levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
+
+  box(width: width, height: total, {
+    // Level 0 sits closest to the staff, so the stack is laid out upwards from
+    // the bottom of the lane.
+    let bottom = total
+    for level in levels {
+      let y = bottom - level.height
+      for m in level.marks {
+        (m.draw)(y)
       }
+      bottom = y - gap
     }
   })
 }
 
 /// The technique lane, collapsing when nothing needs it.
 #let lane-for(theme, system, width) = {
-  if height(theme, system) == 0pt { return empty-lane }
-  lane(height(theme, system), () => draw(theme, system, width))
+  // Packed once and handed to `draw`, rather than worked out twice.
+  let levels = _levels(theme, system)
+  if levels.len() == 0 { return empty-lane }
+  let gap = _LEVEL-GAP * theme.staff-space
+  let total = levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
+  lane(total, () => draw(theme, system, width, levels: levels))
 }

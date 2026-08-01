@@ -476,12 +476,13 @@
 
 /// The vertical TAB mark that opens every system.
 ///
-/// Returns `(width, body)` where `width` is how much the letters actually cover,
-/// so the string lines can be broken around them the same way they are broken
-/// around fret numbers. `theme.tab-mark-width` is the space reserved for the
-/// mark by the layout engine, which is a little wider.
+/// Returns `(width, bands, body)`. `bands` gives each letter's extent as
+/// `(top, bottom, x0, x1)`, so a string line can be broken exactly where a
+/// letter sits on it — and left whole where none does. Breaking every line for
+/// the mark's full height clips the outermost ones, which have nothing over
+/// them.
 ///
-/// Must be called from a context: the letter width is measured.
+/// Must be called from a context: the letters are measured.
 #let tab-mark(theme, strings) = {
   let sp = theme.staff-space
   let h = height(theme, strings)
@@ -500,18 +501,23 @@
     bottom-edge: "baseline",
     letter,
   )
-  let ink = letters.map(l => measure(styled(l)).width).fold(0pt, calc.max)
+  let widths = letters.map(l => measure(styled(l)).width)
+  let ink = widths.fold(0pt, calc.max)
+  let top-of(i) = (h - total) / 2 + i * (cap + gap)
 
   (
     width: inset + ink,
+    bands: letters
+      .enumerate()
+      .map(((i, _)) => (
+        top: top-of(i),
+        bottom: top-of(i) + cap,
+        x0: inset,
+        x1: inset + widths.at(i),
+      )),
     body: box(width: theme.tab-mark-width, height: h, {
       for (i, letter) in letters.enumerate() {
-        place(
-          top + left,
-          dx: inset,
-          dy: (h - total) / 2 + i * (cap + gap),
-          styled(letter),
-        )
+        place(top + left, dx: inset, dy: top-of(i), styled(letter))
       }
     }),
   )
@@ -643,17 +649,21 @@
   let lines = ()
   for s in range(1, strings + 1) {
     let y = string-y(theme, s)
-    let gaps = if theme.mask == "gap" {
-      _merge(
-        labels
-          .filter(l => l.string == s)
-          .map(l => (
-            start: l.x - l.w / 2 - theme.gap-padding,
-            end: l.x + l.w / 2 + theme.gap-padding,
-          )),
-      )
+    // The TAB letters knock the line out too, but only the lines they cross:
+    // the outermost ones have no letter over them and stay whole.
+    let mark-gaps = mark
+      .bands
+      .filter(b => y >= b.top - theme.gap-padding and y <= b.bottom + theme.gap-padding)
+      .map(b => (start: b.x0 - theme.gap-padding, end: b.x1 + theme.gap-padding))
+    let number-gaps = if theme.mask == "gap" {
+      labels
+        .filter(l => l.string == s)
+        .map(l => (
+          start: l.x - l.w / 2 - theme.gap-padding,
+          end: l.x + l.w / 2 + theme.gap-padding,
+        ))
     } else { () }
-    lines.push(_line-with-gaps(theme, y, width, gaps))
+    lines.push(_line-with-gaps(theme, y, width, _merge(mark-gaps + number-gaps)))
   }
 
   // 3. Barlines. Every system opens with one at the staff edge; each measure

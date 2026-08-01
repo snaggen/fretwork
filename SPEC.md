@@ -309,9 +309,10 @@ Looking good is a stated goal, so it is specified as testable requirements.
    staff spaces wide for a digit of roughly 0.6, leaving some 0.1 either side. A
    wider one reads as a hole in the staff rather than as room for a number.
 
-   The **TAB mark is not covered by this rule.** The reference sheets run their
-   string lines straight through it and let the letters sit on top; breaking them
-   there leaves the outermost lines looking clipped.
+   The **TAB mark is knocked out the same way, letter by letter**: a line is
+   broken only where a letter actually sits on it. Breaking every line across the
+   mark's full height clips the outermost ones, which have no letter over them,
+   and that reads as a hole rather than as a knockout.
 2. **Optical, not proportional, spacing.** Event width grows as
    `duration ^ 0.6`, with a floor set by the measured glyph width so a `12`
    claims more room than a `0`. Proportional spacing would strand long notes in
@@ -322,13 +323,20 @@ Looking good is a stated goal, so it is specified as testable requirements.
 4. **Everything derives from one unit**, `staff-space`: line weights, stem
    lengths, beam thickness, type sizes. Changing it rescales a whole sheet
    without the proportions drifting.
-5. **`TAB` is stacked vertically** at the start of every system.
-6. **Barlines are heavier than string lines**; closing and repeat forms use the
+5. **Marks above the staff pack sideways, not into fixed lanes.** A mark sits as
+   close to the staff as it fits, and things stack only where they are actually
+   in each other's way — which is what published sheets do. Reserving a lane per
+   kind for a whole system makes it taller than it needs to be whenever two
+   marks are in different bars. Marks of one kind move together, so every palm
+   mute in a system stays at one height; when two kinds do collide, the one that
+   belongs closer to the staff wins the lower level.
+6. **`TAB` is stacked vertically** at the start of every system.
+7. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair. `theme(repeat-style: "ornate")` gives the
    repeat signs the flared serifs of an engraved one, curling inwards over the
    music as engraved rock tab does; `"plain"` is the default.
-7. **A system never breaks across a page.**
-8. **Slurs are drawn as tapered arcs, and their height follows their span.**
+8. **A system never breaks across a page.**
+9. **Slurs are drawn as tapered arcs, and their height follows their span.**
    A slur is a filled lens — swelling in the middle, coming to a point at each
    end — because a constant-thickness stroke reads as a wire. The Hal Leonard
    legend leaves the note line 0.30 staff spaces up and peaks 1.35 up over a
@@ -336,15 +344,15 @@ Looking good is a stated goal, so it is specified as testable requirements.
    the string spacing. A fixed height does one of the two badly: at 1.15 spaces
    it runs almost tangent to the line one space above and reads as merging with
    it.
-9. **A bracketed span is closed by a tick that crosses its rule**, not one that
+10. **A bracketed span is closed by a tick that crosses its rule**, not one that
    merely hangs off it, and the dashed rule meets its label near the baseline
    rather than at the cap. Dash and gap are each about 0.3 staff spaces.
-10. **A bend arrow rises from the fret number it belongs to**, not from a fixed
+11. **A bend arrow rises from the fret number it belongs to**, not from a fixed
    height above the staff. The same bend must sit the same distance above its
    number whichever string it is on, and adding an accent elsewhere in the
    system must not move it. A pre-bend is already bent when struck, so its
    arrow is straight where an ordinary bend's curves.
-11. **Two-digit frets are centred on their column** and get a correspondingly
+12. **Two-digit frets are centred on their column** and get a correspondingly
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
 
