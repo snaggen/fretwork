@@ -21,6 +21,7 @@
 #import "render/rhythm.typ"
 #import "render/chordnames.typ"
 #import "render/techniques.typ"
+#import "render/voltas.typ"
 #import "page.typ": song, section, credits
 
 /// Width every event needs for its fret numbers.
@@ -80,8 +81,10 @@
       let w = sys.width
 
       // Bottom to top: the count row under the staff, technique marks directly
-      // above it, then the rhythm, then chord names furthest out.
+      // above it, then the rhythm, then chord names, and the endings furthest
+      // out, as they bracket whole measures rather than single events.
       let lanes = (
+        voltas.lane-for(thm, sys, w),
         chordnames.lane-for(thm, sys, w),
         rhythm.lane-for(thm, sys, w),
         techniques.lane-for(thm, sys, w),

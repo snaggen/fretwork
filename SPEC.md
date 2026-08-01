@@ -376,6 +376,7 @@ src/
                      and everything anchored to a string: slurs, slides, bends
     rhythm.typ       stems, beams, rests, count row
     techniques.typ   marks that belong to a lane: spans, vibrato, articulations
+    voltas.typ       the numbered brackets over first and second endings
     chordnames.typ   chord names with accidentals and raised figures
 ```
 
@@ -427,7 +428,8 @@ displacement in chords, and slurs.
   that every message carries a source location.
 - **Round trip**: an annotated ASCII tab, written out as DSL and read back,
   must give the same model.
-- **Manual visual review**: `examples/tnt.typ` against the reference sheet.
+- **Manual visual review**: `examples/demo.typ` is a tour of every feature and
+  `examples/tnt.typ` is compared against the reference sheet.
   This is the final acceptance criterion for "looks good"; no automated test
   captures it. `examples/glyphs.typ` shows every vector glyph at three sizes
   inside its declared metric box, so a glyph that overflows its own metrics is

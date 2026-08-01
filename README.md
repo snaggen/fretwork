@@ -22,9 +22,25 @@ ln -s "$PWD/tablature" ~/.local/share/typst/packages/local/tablature/0.1.0
 
 Then `#import "@local/tablature:0.1.0": *`.
 
-Running text looks best in Montserrat, which is not bundled with Typst. Install
-it, or let the fallback chain (`Montserrat`, `Inter`, `Noto Sans`) pick what you
-have. Music symbols are unaffected.
+### Fonts
+
+Running text looks best in Montserrat, which Typst does not bundle. Google Fonts
+now ships it as two variable files, and Typst instantiates every weight the
+package asks for from them:
+
+```sh
+mkdir -p ~/.local/share/fonts/montserrat
+base=https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat
+curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat[wght].ttf" \
+  "$base/Montserrat%5Bwght%5D.ttf"
+curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat-Italic[wght].ttf" \
+  "$base/Montserrat-Italic%5Bwght%5D.ttf"
+fc-cache -f ~/.local/share/fonts
+```
+
+Without it the fallback chain (`Montserrat`, `Inter`, `Noto Sans`) picks what you
+have, and Typst warns once per missing family. Music symbols are unaffected —
+they are vectors, not glyphs.
 
 ## Quick start
 
@@ -111,6 +127,7 @@ imported tab is worth keeping.
 ## Examples
 
 ```sh
+typst compile --root . examples/demo.typ     # a tour of everything
 typst compile --root . examples/tnt.typ      # a full song sheet
 typst compile --root . examples/ascii.typ    # ASCII import, enriched in stages
 typst compile --root . examples/bends.typ    # bend arrows on every string
