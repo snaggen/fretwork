@@ -253,6 +253,34 @@
   )),
 )
 
+/// A wavy line, used for vibrato, trills, pick scrapes and arpeggios.
+///
+/// `vertical: true` runs it down the staff instead of along it, which is the
+/// form an arpeggio or a rake takes beside a chord.
+#let wavy(sp, length, amp: 0.18, vertical: false, fill: black) = {
+  let step = 0.42 * sp
+  let n = calc.max(2, int(length / step))
+  let a = amp * sp
+  let along(t) = if vertical { (a, t) } else { (t, a) }
+  let across(t, d) = if vertical { (a + d, t) } else { (t, a + d) }
+
+  let parts = (curve.move(along(0pt)),)
+  for i in range(n) {
+    let t = i * step
+    parts.push(curve.cubic(
+      across(t + step * 0.3, -a),
+      across(t + step * 0.7, a),
+      along(t + step),
+    ))
+  }
+  let thickness = 0.09 * sp
+  _glyph(
+    if vertical { 2 * a + thickness } else { n * step },
+    if vertical { n * step } else { 2 * a + thickness },
+    _draw(curve(stroke: (paint: fill, thickness: thickness, cap: "round"), ..parts)),
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Note values used outside the staff
 // ---------------------------------------------------------------------------

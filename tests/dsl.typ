@@ -163,3 +163,17 @@
 )
 
 #report("dsl")
+
+// --- techniques added to close gaps against the Hal Leonard legend ---------
+
+#eq(tech("7/3tr9").at(0), m.technique("trill", fret: 9), "trill to a named fret")
+#eq(tech("7/3tr").at(0), m.technique("trill", fret: none), "trill with no fret named")
+#eq(tech("7/3TP").at(0).kind, "tremolo", "tremolo picking")
+#eq(tech("7/3PS").at(0).kind, "scrape", "pick scrape")
+#eq(tech("7/3A").at(0).kind, "arpeggiate", "arpeggiate")
+#eq(tech("7/3R").at(0).kind, "rake", "rake")
+
+// The new suffixes must not shadow the shorter ones they start with.
+#eq(tech("7/3T").at(0).kind, "tap", "'T' is still tapping, not the start of 'TP'")
+#eq(tech("7/3PH").at(0).style, "pinch", "'PH' is still a pinch harmonic, not 'PS'")
+#eq(tech("7/3TPT").map(t => t.kind), ("tremolo", "tap"), "'TP' then 'T' chain in order")

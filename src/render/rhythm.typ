@@ -98,6 +98,17 @@
           let f = g.flag(sp * 0.85, fill: theme.color)
           place(top + left, dx: pe.x, dy: beam-y, f.body)
         }
+        // Tremolo picking: slashes across the stem, as many as the legend uses.
+        if ev.notes.any(n => n.techniques.any(t => t.kind == "tremolo")) {
+          for k in range(3) {
+            let sy = beam-y + (0.5 + k * 0.42) * sp
+            place(top + left, dx: 0pt, dy: 0pt, curve(
+              stroke: (paint: theme.color, thickness: theme.beam-thickness * 0.6, cap: "butt"),
+              curve.move((pe.x - 0.32 * sp, sy + 0.22 * sp)),
+              curve.line((pe.x + 0.32 * sp, sy - 0.12 * sp)),
+            ))
+          }
+        }
         for d in range(dots-of(ev)) {
           let dot = g.aug-dot(sp, fill: theme.color)
           place(

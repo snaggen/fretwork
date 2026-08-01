@@ -363,6 +363,9 @@
       if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
         over = calc.max(over, slur-apex(theme, pe.alloc) + 0.15 * sp - y)
       }
+      if n.techniques.any(t => t.kind == "rake") {
+        over = calc.max(over, 0.45 * sp + theme.technique-size * 1.3 - y)
+      }
     }
   }
   over
@@ -440,6 +443,9 @@
   let placed = system.measures.map(m => m.events).flatten()
   let labels = ()
   let connectors = ()
+  // An arpeggio or a rake is a wavy line beside the chord, spanning the strings
+  // it touches — string-anchored, so it belongs here rather than in a lane.
+  let strokes = ()
   // Where each string's last drawn number ended, so a tie knows where to start.
   for (i, pe) in placed.enumerate() {
     for n in pe.event.notes {
@@ -516,6 +522,24 @@
     }
   }
 
+  for pe in placed {
+    for kind in ("arpeggiate", "rake") {
+      if not pe.event.notes.any(n => n.techniques.any(t => t.kind == kind)) { continue }
+      let rows = pe.event.notes.map(n => n.string)
+      let widest = pe
+        .event
+        .notes
+        .map(n => measure(fret-label(theme, n.fret)).width)
+        .fold(0pt, calc.max)
+      strokes.push((
+        kind: kind,
+        x: pe.x - widest / 2 - 0.45 * sp,
+        top: string-y(theme, calc.min(..rows)) - 0.45 * sp,
+        bottom: string-y(theme, calc.max(..rows)) + 0.45 * sp,
+      ))
+    }
+  }
+
   // 2. String lines, broken around the numbers that sit on them. The TAB mark
   //    is not one of them: the reference sheets run their lines straight through
   //    it and let the letters sit over the top, and breaking them there leaves
@@ -585,6 +609,26 @@
           dy: string-y(theme, l.string) - l.h / 2,
           l.body,
         )
+      }
+
+      for st in strokes {
+        let wave = g.wavy(sp, st.bottom - st.top, vertical: true, fill: theme.color)
+        place(top + left, dx: st.x - wave.width, dy: st.top, wave.body)
+        if st.kind == "rake" {
+          place(
+            top + left,
+            dx: st.x - wave.width - 0.1 * sp,
+            dy: st.top - theme.technique-size * 1.15,
+            text(
+              font: theme.font,
+              size: theme.technique-size,
+              fill: theme.color,
+              top-edge: "cap-height",
+              bottom-edge: "baseline",
+              "rake",
+            ),
+          )
+        }
       }
 
       // Connectors are drawn last so they sit over the numbers they join. What

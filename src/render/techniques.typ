@@ -63,6 +63,9 @@
   .any(t => t.kind in _ARTICULATIONS)))
 
 #let _has(placed, kind) = placed.any(pe => _event-techniques(pe.event, kind).len() > 0)
+
+/// Marks that print as a word followed by a wavy line running over the event.
+#let _WAVY-LABELS = (trill: "tr", scrape: "P.S.")
 #let _has-text(placed) = placed.any(pe => pe.event.text != none)
 
 /// The sub-rows present in this system, bottom to top, with their heights.
@@ -71,7 +74,7 @@
   let rows = ()
   if _has-articulation(placed) { rows.push((name: "artic", height: 0.85 * sp)) }
   if _has(placed, "vibrato") { rows.push((name: "vibrato", height: 0.75 * sp)) }
-  if _has(placed, "harmonic") or _has-text(placed) {
+  if _has(placed, "trill") or _has(placed, "scrape") or _has(placed, "harmonic") or _has-text(placed) {
     rows.push((name: "text", height: theme.technique-size * 1.3))
   }
   if _span-names(placed).len() > 0 { rows.push((name: "span", height: 1.15 * sp)) }
@@ -98,22 +101,8 @@
 /// A vibrato squiggle of the given width.
 #let _vibrato(theme, x, y, w, wide) = {
   let sp = theme.staff-space
-  let amp = if wide { 0.30 * sp } else { 0.18 * sp }
-  let step = 0.42 * sp
-  let n = calc.max(3, int(w / step))
-  let parts = (curve.move((x, y)),)
-  for i in range(n) {
-    let x0 = x + i * step
-    parts.push(curve.cubic(
-      (x0 + step * 0.3, y - amp),
-      (x0 + step * 0.7, y + amp),
-      (x0 + step, y),
-    ))
-  }
-  place(top + left, dx: 0pt, dy: 0pt, curve(
-    stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
-    ..parts,
-  ))
+  let wave = g.wavy(sp, w, amp: if wide { 0.30 } else { 0.18 }, fill: theme.color)
+  place(top + left, dx: x, dy: y - wave.height / 2, wave.body)
 }
 
 /// Draw the technique lane for one placed system.
@@ -171,6 +160,35 @@
     let y = _row-top(rows, "text", total)
     if y != none {
       for pe in placed {
+        // A trill or a pick scrape prints its word and then a wavy line for as
+        // long as it lasts.
+        for kind in _WAVY-LABELS.keys() {
+          let marks = _event-techniques(pe.event, kind)
+          if marks.len() == 0 { continue }
+          let word = text(
+            font: theme.font,
+            size: theme.technique-size,
+            style: if kind == "trill" { "italic" } else { "normal" },
+            fill: theme.color,
+            top-edge: "cap-height",
+            bottom-edge: "baseline",
+            _WAVY-LABELS.at(kind),
+          )
+          let word-w = measure(word).width
+          place(top + left, dx: pe.x - 0.2 * sp, dy: y, word)
+          let wave = g.wavy(
+            sp,
+            calc.max(1.2 * sp, pe.alloc - word-w - 0.5 * sp),
+            fill: theme.color,
+          )
+          place(
+            top + left,
+            dx: pe.x - 0.2 * sp + word-w + 0.25 * sp,
+            dy: y + theme.technique-size * 0.25,
+            wave.body,
+          )
+        }
+
         let harmonics = _event-techniques(pe.event, "harmonic")
         let label = if pe.event.text != none {
           pe.event.text

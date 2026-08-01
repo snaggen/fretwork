@@ -98,6 +98,10 @@ Suffixes, always after the string number.
 | `7/3g` | ghost note, printed in parentheses |
 | `7/3>` `7/3^` `7/3!` `7/3-` | accent / marcato / staccato / tenuto |
 | `7/3T` | tapping |
+| `7/3tr9` `7/3tr` | trill, to the given fret or unspecified |
+| `7/3TP` | tremolo picking |
+| `7/3PS` | pick scrape |
+| `(…)A` `(…)R` | arpeggiate / rake — a wavy line beside the chord |
 | `7/3n` `7/3u` | downstroke ⊓ / upstroke ∨ |
 
 A hammer-on, pull-off or slide target prints as a further number on the same
@@ -271,13 +275,24 @@ reported. Uneven column counts are the most reliable signal of a broken source.
 
 Following the Hal Leonard legend.
 
-- **Tier A — required in phase 1.** Hammer-on, pull-off, legato and shift slide,
-  bend, bend-and-release and pre-bend, vibrato and wide vibrato, palm mute, let
-  ring, dead string, tie, ghost notes in parentheses, natural harmonic, accent
-  and staccato, down- and upstroke.
-- **Tier B — as time allows.** Pinch and harp harmonics, tremolo picking,
-  arpeggiate, rake, trill, tapping.
-- **Tier C — backlog.** Pick scrape, vibrato bar (dive, scoop, dip), unison bend.
+**Supported.** Hammer-on, pull-off, legato and shift slide, bend,
+bend-and-release, pre-bend and pre-bend-and-release, vibrato and wide vibrato,
+palm mute, let ring, dead string, tie, ghost notes in parentheses, natural,
+pinch and harp harmonics, accent, marcato, staccato and tenuto, down- and
+upstroke, tapping, trill, tremolo picking, pick scrape, arpeggiate, rake, first
+and second endings, repeat signs and repeat counts.
+
+**Not supported**, with the reason:
+
+| From the legend | Why not |
+|---|---|
+| Rhythm slashes, musical staff | Out of phase 1 by design |
+| Grace-note bend | Grace notes are not in the model; adding them touches the rhythm engine, not just a renderer |
+| Unison bend | Two notes bent to one pitch needs a bend that spans strings, not one anchored to a note |
+| Vibrato bar dive / scoop / dip | Needs a pitch-contour sub-model, not a technique flag |
+| D.S., D.C., Coda, Fine | The segno and coda glyphs are drawn and exported; the navigation markup that would place them is not built |
+| Repeat-measure sign | Not built |
+| Rhy. Fig., Riff, Fill, tacet labels | Available as free text via `"…"`, not as first-class labels |
 
 ## Visual requirements
 

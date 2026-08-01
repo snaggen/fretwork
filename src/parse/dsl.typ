@@ -31,6 +31,9 @@
 #let _SUFFIXES = (
   ("PH", "harmonic-pinch"),
   ("HH", "harmonic-harp"),
+  ("PS", "scrape"),
+  ("TP", "tremolo"),
+  ("tr", "trill"),
   ("br", "bend-release"),
   ("Br", "prebend-release"),
   ("h", "hammer"),
@@ -49,12 +52,17 @@
   ("!", "staccato"),
   ("-", "tenuto"),
   ("T", "tap"),
+  ("A", "arpeggiate"),
+  ("R", "rake"),
   ("n", "stroke-down"),
   ("u", "stroke-up"),
 )
 
 // Suffixes that must be followed by a fret number.
 #let _NEEDS-FRET = ("hammer", "pull", "slide-legato", "slide-shift")
+
+// Suffixes that may take a fret number but do not require one.
+#let _OPTIONAL-FRET = ("trill",)
 
 // ---------------------------------------------------------------------------
 // Low-level scanning
@@ -126,6 +134,8 @@
     m.technique("harmonic", style: "pinch")
   } else if kind == "harmonic-harp" {
     m.technique("harmonic", style: "harp")
+  } else if kind == "trill" {
+    m.technique("trill", fret: arg)
   } else if kind == "stroke-down" {
     m.technique("stroke", dir: "down")
   } else if kind == "stroke-up" {
@@ -157,7 +167,11 @@
     }
     i += matched.n
     let arg = none
-    if matched.kind in _NEEDS-FRET {
+    if matched.kind in _OPTIONAL-FRET {
+      let scanned = _scan-int(chars, i)
+      arg = scanned.v
+      i = scanned.i
+    } else if matched.kind in _NEEDS-FRET {
       let scanned = _scan-int(chars, i)
       if scanned.v == none {
         errors.fail(
@@ -618,6 +632,12 @@
     if t.style == "natural" { "*" } else if t.style == "pinch" { "PH" } else { "HH" }
   } else if t.kind == "stroke" {
     if t.dir == "down" { "n" } else { "u" }
+  } else if t.kind == "trill" {
+    "tr" + (if t.at("fret", default: none) == none { "" } else { str(t.fret) })
+  } else if t.kind == "tremolo" { "TP" } else if t.kind == "scrape" {
+    "PS"
+  } else if t.kind == "arpeggiate" { "A" } else if t.kind == "rake" {
+    "R"
   } else if t.kind == "tie" { "~" } else if t.kind == "ghost" {
     "g"
   } else if t.kind == "accent" { ">" } else if t.kind == "marcato" {

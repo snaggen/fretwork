@@ -119,6 +119,17 @@ ghost note:
 q 7/3> 7/3^ 7/3! 7/3- | q 7/3n 7/3u 7/3T 7/3g |.
 ```)
 
+Trill, tremolo picking and pick scrape print a word and then a wavy line for as
+long as they last; an arpeggio and a rake are wavy lines beside the chord:
+
+#tab(```
+q 7/3tr9 e 7/3TP 7/3TP q 12/6PS 7/3v |.
+```)
+
+#tab(```
+q (0/1 2/2 2/3 1/4)A h (3/1 3/2 0/3 0/4)R |.
+```)
+
 Palm mute and let ring bracket whatever they are wrapped around, and a free
 instruction can be written in quotes:
 
