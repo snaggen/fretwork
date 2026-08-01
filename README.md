@@ -113,6 +113,7 @@ imported tab is worth keeping.
 ```sh
 typst compile --root . examples/tnt.typ      # a full song sheet
 typst compile --root . examples/ascii.typ    # ASCII import, enriched in stages
+typst compile --root . examples/bends.typ    # bend arrows on every string
 typst compile --root . examples/glyphs.typ   # every vector glyph, three sizes
 ```
 

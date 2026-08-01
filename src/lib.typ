@@ -85,7 +85,21 @@
         chordnames.lane-for(thm, sys, w),
         rhythm.lane-for(thm, sys, w),
         techniques.lane-for(thm, sys, w),
-        lane(tabstaff.height(thm, strings), () => tabstaff.draw(thm, strings, sys, w)),
+        {
+          // Bends and slurs are anchored to their own string and reach above the
+          // top line by an amount that depends on which string that is, and a
+          // fret number on the lowest string hangs below it. The staff lane
+          // reserves both rather than overflowing into its neighbours.
+          let over = tabstaff.overflow-above(thm, sys)
+          let under = tabstaff.overflow-below(thm)
+          lane(over + tabstaff.height(thm, strings) + under, () => tabstaff.draw(
+            thm,
+            strings,
+            sys,
+            w,
+            overflow: over,
+          ))
+        },
         rhythm.count-lane-for(thm, sys, w, enabled: count-in and i == 0),
       )
       // A system must never be split by a page break.

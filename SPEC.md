@@ -303,7 +303,12 @@ Looking good is a stated goal, so it is specified as testable requirements.
 6. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair.
 7. **A system never breaks across a page.**
-8. **Two-digit frets are centred on their column** and get a correspondingly
+8. **A bend arrow rises from the fret number it belongs to**, not from a fixed
+   height above the staff. The same bend must sit the same distance above its
+   number whichever string it is on, and adding an accent elsewhere in the
+   system must not move it. A pre-bend is already bent when struck, so its
+   arrow is straight where an ordinary bend's curves.
+9. **Two-digit frets are centred on their column** and get a correspondingly
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
 
@@ -367,15 +372,25 @@ src/
     lanes.typ        vertical stacking
   render/
     glyphs.typ       vector glyphs
-    tabstaff.typ     string lines with gaps, TAB mark, fret numbers
+    tabstaff.typ     string lines with gaps, TAB mark, fret numbers,
+                     and everything anchored to a string: slurs, slides, bends
     rhythm.typ       stems, beams, rests, count row
-    techniques.typ   spans, bends, vibrato, articulations
+    techniques.typ   marks that belong to a lane: spans, vibrato, articulations
     chordnames.typ   chord names with accidentals and raised figures
 ```
 
 The layout engine runs inside `layout(size => …)`: measure the natural widths,
 pack measures into systems greedily, distribute the surplus proportionally, then
 position everything absolutely with `place`.
+
+The split between the two technique renderers is by what a mark is positioned
+against. Anything anchored to a **string** — the second number of a hammer-on,
+the line of a slide, a bend arrow — is drawn by `tabstaff.typ`, because its
+height depends on which string the note is on. Anything belonging to a **lane**
+above the staff is drawn by `techniques.typ`. Marks anchored to a string reach
+outside the staff, so `tabstaff.typ` reports how far with `overflow-above` and
+`overflow-below`, and the staff's lane reserves exactly that much instead of
+relying on the box not clipping.
 
 Durations are exact rationals rather than floats. Tuplets introduce thirds and
 fifths a binary float cannot represent, and both bar-length validation and beam
@@ -416,4 +431,6 @@ displacement in chords, and slurs.
   This is the final acceptance criterion for "looks good"; no automated test
   captures it. `examples/glyphs.typ` shows every vector glyph at three sizes
   inside its declared metric box, so a glyph that overflows its own metrics is
-  immediately visible.
+  immediately visible, and `examples/bends.typ` puts the same bend on all six
+  strings — and every kind of bend side by side — for comparison against page 1
+  of the Hal Leonard legend.

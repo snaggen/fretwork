@@ -1,15 +1,16 @@
 // Playing techniques drawn above the staff.
 //
 // The lane is built from sub-rows that appear only when something needs them:
-// articulations sit closest to the staff, then vibrato, bend arrows, bracketed
-// spans, and free text at the top. An empty row costs no vertical space, so a
-// plain riff stays as compact as it would be with no technique support at all.
+// articulations sit closest to the staff, then vibrato, free text, and
+// bracketed spans at the top. An empty row costs no vertical space, so a plain
+// riff stays as compact as it would be with no technique support at all.
 //
-// Techniques that belong *on* the staff — the second number of a hammer-on, the
-// line of a slide — are drawn by `tabstaff.typ`, since they are fret numbers.
+// The division of labour with `tabstaff.typ` is by what a mark is positioned
+// against: anything anchored to a *string* — the second number of a hammer-on,
+// the line of a slide, a bend arrow — is drawn there. Only marks that belong to
+// a lane above the staff are drawn here.
 
 #import "../model.typ": get-technique, has-technique
-#import "../rational.typ" as r
 #import "../layout/lanes.typ": empty-lane, lane
 #import "glyphs.typ" as g
 
@@ -70,7 +71,6 @@
   let rows = ()
   if _has-articulation(placed) { rows.push((name: "artic", height: 0.85 * sp)) }
   if _has(placed, "vibrato") { rows.push((name: "vibrato", height: 0.75 * sp)) }
-  if _has(placed, "bend") { rows.push((name: "bend", height: 2.6 * sp)) }
   if _has(placed, "harmonic") or _has-text(placed) {
     rows.push((name: "text", height: theme.technique-size * 1.3))
   }
@@ -93,59 +93,6 @@
     if row.name == name { return y }
   }
   none
-}
-
-/// A bend arrow: a curve rising to the right, with the interval above it.
-#let _bend(theme, x, y0, h, amount, release) = {
-  let sp = theme.staff-space
-  let label = if r.eq(amount, r.rat(1)) {
-    "full"
-  } else if amount.den == 1 { str(amount.num) } else {
-    str(amount.num) + "/" + str(amount.den)
-  }
-  let peak = y0 + 1.25 * sp
-  let tip-x = x + 1.1 * sp
-
-  place(top + left, dx: 0pt, dy: 0pt, curve(
-    stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
-    curve.move((x, y0 + h)),
-    curve.cubic((x + 0.75 * sp, y0 + h), (tip-x, y0 + h - 0.5 * sp), (tip-x, peak)),
-  ))
-  // Arrowhead.
-  place(top + left, dx: 0pt, dy: 0pt, curve(
-    fill: theme.color,
-    stroke: none,
-    curve.move((tip-x, peak - 0.35 * sp)),
-    curve.line((tip-x - 0.22 * sp, peak + 0.05 * sp)),
-    curve.line((tip-x + 0.22 * sp, peak + 0.05 * sp)),
-    curve.close(),
-  ))
-  let label-body = text(
-    font: theme.font,
-    size: theme.bend-size,
-    weight: 500,
-    fill: theme.color,
-    label,
-  )
-  place(top + left, dx: tip-x - measure(label-body).width / 2, dy: y0, label-body)
-
-  // A release returns to the original pitch, drawn as a mirrored arrow.
-  if release {
-    let back-x = tip-x + 1.0 * sp
-    place(top + left, dx: 0pt, dy: 0pt, curve(
-      stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
-      curve.move((tip-x, peak)),
-      curve.cubic((back-x, peak), (back-x, y0 + h - 0.5 * sp), (back-x, y0 + h)),
-    ))
-    place(top + left, dx: 0pt, dy: 0pt, curve(
-      fill: theme.color,
-      stroke: none,
-      curve.move((back-x, y0 + h + 0.35 * sp)),
-      curve.line((back-x - 0.22 * sp, y0 + h - 0.05 * sp)),
-      curve.line((back-x + 0.22 * sp, y0 + h - 0.05 * sp)),
-      curve.close(),
-    ))
-  }
 }
 
 /// A vibrato squiggle of the given width.
@@ -215,17 +162,6 @@
       for pe in placed {
         for t in _event-techniques(pe.event, "vibrato") {
           _vibrato(theme, pe.x - 0.2 * sp, y + 0.4 * sp, calc.max(1.4 * sp, pe.alloc * 0.8), t.wide)
-          break
-        }
-      }
-    }
-
-    // --- bends ---
-    let y = _row-top(rows, "bend", total)
-    if y != none {
-      for pe in placed {
-        for t in _event-techniques(pe.event, "bend") {
-          _bend(theme, pe.x, y, 2.6 * sp, t.amount, t.release)
           break
         }
       }

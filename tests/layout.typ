@@ -4,8 +4,9 @@
 #import "/src/theme.typ": theme
 #import "/src/layout/beams.typ": beat-unit, dots-of, flags-of, group-beams, sub-beams, tuplet-runs
 #import "/src/layout/spacing.typ": event-natural, measure-natural
-#import "/src/layout/system.typ": justify-factor, pack
-#import "/src/parse/dsl.typ": parse-measures
+#import "/src/layout/system.typ": justify-factor, layout-part, pack
+#import "/src/parse/dsl.typ": parse, parse-measures
+#import "/src/render/tabstaff.typ"
 
 #let thm = theme(staff-space: 3mm)
 #let events(src) = parse-measures(src).first().events
@@ -132,5 +133,32 @@
   1.0,
   "a last system below the fill threshold keeps its natural width",
 )
+
+// --- reserved room above the staff ----------------------------------------
+// Bends and slurs are anchored to their own string, so how far they reach above
+// the top line depends on which string that is. The staff lane reserves exactly
+// that much, which is what keeps a bend clear of the rhythm lane above it.
+
+#context {
+  let system(src) = {
+    let part = parse(src)
+    let widths = part.measures.map(m => m.events.map(ev => tabstaff.event-metrics(thm, ev)))
+    layout-part(thm, part, widths, 120mm, thm.tab-mark-width).first()
+  }
+  let over(src) = tabstaff.overflow-above(thm, system(src))
+
+  eq(over("q 0/6 0/6 0/6 0/6"), 0pt, "plain notes need no room above the staff")
+  ok(over("q 7/1b 0/6 0/6 0/6") > 0pt, "a bend on the top string does")
+  ok(
+    over("q 7/6b 0/6 0/6 0/6") < over("q 7/1b 0/6 0/6 0/6"),
+    "the same bend on the bottom string needs less, since the staff itself gives room",
+  )
+  ok(over("q 5/1h7 0/6 0/6 0/6") > 0pt, "a slur on the top string needs room too")
+  ok(
+    over("q 5/1h7 0/6 0/6 0/6") < over("q 7/1b 0/6 0/6 0/6"),
+    "but less than a bend, which climbs further and carries a label",
+  )
+  eq(over("q 5/6h7 0/6 0/6 0/6"), 0pt, "a slur low on the staff needs none at all")
+}
 
 #report("layout")

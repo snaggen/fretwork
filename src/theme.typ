@@ -49,7 +49,7 @@
     beam-thickness: 0.5 * sp,
     beam-gap: 0.32 * sp,
     // Distance from the top string line up to the foot of the stems.
-    rhythm-clearance: 0.35 * sp,
+    rhythm-clearance: 0.15 * sp,
 
     // --- type ---
     fret-size: 1.02 * sp,
@@ -78,7 +78,7 @@
 
     // --- vertical spacing ---
     system-gap: 4.0 * sp,
-    lane-gap: 0.40 * sp,
+    lane-gap: 0.30 * sp,
   )
 }
 

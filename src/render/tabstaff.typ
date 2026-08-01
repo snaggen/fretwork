@@ -11,8 +11,16 @@
 //
 // Callers must be inside a context, since glyph widths are measured.
 
-#import "../model.typ": MUTED
+#import "../model.typ": get-technique, MUTED
+#import "../rational.typ" as r
 #import "glyphs.typ" as g
+
+// Vertical geometry shared by the drawing code and by `overflow-above`, in
+// staff spaces measured from the string's own line. Keeping the numbers in one
+// place is what lets the reserved height match what is actually drawn.
+#let _TAIL-RISE = 0.55 // clearance between a fret number and what sits above it
+#let _BEND-RISE = 1.50 // how far a bend arrow climbs from there
+#let _SLUR-RISE = 1.15 // apex of a slur or tie
 
 /// Vertical extent of the staff: string 1 sits at y = 0.
 #let height(theme, strings) = (strings - 1) * theme.staff-space
@@ -165,11 +173,11 @@
   let sp = theme.staff-space
   place(top + left, dx: 0pt, dy: 0pt, curve(
     stroke: (paint: theme.color, thickness: 0.08 * sp, cap: "round"),
-    curve.move((x0, y - 0.5 * sp)),
+    curve.move((x0, y - _TAIL-RISE * sp)),
     curve.cubic(
-      (x0 + (x1 - x0) * 0.3, y - 1.15 * sp),
-      (x0 + (x1 - x0) * 0.7, y - 1.15 * sp),
-      (x1, y - 0.5 * sp),
+      (x0 + (x1 - x0) * 0.3, y - _SLUR-RISE * sp),
+      (x0 + (x1 - x0) * 0.7, y - _SLUR-RISE * sp),
+      (x1, y - _TAIL-RISE * sp),
     ),
   ))
 }
@@ -184,6 +192,139 @@
     curve.line((x1 - 0.1 * sp, y + (if rising { -rise } else { rise }))),
   ))
 }
+
+/// The interval a bend is written with: `full`, `1/2`, `1/4`.
+#let bend-label(theme, amount) = {
+  let size = if r.eq(amount, r.rat(1)) {
+    "full"
+  } else if amount.den == 1 {
+    str(amount.num)
+  } else {
+    str(amount.num) + "/" + str(amount.den)
+  }
+  text(font: theme.font, size: theme.bend-size, weight: 500, fill: theme.color, size)
+}
+
+/// An arrowhead pointing along the y axis, with a slightly concave base.
+#let _arrowhead(theme, x, y, down: false) = {
+  let sp = theme.staff-space
+  let d = if down { -1.0 } else { 1.0 }
+  place(top + left, dx: 0pt, dy: 0pt, curve(
+    fill: theme.color,
+    stroke: none,
+    curve.move((x, y)),
+    curve.line((x - 0.20 * sp, y + d * 0.55 * sp)),
+    curve.cubic(
+      (x - 0.07 * sp, y + d * 0.40 * sp),
+      (x + 0.07 * sp, y + d * 0.40 * sp),
+      (x + 0.20 * sp, y + d * 0.55 * sp),
+    ),
+    curve.close(),
+  ))
+}
+
+/// A bend arrow, rising from just above the fret number it belongs to.
+///
+/// Anchoring to the note's own string rather than to a lane above the staff is
+/// what the published sheets do, and it is the only way the arrow stays a fixed
+/// distance from its number whatever else the system contains.
+///
+/// `alloc` is the horizontal room the event was given. The lean and the release
+/// spacing are both capped by it, so a bend in a bar of sixteenths tightens up
+/// instead of running into the next event.
+///
+/// A pre-bend is already bent when the string is struck, so it gets a straight
+/// vertical arrow rather than a curved one — the curve is what shows the pitch
+/// rising after the attack.
+#let _bend-arrow(theme, x, y, bend, alloc) = {
+  let sp = theme.staff-space
+  let tail-y = y - _TAIL-RISE * sp
+  let peak-y = y - (_TAIL-RISE + _BEND-RISE) * sp
+  let head-base = peak-y + 0.5 * sp
+  let tip-x = if bend.pre { x } else { x + calc.min(1.0 * sp, alloc * 0.4) }
+
+  place(top + left, dx: 0pt, dy: 0pt, curve(
+    stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
+    curve.move((x, tail-y)),
+    if bend.pre {
+      curve.line((tip-x, head-base))
+    } else {
+      curve.cubic(
+        (x + (tip-x - x) * 0.75, tail-y),
+        (tip-x, tail-y - (tail-y - peak-y) * 0.45),
+        (tip-x, head-base),
+      )
+    },
+  ))
+  _arrowhead(theme, tip-x, peak-y)
+
+  let label = bend-label(theme, bend.amount)
+  let size = measure(label)
+  // Centred on the tip, but never allowed past the event's own allocation.
+  let label-x = calc.min(
+    tip-x - size.width / 2,
+    x + alloc - theme.min-event-gap / 2 - size.width,
+  )
+  place(
+    top + left,
+    dx: calc.max(label-x, x - 0.3 * sp),
+    dy: peak-y - size.height - 0.2 * sp,
+    label,
+  )
+
+  // A release returns to the original pitch: a mirrored arrow back down.
+  if bend.release {
+    let back-x = tip-x + calc.min(0.9 * sp, alloc * 0.35)
+    place(top + left, dx: 0pt, dy: 0pt, curve(
+      stroke: (paint: theme.color, thickness: 0.09 * sp, cap: "round"),
+      curve.move((tip-x, peak-y)),
+      curve.cubic(
+        (back-x, peak-y),
+        (back-x, peak-y + (tail-y - peak-y) * 0.55),
+        (back-x, tail-y - 0.5 * sp),
+      ),
+    ))
+    _arrowhead(theme, back-x, tail-y, down: true)
+  }
+}
+
+/// How far the drawing reaches above the top string line.
+///
+/// Bends and slurs are anchored to their own string, so how much room they need
+/// above the staff depends on which string that is: the same bend needs far more
+/// clearance on string 1 than on string 6. Reserving the space — rather than
+/// relying on the box not clipping — is what keeps a bend from colliding with
+/// the rhythm lane above it.
+///
+/// Must be called from a context: the bend label is measured.
+#let overflow-above(theme, system) = {
+  let sp = theme.staff-space
+  let over = 0pt
+  for pe in system.measures.map(m => m.events).flatten() {
+    for n in pe.event.notes {
+      let y = string-y(theme, n.string)
+      let bend = get-technique(n, "bend")
+      if bend != none {
+        let reach = (_TAIL-RISE + _BEND-RISE) * sp + measure(bend-label(theme, bend.amount)).height
+        over = calc.max(over, reach + 0.25 * sp - y)
+      }
+      if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
+        over = calc.max(over, _SLUR-RISE * sp + 0.15 * sp - y)
+      }
+    }
+  }
+  over
+}
+
+/// How far the drawing reaches below the bottom string line.
+///
+/// A fret number is centred on its line, so half of one on the lowest string
+/// hangs below the staff. Unlike `overflow-above` this does not depend on the
+/// music — every system has a bottom string — but it must still be reserved, or
+/// the count row rides up into the numbers.
+///
+/// Must be called from a context: the fret label is measured.
+#let overflow-below(theme) = measure(fret-label(theme, 0)).height / 2 + 0.15 * theme.staff-space
 
 /// The vertical TAB mark that opens every system.
 ///
@@ -232,7 +373,12 @@
 ///
 /// `system` comes from `layout/system.typ` and carries the x-position of every
 /// event; `width` is the full system width including the indent.
-#let draw(theme, strings, system, width, indent: 0pt) = {
+///
+/// `overflow` is the room to leave above the top string line for bends and
+/// slurs, from `overflow-above`. The staff is pushed down by that much, and the
+/// box also allows for what hangs below the bottom line, so the returned box
+/// contains everything it draws.
+#let draw(theme, strings, system, width, overflow: 0pt) = {
   let sp = theme.staff-space
   let h = height(theme, strings)
 
@@ -290,6 +436,11 @@
           rising: false,
         ))
       }
+
+      let bend = get-technique(n, "bend")
+      if bend != none {
+        connectors.push((kind: "bend", from: pe.x, y: y, bend: bend, alloc: pe.alloc))
+      }
     }
   }
 
@@ -333,44 +484,49 @@
     bars.push(place(top + left, dx: m.end - b.width, dy: 0pt, b.body))
   }
 
-  box(width: width, height: h, {
-    lines.join()
-    bars.join()
-    place(top + left, dx: 0pt, dy: 0pt, mark.body)
+  box(width: width, height: overflow + h + overflow-below(theme), place(top + left, dy: overflow, box(
+    width: width,
+    height: h,
+    {
+      lines.join()
+      bars.join()
+      place(top + left, dx: 0pt, dy: 0pt, mark.body)
 
-    for l in labels {
-      // An opaque patch instead of a broken line, when asked for.
-      if theme.mask == "box" {
+      for l in labels {
+        // An opaque patch instead of a broken line, when asked for.
+        if theme.mask == "box" {
+          place(
+            top + left,
+            dx: l.x - l.w / 2 - theme.gap-padding,
+            dy: string-y(theme, l.string) - l.h / 2 - 0.1 * sp,
+            rect(
+              width: l.w + 2 * theme.gap-padding,
+              height: l.h + 0.2 * sp,
+              fill: white,
+              stroke: none,
+            ),
+          )
+        }
         place(
           top + left,
-          dx: l.x - l.w / 2 - theme.gap-padding,
-          dy: string-y(theme, l.string) - l.h / 2 - 0.1 * sp,
-          rect(
-            width: l.w + 2 * theme.gap-padding,
-            height: l.h + 0.2 * sp,
-            fill: white,
-            stroke: none,
-          ),
+          dx: l.x - l.w / 2,
+          dy: string-y(theme, l.string) - l.h / 2,
+          l.body,
         )
       }
-      place(
-        top + left,
-        dx: l.x - l.w / 2,
-        dy: string-y(theme, l.string) - l.h / 2,
-        l.body,
-      )
-    }
 
-    // Connectors are drawn last so they sit over the numbers they join, and
-    // they are allowed to reach above the top string line — the box does not
-    // clip, and the lane gap above leaves room.
-    for c in connectors {
-      if c.kind == "slide" {
-        _slide-line(theme, c.from, c.to, c.y, c.rising)
-        if c.legato { _slur(theme, c.from, c.to, c.y) }
-      } else {
-        _slur(theme, c.from, c.to, c.y)
+      // Connectors are drawn last so they sit over the numbers they join. What
+      // they reach above the top string line is reserved by `overflow-above`.
+      for c in connectors {
+        if c.kind == "bend" {
+          _bend-arrow(theme, c.from, c.y, c.bend, c.alloc)
+        } else if c.kind == "slide" {
+          _slide-line(theme, c.from, c.to, c.y, c.rising)
+          if c.legato { _slur(theme, c.from, c.to, c.y) }
+        } else {
+          _slur(theme, c.from, c.to, c.y)
+        }
       }
-    }
-  })
+    },
+  )))
 }
