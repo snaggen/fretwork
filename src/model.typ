@@ -241,13 +241,23 @@
   )
 }
 
-/// The time signature in force at a measure index, as a rational bar length.
-#let time-at(part, index) = {
+/// The time signature in force at a measure index, as a `(beats, unit)` pair.
+///
+/// A measure records a time signature only where one *changes*, so anything
+/// that needs the signature in force — bar-length validation, beam grouping,
+/// the count row — has to resolve it by looking back.
+#let time-signature-at(part, index) = {
   let sig = part.time
   for i in range(0, index + 1) {
     let t = part.measures.at(i).time
     if t != none { sig = t }
   }
+  sig
+}
+
+/// The time signature in force at a measure index, as a rational bar length.
+#let time-at(part, index) = {
+  let sig = time-signature-at(part, index)
   if sig == none { none } else { r.rat(sig.at(0), den: sig.at(1)) }
 }
 

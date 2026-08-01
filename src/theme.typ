@@ -45,11 +45,11 @@
     // --- rhythm ---
     // Stems hang from the beams down towards the staff.
     stem: 0.09 * sp,
-    stem-length: 2.4 * sp,
+    stem-length: 2.0 * sp,
     beam-thickness: 0.5 * sp,
     beam-gap: 0.32 * sp,
     // Distance from the top string line up to the foot of the stems.
-    rhythm-clearance: 0.7 * sp,
+    rhythm-clearance: 0.35 * sp,
 
     // --- type ---
     fret-size: 1.02 * sp,
@@ -74,11 +74,11 @@
     // Air after the opening barline and before the closing one.
     measure-padding: 0.7 * sp,
     // Room at the start of each system for the vertical TAB mark.
-    tab-mark-width: 1.9 * sp,
+    tab-mark-width: 2.7 * sp,
 
     // --- vertical spacing ---
     system-gap: 4.0 * sp,
-    lane-gap: 0.55 * sp,
+    lane-gap: 0.40 * sp,
   )
 }
 
