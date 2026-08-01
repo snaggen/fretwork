@@ -20,23 +20,33 @@
 // place is what lets the reserved height match what is actually drawn.
 //
 // The figures were read off a 300 dpi rasterisation of the Hal Leonard Guitar
-// Notation Legend rather than judged by eye. Its hammer-on slur leaves the note
-// line 0.74 spaces up — just clear of the digit's cap — and peaks 1.36 up across
-// a span of 5.4.
-#let _SLUR-TAIL = 0.74 // where a slur or tie leaves the note line
-#let _SLUR-RISE-MAX = 0.62 // how much further a long one climbs
-#let _SLUR-RISE-MIN = 0.22 // and the least a short one may
-#let _SLUR-SLOPE = 0.115 // rise per unit of span, between those bounds
-#let _SLUR-WEIGHT = 0.11 // thickness at the middle, tapering to nothing at the ends
+// Notation Legend rather than judged by eye: its hammer-on slur peaks 1.36
+// spaces above the note line across a span of 5.4. The tail sits lower than the
+// legend's 0.74 so a short slur hugs its digits instead of stranding them.
+#let _SLUR-TAIL = 0.52 // where a slur or tie leaves the note line
+#let _SLUR-RISE-MAX = 0.84 // how much further a long one climbs
+#let _SLUR-RISE-MIN = 0.20 // and the least a short one may
+#let _SLUR-SLOPE = 0.155 // rise per unit of span, between those bounds
+#let _SLUR-WEIGHT = 0.15 // thickness at the middle, tapering to nothing at the ends
+
+// The line one space up is the hazard: an apex landing on it runs along it and
+// reads as merging with it. An apex anywhere in this band is pushed clear —
+// down if it was heading under the line, up if it was heading over.
+#let _SLUR-BAND-LOW = 0.86
+#let _SLUR-BAND-HIGH = 1.16
+#let _SLUR-CLEAR-UNDER = 0.82
+#let _SLUR-CLEAR-OVER = 1.20
 
 // A slur leaving a number's *side* — which is what stacked numbers in a chord
-// force — starts level with the digit's middle rather than above its cap, so it
-// is obvious which number it belongs to. It then stays low and flat, inside its
-// own string's space, where a taller arc would reach the number above.
-#let _SLUR-SIDE-TAIL = 0.08
-#let _SLUR-SIDE-RISE-MAX = 0.42
-#let _SLUR-SIDE-RISE-MIN = 0.18
-#let _SLUR-SIDE-SLOPE = 0.09
+// force — starts at the upper part of the digit rather than above its cap, so it
+// is obvious which number it belongs to. Not at the digit's middle, though:
+// level with the line, the arc and the line enclose a sliver and read as one
+// closed shape. It then stays low and flat, inside its own string's space, where
+// a taller arc would reach the number above.
+#let _SLUR-SIDE-TAIL = 0.28
+#let _SLUR-SIDE-RISE-MAX = 0.30
+#let _SLUR-SIDE-RISE-MIN = 0.16
+#let _SLUR-SIDE-SLOPE = 0.07
 
 // A bend arrow leaves the side of its fret number rather than the top.
 #let _BEND-TAIL = 0.42 // how far above the note line it starts
@@ -45,11 +55,10 @@
 
 /// How high a slur peaks above the note line, for a given horizontal span.
 ///
-/// The height follows the span rather than being fixed. A long slur rises to the
-/// reference height and crosses the line above it at a clear angle; a short one
-/// stays flat enough to sit inside the string spacing. A fixed height does one
-/// of the two badly: at 1.15 spaces it ran almost tangent to the line one space
-/// up and read as merging with it.
+/// The height follows the span rather than being fixed: a long slur rises to the
+/// reference height and crosses the line above it at a clear angle, a short one
+/// stays flat and sits inside the string spacing. Whatever the span, the apex is
+/// then kept out of the band where it would run along that line.
 #let slur-apex(theme, span, side: false) = {
   let sp = theme.staff-space
   if side {
@@ -60,7 +69,11 @@
     return _SLUR-SIDE-TAIL * sp + rise
   }
   let rise = calc.max(_SLUR-RISE-MIN * sp, calc.min(_SLUR-RISE-MAX * sp, span * _SLUR-SLOPE))
-  _SLUR-TAIL * sp + rise
+  let apex = _SLUR-TAIL + rise / sp
+  if apex > _SLUR-BAND-LOW and apex < _SLUR-BAND-HIGH {
+    apex = if apex < 1.0 { _SLUR-CLEAR-UNDER } else { _SLUR-CLEAR-OVER }
+  }
+  apex * sp
 }
 
 /// Where a bend arrow's head sits, as a y in staff coordinates.

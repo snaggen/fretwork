@@ -336,14 +336,20 @@ Looking good is a stated goal, so it is specified as testable requirements.
    repeat signs the flared serifs of an engraved one, curling inwards over the
    music as engraved rock tab does; `"plain"` is the default.
 8. **A system never breaks across a page.**
-9. **Slurs are drawn as tapered arcs, and their height follows their span.**
+9. **Slurs are drawn as tapered arcs that keep clear of the line above.**
    A slur is a filled lens — swelling in the middle, coming to a point at each
-   end — because a constant-thickness stroke reads as a wire. The Hal Leonard
-   legend leaves the note line 0.30 staff spaces up and peaks 1.35 up over a
-   span of about six and a half; a short slur is held flatter so it stays inside
-   the string spacing. A fixed height does one of the two badly: at 1.15 spaces
-   it runs almost tangent to the line one space above and reads as merging with
-   it.
+   end — because a constant-thickness stroke reads as a wire. Its height follows
+   its span: a long one peaks 1.36 staff spaces up, as the Hal Leonard legend
+   does, and crosses the line one space above at a clear angle; a short one stays
+   flatter and sits inside the string spacing. Whatever the span, the apex is
+   then pushed out of the band around that line, because an apex landing on it
+   runs along it and reads as merging with it. The tail sits at 0.52, lower than
+   the legend's 0.74, so a short slur hugs its digits instead of stranding them.
+
+   Stacked numbers in a chord force the slur to leave the digit's *side*. It
+   attaches at the digit's upper part rather than level with its middle: level
+   with the line, the arc and the line enclose a sliver and read as one closed
+   shape.
 10. **A bracketed span is closed by a tick that crosses its rule**, not one that
    merely hangs off it, and the dashed rule meets its label near the baseline
    rather than at the cap. Dash and gap are each about 0.3 staff spaces.
