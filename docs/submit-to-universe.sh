@@ -20,6 +20,27 @@ work="${TMPDIR:-/tmp}/universe-$name-$version"
 
 echo "Submitting $name $version as $user"
 
+# The README links to files at the `v$version` tag — SPEC.md, LICENSE, the
+# examples — so a tag left behind on an older commit silently points readers of
+# the Universe page at superseded files. That happened once: five commits of
+# fixes landed after the tag was cut, and every linked file was stale at it.
+tag="v$version"
+if ! git -C "$root" rev-parse -q --verify "$tag" >/dev/null; then
+  echo "  refusing: tag $tag does not exist — create it at the commit being submitted"
+  exit 1
+fi
+if [ "$(git -C "$root" rev-parse "$tag^{commit}")" != "$(git -C "$root" rev-parse HEAD)" ]; then
+  echo "  refusing: $tag is not at HEAD, so the README's links would be stale"
+  echo "    $tag  $(git -C "$root" log --oneline -1 "$tag^{commit}")"
+  echo "    HEAD  $(git -C "$root" log --oneline -1 HEAD)"
+  echo "  move it with:  git tag -f -a $tag -m '$name $version' && git push --force origin $tag"
+  exit 1
+fi
+if [ -n "$(git -C "$root" status --porcelain)" ]; then
+  echo "  refusing: the working tree has uncommitted changes"
+  exit 1
+fi
+
 rm -rf "$work"
 # Sparse, shallow, treeless: the packages repository holds every version of every
 # package ever published, and a full clone is enormous.
