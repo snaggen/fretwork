@@ -254,12 +254,15 @@
 /// A whole group moves together, so every palm mute in a system stays at one
 /// height. Groups are offered the levels in the order `_marks` returns them, so
 /// when two do collide the closer-to-the-staff kind wins the lower level.
-#let _pack(groups) = {
+///
+/// `pad` is the least horizontal air between two marks sharing a level; without
+/// it, two that merely fit end up touching.
+#let _pack(groups, pad) = {
   let levels = ()
   for group in groups {
     let target = none
     for (i, level) in levels.enumerate() {
-      let clear = group.all(m => level.all(o => m.x1 <= o.x0 or m.x0 >= o.x1))
+      let clear = group.all(m => level.all(o => m.x1 + pad <= o.x0 or m.x0 >= o.x1 + pad))
       if clear {
         target = i
         break
@@ -276,7 +279,7 @@
 
 /// The levels of a system, each with the height it needs.
 #let _levels(theme, system) = {
-  _pack(_marks(theme, _flatten(system))).map(level => (
+  _pack(_marks(theme, _flatten(system)), 0.35 * theme.staff-space).map(level => (
     marks: level,
     height: level.fold(0pt, (acc, m) => calc.max(acc, m.height)),
   ))

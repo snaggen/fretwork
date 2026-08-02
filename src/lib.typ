@@ -190,15 +190,38 @@
   )
   let part = if enrich != none { enrich(result.part) } else { result.part }
 
-  // Sections carried by `S:` rows are headings in their own right.
-  for mark in part.sections {
-    if mark.index == 0 { section(mark.title, theme: theme) }
+  // Sections carried by `S:` rows are headings in their own right, and a
+  // heading in the middle of the piece must land *between* the measures it
+  // separates — which means the music is rendered in one run per section
+  // rather than in one call. An `S:` row used to print only when it came
+  // before the first measure; later ones vanished without a word.
+  let cuts = part.sections.map(mk => mk.index).dedup().sorted()
+  let starts = if cuts.len() == 0 or cuts.first() != 0 { (0,) + cuts } else { cuts }
+  for (si, from) in starts.enumerate() {
+    let to = starts.at(si + 1, default: part.measures.len())
+    for mark in part.sections {
+      if mark.index == from { section(mark.title, theme: theme) }
+    }
+    if to <= from { continue }
+    tab(
+      model.part(
+        measures: part.measures.slice(from, to),
+        tuning: part.tuning,
+        time: part.time,
+        tempo: part.tempo,
+        capo: part.capo,
+        anacrusis: part.anacrusis and from == 0,
+      ),
+      theme: theme,
+      // The count row belongs to the pick-up into the piece, not to every
+      // section.
+      count-in: count-in and from == 0,
+      warn: false,
+    )
   }
-
-  // The staff first, then one report covering both what the source could not
-  // say and what the result does not add up to. `tab` is told to stay quiet so
-  // the two do not appear as separate blocks.
-  tab(part, theme: theme, count-in: count-in, warn: false)
+  // A heading at the very end — `mark.index == measures.len()` — is its own
+  // cut, so the loop above prints it and then finds no music to set under it,
+  // which is the right outcome for an outro the transcriber never finished.
 
   // Malformed input is reported but never fatal: a real tab is usually
   // imperfect, and refusing to set it would defeat the purpose of importing.

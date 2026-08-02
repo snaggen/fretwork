@@ -2,7 +2,7 @@
 #import "/src/rational.typ" as r
 #import "/src/model.typ" as m
 #import "/src/tuning.typ": tunings
-#import "/src/parse/dsl.typ": parse, parse-measures, tokenize
+#import "/src/parse/dsl.typ": parse, parse-measures, tokenize, write
 
 #let notes-of(measure, i) = measure.events.at(i).notes
 #let first(src) = parse-measures(src).first()
@@ -209,4 +209,29 @@
   ```).first().events.first().duration,
   m.durations.q,
   "a multi-line block was never affected, and still is not",
+)
+
+// --- the writer round-trips what the parser reads -------------------------
+// `write` exists so an annotated ASCII tab can graduate to the native syntax,
+// which makes parse→write→parse the contract. Voltas, repeat counts and quoted
+// chord names were all silently dropped or mangled on the way out.
+
+#let round-trip(src) = {
+  let first = parse(src)
+  let out = write(first)
+  eq(parse(out).measures, first.measures, "round trip of " + repr(src))
+}
+
+#round-trip("|: q 0/6 {V1: 2/6 :|x3} {V2: q 3/6 |.}")
+#round-trip("|: q 0/6 2/6 {V1: q 3/6 5/6 :| q 7/6 8/6 :|x4}")
+#eq(
+  write(parse("|: q 0/6 :|x3")).contains(":|x3"),
+  true,
+  "a repeat count survives the writer",
+)
+#round-trip("@\"C#m7 add9\" q 0/6 2/6 3/6 5/6 |")
+#eq(
+  write(parse("@E5 q 0/6 |")).contains("@E5"),
+  true,
+  "a bare chord name stays unquoted",
 )

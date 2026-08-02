@@ -85,6 +85,9 @@
   (v: if i > start { int(chars.slice(start, i).join()) } else { none }, i: i)
 }
 
+/// Whether a string is one or more digits — safe to hand to `int`.
+#let _all-digits(s) = s.len() > 0 and s.clusters().all(c => c in _DIGITS)
+
 /// Parse a bend size written `(1/2)`, `(1)` or `(full)`, in whole steps.
 #let _scan-bend-amount(chars, i, loc, source) = {
   if i >= chars.len() or chars.at(i) != "(" { return (v: r.rat(1), i: i) }
@@ -93,17 +96,36 @@
   if close >= chars.len() {
     errors.fail("tab", loc, "unclosed bend amount", source: source)
   }
-  let body = chars.slice(i + 1, close).join().trim()
+  // `join` of an empty slice is `none`, so `b()` needs the fallback.
+  let joined = chars.slice(i + 1, close).join()
+  let body = if joined == none { "" } else { joined.trim() }
+
+  // Everything is checked before `int` is called: a raw `int("x")` panic would
+  // point at this file instead of at the source, defeating the located errors
+  // the parsers promise.
+  let malformed() = errors.fail(
+    "tab",
+    loc,
+    "malformed bend amount '" + body + "' — write (1/2), (1) or (full)",
+    source: source,
+  )
   let value = if body == "full" {
     r.rat(1)
   } else if "/" in body {
     let parts = body.split("/")
-    if parts.len() != 2 {
-      errors.fail("tab", loc, "malformed bend amount '" + body + "'", source: source)
+    if parts.len() != 2 or not _all-digits(parts.at(0)) or not _all-digits(parts.at(1)) {
+      malformed()
+    }
+    if int(parts.at(1)) == 0 {
+      errors.fail("tab", loc, "bend amount '" + body + "' divides by zero", source: source)
     }
     r.rat(int(parts.at(0)), den: int(parts.at(1)))
   } else {
+    if not _all-digits(body) { malformed() }
     r.rat(int(body))
+  }
+  if value.num == 0 {
+    errors.fail("tab", loc, "a bend amount must be positive", source: source)
   }
   (v: value, i: close + 1)
 }
@@ -690,6 +712,17 @@
   names
 }
 
+/// A chord name as the tokenizer will read it back.
+///
+/// An unquoted name ends at the first space or structural character, so a name
+/// containing either must be written in the quoted form — otherwise the writer
+/// emits source its own parser rejects, and the round trip is broken exactly
+/// where it is needed.
+#let _write-chord-name(name) = {
+  let needs-quotes = name.clusters().any(c => c in _SPACE or c in _STRUCTURAL)
+  if needs-quotes { "\"" + name + "\"" } else { name }
+}
+
 /// Serialise a part back to DSL source.
 ///
 /// Round-tripping matters because it is how an annotated ASCII tab graduates to
@@ -699,10 +732,17 @@
   let lines = ()
   let duration = none
   let open = ()
+  // The ending currently written, so a volta spanning several measures opens
+  // once and closes after its last one.
+  let open-volta = none
 
-  for measure in part.measures {
+  for (mi, measure) in part.measures.enumerate() {
     let parts = ()
     if measure.start-repeat { parts.push("|:") }
+    if measure.volta != none and measure.volta != open-volta {
+      parts.push("{V" + str(measure.volta.first()) + ":")
+      open-volta = measure.volta
+    }
 
     for ev in measure.events {
       // Close the groups this event has left, innermost first, then open the
@@ -717,7 +757,7 @@
         open.push(name)
       }
 
-      if ev.chord != none { parts.push("@" + ev.chord) }
+      if ev.chord != none { parts.push("@" + _write-chord-name(ev.chord)) }
       if ev.text != none { parts.push("\"" + ev.text + "\"") }
       if ev.duration != none and ev.duration != duration {
         let token = _write-duration(ev.duration)
@@ -735,10 +775,21 @@
     }
 
     parts.push(if measure.end-repeat {
-      ":|"
+      // The count sits directly on the sign, as the tokenizer requires.
+      ":|" + (if measure.repeat-count != none { "x" + str(measure.repeat-count) } else { "" })
     } else if measure.end == "final" { "|." } else if measure.end == "double" {
       "||"
     } else { "|" })
+
+    // The ending's group closes after the barline of its last measure, which is
+    // where the parser expects it: the barline is inside the group.
+    let next-volta = if mi + 1 < part.measures.len() {
+      part.measures.at(mi + 1).volta
+    } else { none }
+    if open-volta != none and next-volta != open-volta {
+      parts.push("}")
+      open-volta = none
+    }
     lines.push(parts.join(" "))
   }
 

@@ -5,7 +5,6 @@
 // fret number belonging to the same event must line up vertically, and a
 // notation staff added later lines up for free by consuming the same positions.
 
-#import "../model.typ": time-signature-at
 #import "spacing.typ": barline-allowance, measure-natural
 
 /// Pack measures greedily into systems.
@@ -108,7 +107,15 @@
 /// `glyph-widths` is a per-measure array of per-event widths, measured by the
 /// caller. `available` is the usable line width.
 #let layout-part(theme, part, glyph-widths, available, indent) = {
-  let times = part.measures.enumerate().map(((i, _)) => time-signature-at(part, i))
+  // The signature in force at each measure, carried forward in one pass —
+  // calling `time-signature-at` per measure rescans the part each time, which
+  // is quadratic over the piece.
+  let times = ()
+  let sig = part.time
+  for m in part.measures {
+    if m.time != none { sig = m.time }
+    times.push(sig)
+  }
   let naturals = part
     .measures
     .enumerate()

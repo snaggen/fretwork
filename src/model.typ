@@ -275,8 +275,13 @@
   let problems = ()
   let strings = string-count(part.tuning)
 
+  // The signature in force, carried forward in one pass — resolving it per
+  // measure through `time-at` would rescan the part each time.
+  let sig = part.time
+
   for (i, m) in part.measures.enumerate() {
     let where = "measure " + str(i + 1)
+    if m.time != none { sig = m.time }
 
     for ev in m.events {
       for n in ev.notes {
@@ -292,11 +297,13 @@
       }
     }
 
-    // A pick-up bar is short by definition, and the bar closing a repeat is
-    // often short in the same way, so only check complete interior bars.
+    // A pick-up bar is short by definition. A bar closing a repeat is often
+    // short too, but only when a pick-up accounts for the difference — that
+    // pairing is not modelled, so such bars are still reported and the report
+    // is advisory.
     if i == 0 and part.anacrusis { continue }
 
-    let expected = time-at(part, i)
+    let expected = if sig == none { none } else { r.rat(sig.at(0), den: sig.at(1)) }
     if expected == none { continue }
     let actual = measure-duration(m)
     if actual == none { continue }

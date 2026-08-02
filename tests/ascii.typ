@@ -294,3 +294,43 @@ E|---------|```).part.measures.first().events.len(),
 #eq(bends("--3hb5-------").first().amount, r.rat(1), "an explicit target beats `hb`")
 // A stray `f` is not a technique and must leave the note alone.
 #eq(bends("--3f---------").len(), 0, "a bare `f` adds nothing")
+
+// --- a bend must rise ------------------------------------------------------
+// `5b3` used to come out as an upward arrow labelled "−1": the size is
+// `(target − fret)/2` and nothing checked the sign. The note survives, the
+// arrow is refused, and the author is told.
+
+#let down = parse("e|-------------|\nB|-------------|\nG|--5b3---3b3--|\nD|-------------|\nA|-------------|\nE|-------------|")
+#eq(
+  down.part.measures.first().events.map(ev => ev.notes.first().techniques.len()),
+  (0, 0),
+  "a non-rising bend attaches no technique",
+)
+#eq(
+  down.warnings.filter(w => w.contains("does not rise")).len(),
+  2,
+  "…and each one is reported",
+)
+#eq(
+  down.part.measures.first().events.map(ev => ev.notes.first().fret),
+  (5, 3),
+  "…while the notes themselves survive",
+)
+
+// --- ending rows -----------------------------------------------------------
+// `1:` and `2:` mark first and second endings with dash runs, the way `PM:`
+// marks its extent. They attach to measures, which is what a volta is.
+
+#let volta-tab = parse("1:        ------------
+2:                       ---------
+e|--0---2--|--3---5-----|--7---8--|
+B|---------|------------|---------|
+G|---------|------------|---------|
+D|---------|------------|---------|
+A|---------|------------|---------|
+E|---------|------------|---------|")
+#eq(
+  volta-tab.part.measures.map(me => me.volta),
+  (none, (1,), (2,)),
+  "ending rows become voltas on the measures under their dashes",
+)

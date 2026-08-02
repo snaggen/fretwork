@@ -209,6 +209,8 @@ E|--------3--------|-----------------|
 - `|` becomes a barline.
 - Techniques are read inline: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )`
   for ghost notes. `7b9` bends to the pitch of fret 9 — two frets to a step.
+- A bend must rise: `5b3` attaches no arrow and is reported, since `(3−5)/2`
+  steps is not a bend. The note itself survives.
 - `hb` and `fb` spell a bend's size out in letters instead of implying it from a
   target fret: half and full. Despite `h` otherwise meaning a hammer-on this is
   unambiguous, because a hammer-on always writes its target as digits, so an `h`
@@ -254,6 +256,7 @@ e|---0---2---3-5---------7--|
 | `C:` | chord names |
 | `S:` | section heading |
 | `PM:` `LR:` | bracketed spans — a run of dashes marks the extent |
+| `1:` `2:` | first and second endings — a run of dashes marks the measures, which get volta brackets |
 | `T:` | free playing instruction (`Harm.`, `w/ bar`) |
 
 `R:` reuses the DSL's tokens deliberately: no second notation to learn and no

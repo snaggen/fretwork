@@ -144,6 +144,7 @@
 #let _parse-row(line, start) = {
   let chars = line.clusters()
   let items = ()
+  let warnings = ()
   let i = start
   // Markers seen since the last note, waiting for the note they point at, and
   // where in `items` that last note sits so the marker can be hung off it.
@@ -213,14 +214,25 @@
           // target says which pitch is wanted rather than merely how far to go,
           // so it wins over a spelled size when a tab gives both; a bare `b` is
           // a whole step, which is what an unqualified bend means.
-          let amount = if target != none {
-            r.rat(target - fret, den: 2)
-          } else if spelled != none {
-            spelled
+          if target != none and target <= fret {
+            // A bend can only rise. `5b3` used to come out as an upward arrow
+            // labelled "−1" — nonsense set in ink. The note survives; only the
+            // arrow is refused.
+            warnings.push(
+              "bend " + str(fret) + "b" + str(target)
+                + " does not rise; ignored (a release is written "
+                + str(fret) + "b" + str(fret + 2) + "r" + str(fret) + ")",
+            )
           } else {
-            r.rat(1)
+            let amount = if target != none {
+              r.rat(target - fret, den: 2)
+            } else if spelled != none {
+              spelled
+            } else {
+              r.rat(1)
+            }
+            techniques.push(m.technique("bend", amount: amount, release: false, pre: false))
           }
-          techniques.push(m.technique("bend", amount: amount, release: false, pre: false))
         } else if mark == "r" {
           // A release only ever follows a bend, so fold it into the one before.
           if techniques.len() > 0 and techniques.last().kind == "bend" {
@@ -273,7 +285,7 @@
     i += 1
   }
 
-  items
+  (items: items, warnings: warnings)
 }
 
 // ---------------------------------------------------------------------------
@@ -499,6 +511,13 @@
 
   let measures = ()
   let events = ()
+  // The source column of every event in the open measure, so that when the
+  // measure closes it can be matched against the ending rows' dash runs.
+  let event-cols = ()
+  // Dash runs from `1:` and `2:` rows. Columns only mean anything within one
+  // block, so this is rebuilt per block; a measure is matched by the block it
+  // *closes* in.
+  let volta-runs = ()
   let sections = ()
   // Note values are sticky across the whole piece, as in the DSL.
   let duration = none
@@ -522,7 +541,9 @@
     let bar-columns = ()
     for (row-index, row) in block.rows.enumerate() {
       let string = order.at(row-index)
-      for item in _parse-row(row, offset) {
+      let parsed = _parse-row(row, offset)
+      warnings += parsed.warnings
+      for item in parsed.items {
         if item.kind == "bar" {
           if str(item.col) not in bar-columns { bar-columns.push(str(item.col)) }
           continue
@@ -559,6 +580,16 @@
       for a in annotations.at(key, default: ()) {
         for run in _span-runs-in(a.text, a.offset) {
           spans-at.push((name: key, start: run.start, end: run.end))
+        }
+      }
+    }
+    // Ending rows mark their extent with dashes the way span rows do, but they
+    // attach to measures rather than to events.
+    volta-runs = ()
+    for key in ("1", "2") {
+      for a in annotations.at(key, default: ()) {
+        for run in _span-runs-in(a.text, a.offset) {
+          volta-runs.push((number: int(key), start: run.start, end: run.end))
         }
       }
     }
@@ -624,19 +655,37 @@
     let chord-at = (:)
     for token in chords-at {
       let col = nearest-event(token.col)
-      if col != none { chord-at.insert(str(col), token.token) }
+      if col != none {
+        chord-at.insert(str(col), token.token)
+      } else {
+        warnings.push("chord '" + token.token + "' has no note within 3 columns; ignored")
+      }
     }
     let text-at = (:)
     for token in texts-at {
       let col = nearest-event(token.col)
-      if col != none { text-at.insert(str(col), token.token) }
+      if col != none {
+        text-at.insert(str(col), token.token)
+      } else {
+        warnings.push("instruction '" + token.token + "' has no note within 3 columns; ignored")
+      }
     }
 
     for (idx, col) in all-columns.enumerate() {
       if str(col) in bar-columns and str(col) not in by-column {
         if events.len() > 0 {
-          measures.push(m.measure(events: events))
+          // The measure belongs to an ending when any of its events sits under
+          // a dash run. Inlined at both close sites: a helper closure would
+          // capture `volta-runs` by value, before the block rebuilt it.
+          let volta = none
+          for run in volta-runs {
+            if volta == none and event-cols.any(c => c >= run.start - 1 and c <= run.end) {
+              volta = (run.number,)
+            }
+          }
+          measures.push(m.measure(events: events, volta: volta))
           events = ()
+          event-cols = ()
         }
         continue
       }
@@ -657,10 +706,19 @@
         text: text-at.at(str(col), default: none),
         column-span: span,
       ))
+      event-cols.push(col)
     }
   }
 
-  if events.len() > 0 { measures.push(m.measure(events: events)) }
+  if events.len() > 0 {
+    let volta = none
+    for run in volta-runs {
+      if volta == none and event-cols.any(c => c >= run.start - 1 and c <= run.end) {
+        volta = (run.number,)
+      }
+    }
+    measures.push(m.measure(events: events, volta: volta))
+  }
 
   let part = m.part(
     measures: measures,

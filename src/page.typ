@@ -86,8 +86,11 @@
     header: context {
       if counter(page).get().first() <= 1 { return }
       set text(font: thm.font, size: thm.copyright-size, fill: thm.faint)
-      let parts = ((source, title).filter(p => p != none)).join(" — ")
-      align(center, [#parts — p.#counter(page).display()])
+      // Without a source or a title there is nothing to join the page number
+      // to, and a leading dash would dangle.
+      let parts = (source, title).filter(p => p != none)
+      let head = if parts.len() == 0 { "" } else { parts.join(" — ") + " — " }
+      align(center, [#head p.#counter(page).display()])
     },
     footer: context {
       if copyright == none { return }

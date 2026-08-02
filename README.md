@@ -138,8 +138,8 @@ e|---0---2---3-5--|
 ```
 
 `R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-instruction, `PM:`/`LR:` bracketed spans. `R:` uses the same tokens as the
-native syntax.
+instruction, `PM:`/`LR:` bracketed spans, `1:`/`2:` first and second endings.
+`R:` uses the same tokens as the native syntax.
 
 When the rhythm is regular, one argument does the job instead:
 

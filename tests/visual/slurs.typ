@@ -31,3 +31,10 @@ q (5/1 5/2 5/3)h7 (7/4 7/5 7/6)p5 h r | q 12/3~ 12/3 h r
 #tab(theme: vt, ```
 w 12/3~ | w 12/3
 ```)
+
+// A tie whose target is several events away: the reserved height must follow
+// the drawn span, not the event's own width. This exact case used to run the
+// arc straight through the rest glyphs in the rhythm lane.
+#tab(theme: vt, ```
+q 5/1~ r r 5/1
+```)

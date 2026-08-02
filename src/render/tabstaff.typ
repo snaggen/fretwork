@@ -452,7 +452,8 @@
 #let overflow-above(theme, system) = {
   let sp = theme.staff-space
   let over = if _has-repeat(theme, system) { repeat-serif-reach(theme) } else { 0pt }
-  for pe in system.measures.map(m => m.events).flatten() {
+  let placed = system.measures.map(m => m.events).flatten()
+  for (i, pe) in placed.enumerate() {
     for n in pe.event.notes {
       let y = string-y(theme, n.string)
       let bend = get-technique(n, "bend")
@@ -460,9 +461,26 @@
         let head = bend-head-y(theme, y)
         over = calc.max(over, -head + measure(bend-label(theme, bend.amount)).height + 0.3 * sp)
       }
-      if link-targets(n).len() > 0 or n.techniques.any(t => t.kind == "tie") {
-        let side = pe.event.notes.len() > 1
+      let side = pe.event.notes.len() > 1
+      if link-targets(n).len() > 0 {
+        // The event's allocation covers everything it prints, so for linked
+        // targets it bounds the slur's span from above — and the apex grows
+        // with the span, so an upper bound reserves enough.
         over = calc.max(over, slur-apex(theme, pe.alloc, side: side) + 0.15 * sp - y)
+      }
+      if n.techniques.any(t => t.kind == "tie") {
+        // A tie is different: it runs to the next event that plays this string,
+        // which may be several events away — over rests, past other strings'
+        // notes — so its span can far exceed the allocation. Reserving by the
+        // allocation let a tie over rests run through the rhythm lane above.
+        let span = pe.alloc
+        for j in range(i + 1, placed.len()) {
+          if placed.at(j).event.notes.any(o => o.string == n.string) {
+            span = calc.max(span, placed.at(j).x - pe.x)
+            break
+          }
+        }
+        over = calc.max(over, slur-apex(theme, span, side: side) + 0.15 * sp - y)
       }
       if n.techniques.any(t => t.kind == "rake") {
         over = calc.max(over, 0.45 * sp + theme.technique-size * 1.3 - y)
@@ -558,7 +576,6 @@
   // An arpeggio or a rake is a wavy line beside the chord, spanning the strings
   // it touches — string-anchored, so it belongs here rather than in a lane.
   let strokes = ()
-  // Where each string's last drawn number ended, so a tie knows where to start.
   for (i, pe) in placed.enumerate() {
     for n in pe.event.notes {
       let body = fret-label(theme, n.fret)
