@@ -506,13 +506,28 @@ displacement in chords, and slurs.
   that every message carries a source location.
 - **Round trip**: an annotated ASCII tab, written out as DSL and read back,
   must give the same model.
+- **Image regression** (`tests/run.sh visual`): one fixture per feature area in
+  `tests/visual/`, each rendered and compared pixel by pixel against a reference
+  committed in `tests/refs/`. A difference writes a diff image with everything
+  that moved tinted red. Every visual defect this package has had was found by
+  looking at the output and none of them failed an assertion, so this is the
+  only mechanism that can catch a change in what the sheet looks like.
+
+  Rendering is reproducible only for a given renderer and a given set of fonts,
+  so the references record both and the comparison **skips** rather than fails
+  when they do not match: a reference rendered by another Typst version says
+  nothing about whether a change was correct. The fixtures therefore pin a font
+  that is widely installed rather than the theme default, which is a variable
+  font. `tests/run.sh --update-refs` re-pins them, and the diff images are what
+  the re-pinning is reviewed against.
 - **Manual visual review**: `examples/demo.typ` is a tour of every feature and
   `examples/songsheet.typ` is a complete sheet to compare against published
   guitar tab. Where a figure above cites a measurement, it was taken by
   rasterising a published sheet and reading the pixels, not by eye. The sheets
   themselves are not distributed with the package.
-  This is the final acceptance criterion for "looks good"; no automated test
-  captures it. `examples/glyphs.typ` shows every vector glyph at three sizes
+  This remains the final acceptance criterion for "looks good": the image
+  regression can only say that nothing changed, never that what it pinned was
+  right in the first place. `examples/glyphs.typ` shows every vector glyph at three sizes
   inside its declared metric box, so a glyph that overflows its own metrics is
   immediately visible, and `examples/bends.typ` puts the same bend on all six
   strings — and every kind of bend side by side — for comparison against page 1

@@ -13,14 +13,19 @@ packages cannot ship fonts.
 
 ## Install
 
-Not yet published. For local use:
+```typst
+#import "@preview/tablature:0.1.0": *
+```
+
+Awaiting review on Typst Universe. Until it lands there, clone it and link it
+into the local package directory:
 
 ```sh
 git clone https://github.com/snaggen/tablature
 ln -s "$PWD/tablature" ~/.local/share/typst/packages/local/tablature/0.1.0
 ```
 
-Then `#import "@local/tablature:0.1.0": *`.
+then import it as `@local/tablature:0.1.0` instead.
 
 ### Fonts
 
@@ -95,7 +100,8 @@ q 5/3h7 7/3p5 e 5/3s7 7/3b 7/3br q 12/3* 7/3v
 
 `h` hammer-on, `p` pull-off, `s`/`S` slide, `b` bend (`br` release, `B`
 pre-bend), `v`/`V` vibrato, `*` harmonic, `~` tie, `g` ghost, `>` accent,
-`n`/`u` down- and upstroke. See [`SPEC.md`](SPEC.md) for the full table.
+`n`/`u` down- and upstroke.
+See [`SPEC.md`](https://github.com/snaggen/tablature/blob/main/SPEC.md) for the full table.
 
 ## ASCII tab
 
@@ -142,8 +148,11 @@ imported tab is worth keeping.
 
 ## Examples
 
+The [repository](https://github.com/snaggen/tablature/blob/main/examples) carries five, which the published package does
+not — clone it, then:
+
 ```sh
-typst compile --root . examples/demo.typ       # a tour of everything
+typst compile --root . examples/demo.typ      # a tour of everything
 typst compile --root . examples/songsheet.typ # a complete song sheet
 typst compile --root . examples/ascii.typ     # ASCII import, enriched in stages
 typst compile --root . examples/bends.typ     # bend arrows on every string
@@ -152,14 +161,25 @@ typst compile --root . examples/glyphs.typ    # every vector glyph, three sizes
 
 ## Tests
 
+Also repository-only:
+
 ```sh
-./tests/run.sh          # everything
-./tests/run.sh dsl      # one suite
+./tests/run.sh              # everything
+./tests/run.sh dsl          # one suite
+./tests/run.sh visual       # only the image-regression tests
+./tests/run.sh --update-refs  # re-pin the reference renders
 ```
 
 Each test is a Typst document whose assertions panic on failure, so the
 compiler's exit status is the result. `tests/errors/` holds fixtures that must
 *fail*, each declaring the message it expects.
+
+`tests/visual/` renders a fixture per feature area and compares it pixel by
+pixel against a reference committed in `tests/refs/`, writing a diff image that
+tints whatever moved. Every visual defect this package has had was found by
+looking at the output rather than by an assertion, which is what those cover.
+They need Python with Pillow, and they skip rather than fail when the Typst
+version or the fonts differ from the ones the references were pinned with.
 
 ## Themes
 
@@ -178,8 +198,9 @@ repeat signs the flared serifs of an engraved one.
 
 Version 0.1 is tablature only — no notation staff, chord diagrams or lyrics. The
 model and layout engine are built so a notation staff can be added without
-rewriting them; [`SPEC.md`](SPEC.md) says how.
+rewriting them;
+[`SPEC.md`](https://github.com/snaggen/tablature/blob/main/SPEC.md) says how.
 
 ## Licence
 
-EUPL-1.2. See [`LICENSE`](LICENSE).
+EUPL-1.2. See [`LICENSE`](https://github.com/snaggen/tablature/blob/main/LICENSE).

@@ -2,12 +2,25 @@
 # Compile every test document. A failed assertion panics, so a non-zero exit
 # status from the compiler is a failed test.
 #
-# Usage: tests/run.sh [name ...]   (default: all)
+# Usage: tests/run.sh [name ...]        (default: all, including the visual ones)
+#        tests/run.sh visual            only the image-regression tests
+#        tests/run.sh --update-refs     re-pin the reference renders
 set -uo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$(mktemp -d)"
 trap 'rm -rf "$out"' EXIT
+
+# The image-regression tests live in their own runner, since comparing renders
+# needs more than a compiler exit status.
+if [ "${1-}" = "--update-refs" ]; then
+  shift
+  exec "$(dirname "$0")/visual.py" --update "$@"
+fi
+if [ "${1-}" = "visual" ]; then
+  shift
+  exec "$(dirname "$0")/visual.py" "$@"
+fi
 
 if [ $# -gt 0 ]; then
   files=()
@@ -56,5 +69,13 @@ if [ $# -eq 0 ] && [ -d "$root/tests/errors" ]; then
   done
 fi
 
-printf '\n%d passed, %d failed\n' "$pass" "$fail"
+# Renders last: they are the slowest, and a difference in the output is only
+# worth reading once the model and the parsers are known to be right. The
+# runner prints its own results and exits with the number that differed.
+if [ $# -eq 0 ]; then
+  "$root/tests/visual.py"
+  fail=$((fail + $?))
+fi
+
+printf '\n%d document(s) passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
