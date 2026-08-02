@@ -38,6 +38,11 @@ curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat-Italic[wght].ttf" \
 fc-cache -f ~/.local/share/fonts
 ```
 
+Montserrat ships as two variable font files, so **Typst 0.15 or newer is
+required** — earlier versions load them but ignore the requested weight and set
+everything as thin outlines. That is why the manifest's compiler floor is 0.15.0
+even though the package compiles as far back as 0.13.
+
 **Installing it also silences Typst's font warnings.** The default chain is
 `("Montserrat", "Noto Sans", "DejaVu Sans")`, and Typst warns once per family it
 cannot find — even when a later one in the chain matches — so a machine without
