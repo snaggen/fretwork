@@ -412,14 +412,21 @@ note value is reported as unchecked rather than as wrong.
   note[`model.validate(…)` → #raw(repr(model.validate(short)))]
 }
 
-`tab` and `ascii-tab` print what it finds on the page, because Typst gives a
-package no other channel for a problem that must not stop the compile: `panic`
-is its only diagnostic and it is fatal. Every other stave in this document adds
-up, so this is the one place the report appears — `warn: false` silences it once
-a sheet is as intended.
+// Kept in one unbreakable block: the report below is deliberate, and a page
+// break that separated it from the sentence explaining it would read as a
+// genuine failure in the package's own showcase.
+#block(breakable: false)[
+  `tab` and `ascii-tab` print what it finds on the page, because Typst gives a
+  package no other channel for a problem that must not stop the compile: `panic`
+  is its only diagnostic and it is fatal.
 
-#src("q 0/6 2/6 3/6 |.")
+  *The stave below is deliberately wrong*, and the only one in this document
+  that is: three quarter notes in a bar of four. Every other stave here adds up.
+  `warn: false` silences the report once a sheet is as intended.
 
-#tab(```
-q 0/6 2/6 3/6 |.
-```)
+  #src("q 0/6 2/6 3/6 |.")
+
+  #tab(```
+  q 0/6 2/6 3/6 |.
+  ```)
+]
