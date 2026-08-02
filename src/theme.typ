@@ -14,7 +14,7 @@
 /// ```
 #let theme(
   staff-space: 2.9mm,
-  font: ("Montserrat", "Inter", "Noto Sans"),
+  font: ("Montserrat", "Noto Sans", "DejaVu Sans"),
   lyric-font: ("Libertinus Serif",),
   color: black,
   faint: luma(90),

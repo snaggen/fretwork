@@ -38,9 +38,20 @@ curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat-Italic[wght].ttf" \
 fc-cache -f ~/.local/share/fonts
 ```
 
-Without it the fallback chain (`Montserrat`, `Inter`, `Noto Sans`) picks what you
-have, and Typst warns once per missing family. Music symbols are unaffected —
-they are vectors, not glyphs.
+**Installing it also silences Typst's font warnings.** The default chain is
+`("Montserrat", "Noto Sans", "DejaVu Sans")`, and Typst warns once per family it
+cannot find — even when a later one in the chain matches — so a machine without
+Montserrat gets about fifteen `unknown font family: montserrat` warnings per
+compile. The count does not grow with the document, and the sheet still sets
+correctly in Noto Sans; the warnings just name what to install.
+
+To silence them without installing anything, pass a chain of fonts you do have:
+
+```typst
+#tab(theme: theme(font: ("Noto Sans", "DejaVu Sans")), ```…```)
+```
+
+Music symbols are unaffected either way — they are vectors, not glyphs.
 
 ## Quick start
 

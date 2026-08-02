@@ -370,7 +370,7 @@ exposed through `theme(font: …)`, so the whole set changes in one place.
 | Role | Choice | Why |
 |---|---|---|
 | **Fret numbers** | Montserrat Medium (500) | Closest to the reference. Geometric and round, and its `1` has a flag, which separates it from `7` — unlike Poppins, where `1` is a bare stem. Medium is deliberate: Regular is too thin against the string lines, Bold too clumsy. |
-| — alternative | Inter Medium | Clarity over style. The best digit differentiation of the candidates (`0`/`O`, `6`/`8`), designed for small sizes. Less geometric. |
+| — fallback | Noto Sans | Widely installed, and close enough in weight and width that a sheet set in it still reads as intended. |
 | — fallback | Noto Sans SemiBold | Widely installed already, and serviceable until Montserrat is. |
 | Title | Montserrat Bold, ~30 pt | The same family as the numbers holds the sheet together. |
 | Credits, source | Montserrat Regular, 9–11 pt | |
@@ -389,9 +389,22 @@ width; otherwise columns drift apart in bars mixing one- and two-digit frets.
 
 Typst ships only Libertinus Serif, New Computer Modern and DejaVu Sans Mono, so
 Montserrat must be installed locally. `theme.font` is a fallback chain,
-`("Montserrat", "Inter", "Noto Sans")`, so a sheet still sets reasonably without
-it. This applies to **text only** — the music symbols are vectors and never need
-a font.
+`("Montserrat", "Noto Sans", "DejaVu Sans")`, so a sheet still sets reasonably
+without it. This applies to **text only** — the music symbols are vectors and
+never need a font.
+
+Typst warns once for every family in a chain it cannot find, whether or not a
+later one matches, and position in the list makes no difference — only presence
+does. A machine without Montserrat therefore sees about fifteen warnings per
+compile. That was measured, and the chain was kept anyway: the warning names
+exactly what to install, the count does not grow with the document, and the
+alternative is a default that silently abandons the design. Callers who would
+rather not see them pass their own chain to `theme(font: …)`.
+
+Generic CSS-style names are not an option: `Sans` and `sans-serif` both fail to
+resolve, because Typst matches the family name recorded in the font file and does
+not consult fontconfig's aliases. `DejaVu Sans` is the closest thing to a family
+present on every Linux system.
 
 ## Page layout
 
