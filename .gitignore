@@ -8,6 +8,10 @@ tests/**/diff/
 # cannot tell the next person that their change moved something.
 !tests/refs/*.png
 
+# …and the README illustrations, which Typst Universe reads from the repository.
+# `exclude` in typst.toml keeps them out of the downloaded bundle.
+!docs/*.png
+
 # Reference material: copyrighted sheet music and scans, kept locally only.
 # `exclude` in typst.toml governs the package bundle, not the repository, so
 # this is what keeps it out of git.

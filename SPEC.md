@@ -1,4 +1,4 @@
-# tablature — specification
+# fretwork — specification
 
 Guitar tablature of publishing quality for Typst.
 
@@ -35,7 +35,7 @@ so it is styleable, autocompleting and type-checked. Note-level content is a
 compact string, because writing a riff as nested function calls is unbearable.
 
 ```typst
-#import "@preview/tablature:0.1.0": *
+#import "@preview/fretwork:0.1.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",

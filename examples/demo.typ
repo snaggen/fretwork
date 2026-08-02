@@ -16,13 +16,13 @@
 #let src(code) = note(raw(code, lang: "typst"))
 
 #show: song.with(
-  title: "tablature",
+  title: "fretwork",
   subtitle: "A demonstration of the Typst package",
   words: "Mattias Eriksson",
   music: "Mattias Eriksson",
   arranged: "Mattias Eriksson",
   source: "Package demo · v0.1.0",
-  copyright: "Typeset with tablature · EUPL-1.2",
+  copyright: "Typeset with fretwork · EUPL-1.2",
   tempo: 120,
   tempo-words: "Moderately",
 )

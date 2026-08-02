@@ -11,7 +11,7 @@
 #show: song.with(
   title: "Progressive enrichment",
   subtitle: "The same ASCII tab, told more each time",
-  source: "tablature",
+  source: "fretwork",
 )
 
 #let riff = "

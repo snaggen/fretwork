@@ -13,8 +13,8 @@
   artist: "for one electric guitar",
   words: "Mattias Eriksson",
   music: "Mattias Eriksson",
-  source: "tablature",
-  copyright: "Typeset with tablature · EUPL-1.2",
+  source: "fretwork",
+  copyright: "Typeset with fretwork · EUPL-1.2",
   tempo: 132,
   tempo-words: "Driving Rock",
 )

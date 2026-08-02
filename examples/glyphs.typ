@@ -33,7 +33,7 @@
   v(3mm)
 }
 
-= tablature — vector glyphs
+= fretwork — vector glyphs
 
 #v(4mm)
 

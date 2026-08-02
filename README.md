@@ -1,78 +1,33 @@
-# tablature
+# fretwork
 
-Guitar tablature of publishing quality for Typst — rhythm stems, technique
-symbols, and ASCII tab import.
+Guitar tablature of publishing quality, written as text.
 
-Existing Typst packages either draw chord diagrams or render standard notation;
-none sets a guitar tab that looks like a published song sheet. This one does:
-optical spacing, string lines broken around the fret numbers, beams grouped by
-the beat, and the technique symbols from Hal Leonard's *Guitar Notation Legend*.
+Existing Typst packages draw chord diagrams or set standard notation; none sets a
+guitar tab that looks like a published song sheet. `fretwork` does: optical
+spacing, string lines broken around the fret numbers, beams grouped by the beat,
+and the technique symbols of an engraved rock transcription — bends, slurs,
+harmonics, palm mutes, repeat signs with flared serifs.
 
-No font is required. Every music symbol is a vector curve, because Typst
-packages cannot ship fonts.
+**No font is required.** Every music symbol is a vector curve, because Typst
+packages cannot ship fonts, and a package that demands one you must install by
+hand is a package that renders wrong for most people.
 
-## Install
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.png">
+  <img alt="A complete song sheet: title block, tempo mark, section headings, a palm-muted riff with a count-in row, a solo with bend arrows, a chorus of power chords and a let-ring outro" src="docs/hero-light.png">
+</picture>
 
-```typst
-#import "@preview/tablature:0.1.0": *
-```
-
-Awaiting review on Typst Universe. Until it lands there, clone it and link it
-into the local package directory:
-
-```sh
-git clone https://github.com/snaggen/tablature
-ln -s "$PWD/tablature" ~/.local/share/typst/packages/local/tablature/0.1.0
-```
-
-then import it as `@local/tablature:0.1.0` instead.
-
-### Fonts
-
-Running text looks best in Montserrat, which Typst does not bundle. Google Fonts
-now ships it as two variable files, and Typst instantiates every weight the
-package asks for from them:
-
-```sh
-mkdir -p ~/.local/share/fonts/montserrat
-base=https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat
-curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat[wght].ttf" \
-  "$base/Montserrat%5Bwght%5D.ttf"
-curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat-Italic[wght].ttf" \
-  "$base/Montserrat-Italic%5Bwght%5D.ttf"
-fc-cache -f ~/.local/share/fonts
-```
-
-Montserrat ships as two variable font files, so **Typst 0.15 or newer is
-required** — earlier versions load them but ignore the requested weight and set
-everything as thin outlines. That is why the manifest's compiler floor is 0.15.0
-even though the package compiles as far back as 0.13.
-
-**Installing it also silences Typst's font warnings.** The default chain is
-`("Montserrat", "Noto Sans", "DejaVu Sans")`, and Typst warns once per family it
-cannot find — even when a later one in the chain matches — so a machine without
-Montserrat gets about fifteen `unknown font family: montserrat` warnings per
-compile. The count does not grow with the document, and the sheet still sets
-correctly in Noto Sans; the warnings just name what to install.
-
-To silence them without installing anything, pass a chain of fonts you do have:
-
-```typst
-#tab(theme: theme(font: ("Noto Sans", "DejaVu Sans")), ```…```)
-```
-
-Music symbols are unaffected either way — they are vectors, not glyphs.
+That whole sheet is one `song` show rule and four `tab` calls.
 
 ## Quick start
 
 ```typst
-#import "@local/tablature:0.1.0": *
+#import "@preview/fretwork:0.1.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",
   words: "A. Guitarist",
   music: "A. Guitarist",
-  copyright: "© 2026 A. Guitarist",
   tempo: 132,
   tempo-words: "Driving Rock",
 )
@@ -85,112 +40,98 @@ Music symbols are unaffected either way — they are vectors, not glyphs.
 ```)
 ```
 
-A note is `fret/string`, string 1 being the highest. Note values (`w h q e s t`,
-with `.` for dotted) are sticky — write one only when it changes. `|` is a
-barline, `|:` and `:|` are repeats, `@E5` names a chord, and `{PM: … }` brackets
-a span.
+A note is `fret/string`, string 1 being the highest. Note values — `w h q e s t`
+for whole down to thirty-second, `.` for each augmentation dot — are **sticky**,
+so you write one only when it changes. `|` is a barline, `|:` and `:|` are
+repeats, `@E5` names a chord over the next event, `{PM: … }` brackets a span, and
+`x` deadens a string.
 
-Techniques are suffixes after the string number:
+## Techniques
 
-```typst
-#tab(```
-q 5/3h7 7/3p5 e 5/3s7 7/3b 7/3br q 12/3* 7/3v
-```)
-```
+Techniques are suffixes after the string number. They chain — `5/3h7v` — and a
+suffix after a closing parenthesis binds to every note of a chord.
 
-`h` hammer-on, `p` pull-off, `s`/`S` slide, `b` bend (`br` release, `B`
-pre-bend), `v`/`V` vibrato, `*` harmonic, `~` tie, `g` ghost, `>` accent,
-`n`/`u` down- and upstroke.
-See [`SPEC.md`](https://github.com/snaggen/tablature/blob/main/SPEC.md) for the full table.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/techniques-dark.png">
+  <img alt="Staves showing hammer-ons and pull-offs joined by slurs, bend arrows labelled full and one-half, vibrato squiggles, harmonics, palm mute and let-ring brackets, and first and second endings under ornate repeat signs" src="docs/techniques-light.png">
+</picture>
 
-## ASCII tab
+| | |
+|---|---|
+| `5/3h7` `7/3p5` | hammer-on / pull-off to a fret |
+| `5/3s7` `5/3S7` | legato slide / shift slide |
+| `7/3b` `7/3b(1/2)` `7/3b(1/4)` | bend — a whole step, or the size given |
+| `7/3br` `7/3B` `7/3Br` | bend and release / pre-bend / pre-bend and release |
+| `7/3v` `7/3V` | vibrato / wide vibrato |
+| `12/3*` `5/3PH` `7/3HH` | natural / pinch / harp harmonic |
+| `7/3~` | tie into the next note on that string |
+| `7/3>` `7/3^` `7/3!` `7/3-` | accent / marcato / staccato / tenuto |
+| `7/3n` `7/3u` | downstroke / upstroke |
+| `7/3T` `7/3g` | tapping / ghost note |
+| `7/3tr9` `7/3TP` `7/3PS` | trill / tremolo picking / pick scrape |
+| `(…)A` `(…)R` | arpeggiate / rake |
 
-Paste a tab and it renders:
+Groups are one mechanism doing four jobs: `{PM: … }` and `{LR: … }` are palm mute
+and let ring, `{3: … }` is a triplet, `{7/4: … }` states a tuplet ratio outright,
+and `{V1: … }` `{V2: … }` are first and second endings. They nest.
+
+## Importing ASCII tab
+
+Paste a tab from the web and it renders. It carries no rhythm, so there are no
+stems — the layout follows the source's own columns instead, which is already far
+better than monospaced text.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/ascii-dark.png">
+  <img alt="The same pasted ASCII tab rendered twice: bare, and again with annotation rows supplying rhythm, chord names, a section heading and a palm mute bracket" src="docs/ascii-light.png">
+</picture>
+
+Everything the format cannot carry can be supplied a little at a time, and
+column-aligned annotation rows are the main way, because each fact attaches to
+exactly the column it sits over:
 
 ```typst
 #ascii-tab(```
-e|-----------------|-----------------|
-B|-----5h7---------|--------------8--|
-G|--2--------------|-----7b9---------|
-D|--2----------7\5-|-----------------|
-A|--0--------------|--10-------------|
-E|--------3--------|-----------------|
-```)
-```
-
-Techniques are read inline: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )`
-for ghost notes. `7b9` bends to the pitch of fret 9; `3hb` and `3fb` spell the
-size out instead — half and full.
-
-ASCII tab carries no rhythm, so this gets no stems or beams — it is spaced from
-the source's own columns. Everything missing can be supplied, a little at a
-time. Column-aligned annotation rows are the main way:
-
-```typst
-#ascii-tab(```
-S:   Main Riff
-C:   E5      G5
-R:   q   q   e e
-PM:  --------
-e|---0---2---3-5--|
-…
+S:  Main Riff
+R:  q   q   q   q    q   q   h
+C:  E5               G5
+PM: ---------
+e|----------------|----------------|
+B|----------------|----------------|
+G|----------------|----------------|
+D|--2---2---2---2-|--5---5---------|
+A|--2---2---2---2-|--5---5---------|
+E|--0---0---0---0-|--3---3---12----|
 ```)
 ```
 
 `R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-instruction, `PM:`/`LR:` bracketed spans, `1:`/`2:` first and second endings.
-`R:` uses the same tokens as the native syntax.
+instruction, `PM:`/`LR:` spans, `1:`/`2:` first and second endings. `R:` uses the
+same tokens as the native syntax, so there is no second notation to learn.
 
-When the rhythm is regular, one argument does the job instead:
+When the rhythm is regular one argument replaces the row — `rhythm: even(1/8)`,
+`rhythm: fill`, or `rhythm: "q q e e"`. Facts about the whole piece are named
+arguments: `tuning`, `time`, `tempo`, `capo`, `anacrusis`. `enrich` takes the
+parsed part and hands back a modified one, for whatever those do not cover.
 
-```typst
-#ascii-tab(source, rhythm: even(1/8))
-```
+Once a tab is fully annotated it is as complete as one written by hand, and
+`#ascii-to-dsl(source)` prints it back as native source, ready to keep.
 
-`#ascii-to-dsl(source)` prints the equivalent native source, for when an
-imported tab is worth keeping.
+## Tunings
 
-## Examples
+Eleven ship with the package — standard, drop D, a half and a whole step down,
+open G, open D, DADGAD, seven-string, four- and five-string bass, and ukulele —
+and `tuning("E4 B3 G3 D3 A2 E2 B1", name: "7-string")` builds any other. The
+number of staff lines follows from the tuning, so a bass or seven-string tab
+needs nothing else said.
 
-The [repository](https://github.com/snaggen/tablature/blob/main/examples) carries five, which the published package does
-not — clone it, then:
-
-```sh
-typst compile --root . examples/demo.typ      # a tour of everything
-typst compile --root . examples/songsheet.typ # a complete song sheet
-typst compile --root . examples/ascii.typ     # ASCII import, enriched in stages
-typst compile --root . examples/bends.typ     # bend arrows on every string
-typst compile --root . examples/glyphs.typ    # every vector glyph, three sizes
-```
-
-## Tests
-
-Also repository-only:
-
-```sh
-./tests/run.sh              # everything
-./tests/run.sh dsl          # one suite
-./tests/run.sh visual       # only the image-regression tests
-./tests/run.sh --update-refs  # re-pin the reference renders
-```
-
-Each test is a Typst document whose assertions panic on failure, so the
-compiler's exit status is the result. `tests/errors/` holds fixtures that must
-*fail*, each declaring the message it expects.
-
-`tests/visual/` renders a fixture per feature area and compares it pixel by
-pixel against a reference committed in `tests/refs/`, writing a diff image that
-tints whatever moved. Every visual defect this package has had was found by
-looking at the output rather than by an assertion, which is what those cover.
-They need Python with Pillow, and they skip rather than fail when the Typst
-version or the fonts differ from the ones the references were pinned with.
+Pitch is in the model even though version 0.1 renders tablature only: string,
+fret and tuning already determine the sounding pitch, and `to-pitch` is public.
 
 ## Themes
 
-Everything derives from one unit, so `theme(staff-space: 3.2mm)` rescales a sheet
-without its proportions drifting. `mask: "box"` prints fret numbers on an opaque
-patch instead of breaking the string lines, and `repeat-style: "ornate"` gives
-repeat signs the flared serifs of an engraved one.
+Every measurement derives from one unit, so `theme(staff-space: 3.2mm)` rescales
+a sheet without its proportions drifting.
 
 ```typst
 #tab(theme: theme(staff-space: 3.2mm, repeat-style: "ornate"), ```
@@ -198,13 +139,58 @@ repeat signs the flared serifs of an engraved one.
 ```)
 ```
 
+`mask: "box"` prints fret numbers on an opaque patch instead of breaking the
+string lines; `repeat-style: "ornate"` gives repeat signs the flared serifs of an
+engraved sheet; `color` and `font` are arguments too — which is how the
+illustrations above are set for a dark page.
+
+## Diagnostics
+
+`validate` checks a part against its time signature. It is advisory, not fatal: a
+partially filled model is legal, and an imported tab is often musically imperfect
+but still worth setting. `tab` and `ascii-tab` print what it finds on the page,
+because Typst gives a package no other channel for a problem that must not stop
+the compile — `panic` is its only diagnostic and it is fatal. Pass `warn: false`
+once a sheet is as intended.
+
+## Fonts
+
+Running text looks best in Montserrat, which Typst does not bundle. Without it a
+sheet still sets correctly in the next font of the chain, but Typst prints an
+`unknown font family: montserrat` warning. Either install it:
+
+```sh
+mkdir -p ~/.local/share/fonts/montserrat
+base=https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat
+curl -sL -o "$HOME/.local/share/fonts/montserrat/Montserrat[wght].ttf" \
+  "$base/Montserrat%5Bwght%5D.ttf"
+fc-cache -f ~/.local/share/fonts
+```
+
+or name a chain you already have:
+
+```typst
+#tab(theme: theme(font: ("Noto Sans", "DejaVu Sans")), ```…```)
+```
+
+Montserrat ships as a variable font, which is why the manifest requires Typst
+0.15: earlier versions load it but ignore the requested weight, setting the fret
+numbers as thin outlines. Music symbols are unaffected either way — they are
+vectors, not glyphs.
+
 ## Scope
 
-Version 0.1 is tablature only — no notation staff, chord diagrams or lyrics. The
-model and layout engine are built so a notation staff can be added without
-rewriting them;
-[`SPEC.md`](https://github.com/snaggen/tablature/blob/main/SPEC.md) says how.
+Version 0.1 is tablature only: no notation staff, chord diagrams or lyrics. The
+model and layout engine were built so a notation staff can be added as one more
+lane without rewriting them —
+[`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/SPEC.md) says how,
+and documents the syntax in full.
+
+The [repository](https://github.com/snaggen/fretwork/tree/v0.1.0/examples)
+carries five example documents, including a tour of every feature.
 
 ## Licence
 
-EUPL-1.2. See [`LICENSE`](https://github.com/snaggen/tablature/blob/main/LICENSE).
+EUPL-1.2 — see
+[`LICENSE`](https://github.com/snaggen/fretwork/blob/v0.1.0/LICENSE).
+Copyright © 2026 Mattias Eriksson.

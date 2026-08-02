@@ -1,6 +1,6 @@
-// Public API of the `tablature` package.
+// Public API of the `fretwork` package.
 //
-//   #import "@local/tablature:0.1.0": *
+//   #import "@local/fretwork:0.1.0": *
 //
 //   #show: song.with(title: "Twelve Past Nine", tempo: 132)
 //   #section("Main Riff")

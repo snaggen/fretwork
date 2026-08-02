@@ -12,7 +12,7 @@
 #show: song.with(
   title: "Bends",
   subtitle: "One bend per string, then the same bends under pressure",
-  source: "tablature",
+  source: "fretwork",
 )
 
 #section("The same whole-step bend on every string")
