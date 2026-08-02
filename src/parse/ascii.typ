@@ -110,7 +110,29 @@
 // Row parsing
 // ---------------------------------------------------------------------------
 
-#let _TECHNIQUE-CHARS = ("h", "p", "b", "r", "/", "\\", "~", "*", "t", "v")
+#let _TECHNIQUE-CHARS = ("h", "p", "b", "r", "s", "/", "\\", "~", "*", "t", "v")
+
+// Markers that join the note before them to the note after them. Written tabs
+// put the target wherever the column happens to fall — `5h7`, `5h-7`, `5-h-7`
+// and `5h  7` all mean the same hammer-on — so these are held until the next
+// note on the row turns up rather than requiring a digit immediately after.
+#let _LINKING = ("h", "p", "s", "/", "\\")
+
+// Tapping marks the note it precedes, not the one before it.
+#let _PRECEDING = ("t",)
+
+/// Attach a held marker now that the note it was waiting for has been found.
+///
+/// `previous` is the note the marker hangs off, `fret` the one it points at.
+#let _resolve(mark, fret) = {
+  if mark == "h" {
+    m.technique("hammer", fret: fret)
+  } else if mark == "p" {
+    m.technique("pull", fret: fret)
+  } else {
+    m.technique("slide", fret: fret, legato: true)
+  }
+}
 
 /// Read one string row into `(column, item)` records.
 ///
@@ -122,6 +144,10 @@
   let chars = line.clusters()
   let items = ()
   let i = start
+  // Markers seen since the last note, waiting for the note they point at, and
+  // where in `items` that last note sits so the marker can be hung off it.
+  let pending = ()
+  let last = none
 
   while i < chars.len() {
     let c = chars.at(i)
@@ -134,6 +160,8 @@
 
     if c in ("x", "X") {
       items.push((col: i, kind: "note", fret: m.MUTED, techniques: ()))
+      last = items.len() - 1
+      pending = ()
       i += 1
       continue
     }
@@ -151,6 +179,7 @@
       if ghost and i < chars.len() and chars.at(i) == ")" { i += 1 }
 
       // A chain of techniques may follow, each optionally naming a target fret.
+      let held = ()
       while i < chars.len() and chars.at(i) in _TECHNIQUE-CHARS {
         let mark = chars.at(i)
         i += 1
@@ -161,14 +190,10 @@
           target = int(chars.slice(i, d).join())
           i = d
         }
-        if mark == "h" and target != none {
-          techniques.push(m.technique("hammer", fret: target))
-        } else if mark == "p" and target != none {
-          techniques.push(m.technique("pull", fret: target))
-        } else if mark == "/" {
-          if target != none { techniques.push(m.technique("slide", fret: target, legato: true)) }
-        } else if mark == "\\" {
-          if target != none { techniques.push(m.technique("slide", fret: target, legato: true)) }
+        if mark in _LINKING {
+          // Resolved here when the target is adjacent, held for the next note
+          // on the row when it is not.
+          if target != none { techniques.push(_resolve(mark, target)) } else { held.push(mark) }
         } else if mark == "b" {
           // `7b9` bends up to the pitch of fret 9: two frets to a whole step.
           let amount = if target == none { r.rat(1) } else { r.rat(target - fret, den: 2) }
@@ -194,6 +219,31 @@
       }
 
       items.push((col: col, kind: "note", fret: fret, techniques: techniques))
+      let index = items.len() - 1
+
+      // Hang everything held over onto the pair of notes it joins. Written out
+      // rather than factored into a helper: a Typst closure captures its
+      // environment by value, so a helper could not update `items` here.
+      for mark in pending {
+        if mark in _PRECEDING {
+          let n = items.at(index)
+          items.at(index) = (..n, techniques: n.techniques + (m.technique("tap"),))
+        } else if last != none {
+          let n = items.at(last)
+          items.at(last) = (..n, techniques: n.techniques + (_resolve(mark, fret),))
+        }
+      }
+
+      pending = held
+      last = index
+      continue
+    }
+
+    // A marker standing in the filler, between the note it hangs off and the
+    // one it points at.
+    if c in _LINKING or c in _PRECEDING {
+      pending.push(c)
+      i += 1
       continue
     }
 

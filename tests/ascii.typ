@@ -193,3 +193,61 @@
 #eq(write(m.part(measures: parse-measures("@E5 q 0/6"))), "@E5 q 0/6 |", "chord names round-trip")
 
 #report("ascii")
+
+// --- markers that sit between the notes they join ------------------------
+// Written tabs put the target wherever the column falls, so a marker has to
+// reach forward to the next note on the row rather than demanding a digit
+// immediately after it. Requiring adjacency silently dropped most of the
+// hammer-ons and slides in a real transcription.
+
+#let joined(body) = events-of(block(body))
+
+#eq(joined("--5h7----").len(), 1, "an adjacent target stays inside one event")
+#eq(
+  m.get-technique(joined("--5h7----").first().notes.first(), "hammer").fret,
+  7,
+  "…as a hammer-on to that fret",
+)
+
+#for form in ("--5h-7---", "--5-h-7--", "--5---h---7--") {
+  let evs = joined(form)
+  eq(evs.len(), 2, "'" + form.trim("-") + "' is two events")
+  eq(
+    m.get-technique(evs.first().notes.first(), "hammer").fret,
+    7,
+    "…joined by a hammer-on to the second",
+  )
+  eq(evs.last().notes.first().fret, 7, "…and the second note survives")
+}
+
+#eq(
+  m.get-technique(joined("--5/-7---").first().notes.first(), "slide").fret,
+  7,
+  "a slash reaches the next note too",
+)
+#eq(
+  m.get-technique(joined("--7\\-5---").first().notes.first(), "slide").fret,
+  5,
+  "and a backslash downwards",
+)
+#eq(
+  m.get-technique(joined("--5p-7---").first().notes.first(), "pull").fret,
+  7,
+  "so does a pull-off",
+)
+#eq(
+  m.get-technique(joined("--12h-14--").first().notes.first(), "hammer").fret,
+  14,
+  "multi-digit frets on both sides",
+)
+
+#eq(
+  m.get-technique(joined("--5s7----").first().notes.first(), "slide").fret,
+  7,
+  "'s' is a slide in ASCII tab, not a stray character splitting the note",
+)
+#ok(m.has-technique(joined("--t12----").first().notes.first(), "tap"), "'t' taps the note it precedes")
+
+// A marker with nothing to point at is dropped rather than invented.
+#eq(joined("--5h-----").first().notes.first().techniques, (), "a dangling marker attaches to nothing")
+#eq(joined("--5h-----").len(), 1, "…and does not conjure an event")
