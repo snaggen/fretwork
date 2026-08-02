@@ -31,7 +31,7 @@ pre-bend is already bent when the string is struck, so its arrow is straight:
 the curve is what shows the pitch rising after the attack.
 
 #tab(```
-q 7/3b 7/3b(1/2) 7/3br 7/3B | q 7/3Br h 7/3b(1/4) |.
+q 7/3b 7/3b(1/2) 7/3br 7/3B | h 7/3Br 7/3b(1/4) |.
 ```)
 
 #section("Under pressure")
@@ -43,6 +43,7 @@ density the labels sit shoulder to shoulder, which is as good as it gets.
 
 #tab(```
 s 7/3b 8/3b 9/3b 10/3b 7/3b(1/2) 8/3br 9/3b 10/3b
+   7/3b 8/3b 9/3b 10/3b 7/3b(1/2) 8/3br 9/3b 10/3b
  | e 7/3b 9/3br 12/3b 7/3b h 9/3Br |.
 ```)
 

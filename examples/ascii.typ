@@ -37,7 +37,7 @@ native syntax, so only changes need writing. Stems, beams and optical spacing
 all follow.
 
 #ascii-tab("
-R:   q   q   e   e     q   q   e   e
+R:   q   e   e   h     q   e   e   h
 " + riff)
 
 #section("3 — with chord names")
@@ -46,7 +46,7 @@ A `C:` row names chords at the columns they fall on.
 
 #ascii-tab("
 C:   A5      C5        A5      C5
-R:   q   q   e   e     q   q   e   e
+R:   q   e   e   h     q   e   e   h
 " + riff)
 
 #section("4 — fully annotated")
@@ -56,14 +56,15 @@ a playing instruction.
 
 #ascii-tab("
 C:   A5      C5        A5      C5
-R:   q   q   e   e     q   q   e   e
+R:   q   e   e   h     q   e   e   h
 PM:  ------------
 T:            let ring
 " + riff)
 
 #section("The same riff, inferred")
 
-When the rhythm is regular, `rhythm: even(1/8)` says so in one word instead of
-annotating every column.
+When the rhythm is regular, `rhythm: even(1/4)` says so in one word instead of
+annotating every column. `rhythm: fill` is the other shortcut: it spreads each
+bar evenly across the time signature, whatever the number of events.
 
-#ascii-tab(riff, rhythm: even(1 / 8))
+#ascii-tab(riff, rhythm: even(1 / 4))

@@ -69,6 +69,14 @@ if [ $# -eq 0 ] && [ -d "$root/tests/errors" ]; then
   done
 fi
 
+# The examples are documentation, and a wrong bar in one of them prints a red
+# report in the package's own showcase. Nothing checked them until several were
+# found by readers, one at a time.
+if [ $# -eq 0 ]; then
+  "$root/tests/examples.py"
+  fail=$((fail + $?))
+fi
+
 # Renders last: they are the slowest, and a difference in the output is only
 # worth reading once the model and the parsers are known to be right. The
 # runner prints its own results and exits with the number that differed.

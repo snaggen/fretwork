@@ -515,6 +515,13 @@ displacement in chords, and slurs.
   that every message carries a source location.
 - **Round trip**: an annotated ASCII tab, written out as DSL and read back,
   must give the same model.
+- **Example documents** (`tests/examples.py`): every example is rendered and its
+  PDF read back, and any `validate` report printed on the page fails the run.
+  The examples are documentation, so a bar that does not add up is a red block
+  in the package's own showcase — which is exactly how a run of them was found,
+  one reader report at a time, once the reports stopped being swallowed.
+  `demo.typ` carries one on purpose, under the text explaining it, and its count
+  is pinned rather than exempted.
 - **Image regression** (`tests/run.sh visual`): one fixture per feature area in
   `tests/visual/`, each rendered and compared pixel by pixel against a reference
   committed in `tests/refs/`. A difference writes a diff image with everything
