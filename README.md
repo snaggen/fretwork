@@ -194,8 +194,26 @@ lane without rewriting them —
 [`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/SPEC.md) says how,
 and documents the syntax in full.
 
+## Examples
+
 The [repository](https://github.com/snaggen/fretwork/tree/v0.1.0/examples)
-carries five example documents, including a tour of every feature.
+carries five example documents. They are not part of the published bundle, so
+clone it to compile them:
+
+```sh
+git clone https://github.com/snaggen/fretwork
+cd fretwork
+typst compile --root . examples/demo.typ        # a tour of every feature
+typst compile --root . examples/songsheet.typ   # a complete song sheet
+typst compile --root . examples/ascii.typ       # ASCII import, enriched in stages
+typst compile --root . examples/bends.typ       # bend arrows on every string
+typst compile --root . examples/glyphs.typ      # every vector glyph, three sizes
+```
+
+`--root .` is needed because the examples import the package from source rather
+than by name, as `/src/lib.typ`, and Typst resolves an absolute path like that
+against the project root — which defaults to the file's own directory unless you
+say otherwise.
 
 ## Licence
 
