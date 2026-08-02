@@ -13,9 +13,21 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# 150 dpi: sharp on a high-density display at the width Universe renders, without
-# the file sizes a full 300 would cost.
-PPI=150
+# Not a round number, and it must not be "tidied" into one.
+#
+# A staff line is 0.075 of a staff space, and the default staff space is 2.9 mm.
+# At an arbitrary resolution the 2.9 mm spacing is a fractional number of pixels,
+# so successive lines land in different sub-pixel phases: some snap to one pixel
+# row, some spread over two, and the staff comes out with lines of visibly
+# different weight. Which lines thicken changes with the resolution — at 150 dpi
+# it was the middle two, at 200 dpi the outer ones — which is what gives the
+# artifact away as rasterisation rather than a fault in the package.
+#
+# Choosing a resolution that makes the staff space an exact pixel count puts
+# every line in the same phase, so they rasterise identically. 27 px per staff
+# space needs 27 × 25.4 / 2.9 dpi, and of the candidates it also renders the line
+# closest to its designed weight (1.87 px of ink against 2.02 nominal).
+PPI=236.48
 
 render() {
   local name="$1" file="$2" mode="$3" extra="${4-}"
