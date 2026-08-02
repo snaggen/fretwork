@@ -26,6 +26,7 @@
 #import "../model.typ" as m
 #import "../tuning.typ": string-count, tunings
 #import "errors.typ"
+#import "dsl.typ": source-text
 
 #let _DIGITS = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
 
@@ -468,7 +469,7 @@
   anacrusis: false,
   rhythm: none,
 ) = {
-  let text = if type(source) == str { source } else { source.text }
+  let text = source-text(source)
   let strings = string-count(tuning)
   let lines = text.split("\n")
   let grouped = _blocks(lines, strings)

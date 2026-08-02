@@ -251,3 +251,15 @@
 // A marker with nothing to point at is dropped rather than invented.
 #eq(joined("--5h-----").first().notes.first().techniques, (), "a dangling marker attaches to nothing")
 #eq(joined("--5h-----").len(), 1, "…and does not conjure an event")
+
+// The importer takes the same source, so it needs the same repair.
+#eq(
+  parse(```e|--0---2--|
+B|---------|
+G|---------|
+D|---------|
+A|---------|
+E|---------|```).part.measures.first().events.len(),
+  2,
+  "a raw block whose first token is a string label keeps that row",
+)

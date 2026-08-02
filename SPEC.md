@@ -169,7 +169,17 @@ tab: measure 3, token 7: unknown duration 'w2'
 
 `validate` separately reports bars whose length disagrees with the time
 signature. It is advisory, not fatal: a pick-up bar is exempt, and unknown
-durations are reported as unchecked rather than wrong.
+durations are reported as unchecked rather than wrong. `tab` and `ascii-tab`
+print what it finds on the page, because Typst has no user-level warning channel
+— `panic` is its only diagnostic and it is fatal. `warn: false` silences the
+report once a sheet is as intended.
+
+Both parsers accept a raw block as well as a string, and unwrap it through
+`source-text`. That indirection is not decoration: Typst takes the first token of
+a *single-line* raw block as a language tag and strips it, so ``` ```q 0/6 2/6```
+``` arrives as `0/6 2/6` with `lang: "q"`. Every note value is a bare word, so the
+leading one would vanish without a sound and the bar would simply come out with
+no rhythm.
 
 ## ASCII tab import
 

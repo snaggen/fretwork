@@ -460,8 +460,21 @@
   (kind: "span", span: name)
 }
 
+/// The source text of a DSL or ASCII argument.
+///
+/// Typst takes the first token of a *single-line* raw block as a language tag
+/// and strips it from `.text`, so ```` ```q 0/6 2/6``` ```` arrives as
+/// `0/6 2/6` with `lang: "q"`. Every duration token is a bare word, so the
+/// leading note value would vanish without a sound. Put it back.
+#let source-text(source) = {
+  if type(source) == str { return source }
+  let lang = source.at("lang", default: none)
+  if lang == none { source.text } else { lang + " " + source.text }
+}
+
 /// Parse DSL source into an array of measures.
 #let parse-measures(source, tuning: tunings.standard) = {
+  let source = source-text(source)
   let tokens = tokenize(source)
   let strings = string-count(tuning)
 
@@ -598,8 +611,8 @@
   anacrusis: false,
 ) = {
   // Accept a raw block as well as a plain string, since raw blocks keep the
-  // source readable in a document.
-  let text = if type(source) == str { source } else { source.text }
+  // source readable in a document; `parse-measures` unwraps it.
+  let text = source
   m.part(
     measures: parse-measures(text, tuning: tuning),
     tuning: tuning,

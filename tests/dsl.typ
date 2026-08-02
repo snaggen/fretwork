@@ -177,3 +177,36 @@
 #eq(tech("7/3T").at(0).kind, "tap", "'T' is still tapping, not the start of 'TP'")
 #eq(tech("7/3PH").at(0).style, "pinch", "'PH' is still a pinch harmonic, not 'PS'")
 #eq(tech("7/3TPT").map(t => t.kind), ("tremolo", "tap"), "'TP' then 'T' chain in order")
+
+// --- raw blocks whose first token looks like a language tag ---------------
+// Typst takes the first token of a single-line raw block as a language tag and
+// strips it from `.text`. Every note value is a bare word, so `q` would vanish
+// without a sound — the bar simply came out with no rhythm.
+
+#eq(
+  parse-measures(```q 0/6 2/6 3/6 5/6```).first().events.first().duration,
+  m.durations.q,
+  "a single-line raw block keeps its leading note value",
+)
+#eq(
+  parse-measures(```q 0/6 2/6 3/6 5/6```).first().events.len(),
+  4,
+  "…and all of its events",
+)
+#eq(
+  parse-measures(```h 0/6 0/6```).first().events.first().duration,
+  m.durations.h,
+  "the same for a leading half note",
+)
+#eq(
+  parse-measures("q 0/6 2/6 3/6 5/6"),
+  parse-measures(```q 0/6 2/6 3/6 5/6```),
+  "a raw block and the equivalent string parse identically",
+)
+#eq(
+  parse-measures(```
+  q 0/6 2/6 3/6 5/6
+  ```).first().events.first().duration,
+  m.durations.q,
+  "a multi-line block was never affected, and still is not",
+)

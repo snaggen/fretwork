@@ -32,6 +32,34 @@
   part.measures.map(m => m.events.map(ev => tabstaff.event-metrics(thm, ev)))
 }
 
+/// Report problems where the reader can actually see them.
+///
+/// Typst offers no user-level warning channel: `panic` is the only diagnostic
+/// it has and it is fatal. A problem that must not stop the compile therefore
+/// has nowhere to go but the page. That is the point — a bar that is short is
+/// worth knowing about — and it is why `place(hide[…])` was the wrong answer:
+/// it satisfied the type checker and showed the reader nothing.
+///
+/// `warn: false` on `tab` and `ascii-tab` silences this once the sheet is as
+/// intended.
+#let _diagnostics(thm, source, messages) = {
+  if messages.len() == 0 { return }
+  block(
+    width: 100%,
+    above: thm.staff-space * 0.7,
+    below: thm.staff-space * 1.0,
+    fill: rgb("#fdf3f0"),
+    stroke: (left: 2pt + rgb("#b4491f")),
+    inset: (x: 7pt, y: 5pt),
+    text(
+      font: thm.font,
+      size: thm.technique-size,
+      fill: rgb("#7a2e11"),
+      messages.map(m => source + ": " + m).join(linebreak()),
+    ),
+  )
+}
+
 /// Typeset a passage of tablature.
 ///
 /// `source` is either DSL source — a raw block or a string — or an already
@@ -60,14 +88,9 @@
     dsl.parse(source, tuning: tuning, time: time, tempo: tempo, capo: capo, anacrusis: anacrusis)
   }
 
-  if warn {
-    for problem in model.validate(part) {
-      // A warning rather than an error: a partially filled model is legal, and
-      // an imported tab is often musically imperfect but still worth setting.
-      // Typst has no user-level warning channel, so this goes to the document.
-      place(hide[#problem])
-    }
-  }
+  // Reported rather than raised: a partially filled model is legal, and an
+  // imported tab is often musically imperfect but still worth setting.
+  if warn { _diagnostics(thm, "tab", model.validate(part)) }
 
   layout(size => {
     let strings = string-count(part.tuning)
@@ -167,20 +190,21 @@
   )
   let part = if enrich != none { enrich(result.part) } else { result.part }
 
-  if warn {
-    // A malformed source is reported but never fatal: a real tab is usually
-    // imperfect, and refusing to set it would defeat the purpose of importing.
-    for problem in result.warnings {
-      place(hide[ascii-tab: #problem])
-    }
-  }
-
   // Sections carried by `S:` rows are headings in their own right.
   for mark in part.sections {
     if mark.index == 0 { section(mark.title, theme: theme) }
   }
 
-  tab(part, theme: theme, count-in: count-in, warn: warn)
+  // The staff first, then one report covering both what the source could not
+  // say and what the result does not add up to. `tab` is told to stay quiet so
+  // the two do not appear as separate blocks.
+  tab(part, theme: theme, count-in: count-in, warn: false)
+
+  // Malformed input is reported but never fatal: a real tab is usually
+  // imperfect, and refusing to set it would defeat the purpose of importing.
+  if warn {
+    _diagnostics(theme, "ascii-tab", result.warnings + model.validate(part))
+  }
 }
 
 /// Convert an ASCII tab to equivalent DSL source.
