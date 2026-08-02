@@ -3,9 +3,12 @@
 // Compile with `typst compile --root . examples/glyphs.typ`.
 
 #import "/src/render/glyphs.typ" as g
+#import "/src/theme.typ": default-theme
 
 #set page(width: 18cm, height: auto, margin: 1.5cm)
-#set text(font: ("Montserrat", "Inter", "Noto Sans"), size: 9pt)
+// The theme's own chain rather than one repeated by hand, which is how this file
+// came to name a font the package had already dropped.
+#set text(font: default-theme.font, size: 9pt)
 
 #let sizes = (2.9mm, 5mm, 9mm)
 
