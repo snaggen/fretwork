@@ -209,6 +209,12 @@ E|--------3--------|-----------------|
 - `|` becomes a barline.
 - Techniques are read inline: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )`
   for ghost notes. `7b9` bends to the pitch of fret 9 — two frets to a step.
+- `hb` and `fb` spell a bend's size out in letters instead of implying it from a
+  target fret: half and full. Despite `h` otherwise meaning a hammer-on this is
+  unambiguous, because a hammer-on always writes its target as digits, so an `h`
+  pressed directly against a `b` can only be a size. Where a tab gives both, as
+  in `3hb5`, the target wins — it names the pitch wanted rather than merely how
+  far to travel.
 - Blocks of N rows stacked one after another concatenate into one continuous
   passage, not into separate pieces.
 - Lines that are neither string rows nor known annotation rows are skipped with

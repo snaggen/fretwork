@@ -111,7 +111,7 @@
 // Row parsing
 // ---------------------------------------------------------------------------
 
-#let _TECHNIQUE-CHARS = ("h", "p", "b", "r", "s", "/", "\\", "~", "*", "t", "v")
+#let _TECHNIQUE-CHARS = ("h", "p", "b", "r", "s", "/", "\\", "~", "*", "t", "v", "f")
 
 // Markers that join the note before them to the note after them. Written tabs
 // put the target wherever the column happens to fall — `5h7`, `5h-7`, `5-h-7`
@@ -184,6 +184,19 @@
       while i < chars.len() and chars.at(i) in _TECHNIQUE-CHARS {
         let mark = chars.at(i)
         i += 1
+
+        // `hb` and `fb` spell the size of a bend out in letters — half and full
+        // — instead of leaving it to be worked out from a target fret. Common
+        // enough in pasted tabs to be worth reading, and unambiguous despite `h`
+        // otherwise meaning a hammer-on: a hammer-on always writes its target as
+        // digits, so an `h` pressed directly against a `b` can only be this.
+        let spelled = none
+        if mark in ("h", "f") and i < chars.len() and chars.at(i) == "b" {
+          spelled = if mark == "h" { r.rat(1, den: 2) } else { r.rat(1) }
+          mark = "b"
+          i += 1
+        }
+
         let target = none
         let d = i
         while d < chars.len() and chars.at(d) in _DIGITS { d += 1 }
@@ -196,8 +209,17 @@
           // on the row when it is not.
           if target != none { techniques.push(_resolve(mark, target)) } else { held.push(mark) }
         } else if mark == "b" {
-          // `7b9` bends up to the pitch of fret 9: two frets to a whole step.
-          let amount = if target == none { r.rat(1) } else { r.rat(target - fret, den: 2) }
+          // `7b9` bends up to the pitch of fret 9: two frets to a whole step. A
+          // target says which pitch is wanted rather than merely how far to go,
+          // so it wins over a spelled size when a tab gives both; a bare `b` is
+          // a whole step, which is what an unqualified bend means.
+          let amount = if target != none {
+            r.rat(target - fret, den: 2)
+          } else if spelled != none {
+            spelled
+          } else {
+            r.rat(1)
+          }
           techniques.push(m.technique("bend", amount: amount, release: false, pre: false))
         } else if mark == "r" {
           // A release only ever follows a bend, so fold it into the one before.

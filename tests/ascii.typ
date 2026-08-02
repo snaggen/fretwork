@@ -263,3 +263,34 @@ E|---------|```).part.measures.first().events.len(),
   2,
   "a raw block whose first token is a string label keeps that row",
 )
+
+// --- bend sizes spelled out in letters ------------------------------------
+// `hb` and `fb` are common in pasted tabs. The reading has to stay unambiguous
+// against `h` for hammer-on, which it is: a hammer-on always writes its target
+// as digits, so an `h` pressed directly against a `b` can only be a size.
+
+#let bends(row) = {
+  let pad = "-------------"
+  let src = "e|" + pad + "|\nB|" + pad + "|\nG|" + row + "|\nD|" + pad + "|\nA|" + pad + "|\nE|" + pad + "|"
+  parse(src).part.measures.first().events.first().notes.first().techniques
+}
+
+#eq(bends("--3hb--------").first().amount, r.rat(1, den: 2), "`hb` is a half bend")
+#eq(bends("--3fb--------").first().amount, r.rat(1), "`fb` is a full bend")
+#eq(bends("--3hb--------").first().kind, "bend", "…and nothing else comes of it")
+#eq(bends("--3hb--------").len(), 1, "in particular, no hammer-on is invented")
+#eq(bends("--3hbr-------").first().release, true, "a release still folds in after")
+#eq(bends("--3hbr-------").first().amount, r.rat(1, den: 2), "…keeping the size")
+
+// The readings that existed before must not have moved.
+#eq(bends("--3b---------").first().amount, r.rat(1), "a bare `b` is still a whole step")
+#eq(bends("--3b5--------").first().amount, r.rat(1), "`3b5` is still two frets, a step")
+#eq(bends("--3b4--------").first().amount, r.rat(1, den: 2), "`3b4` is still one fret")
+#eq(bends("--3h5--------").first().kind, "hammer", "`h` with a target is still a hammer-on")
+#eq(bends("--3h5--------").first().fret, 5, "…pointing where it did")
+#eq(bends("--3bh5-------").len(), 2, "a bend followed by a hammer-on still reads as both")
+
+// A target names the pitch wanted, so it wins over a size given in letters.
+#eq(bends("--3hb5-------").first().amount, r.rat(1), "an explicit target beats `hb`")
+// A stray `f` is not a technique and must leave the note alone.
+#eq(bends("--3f---------").len(), 0, "a bare `f` adds nothing")

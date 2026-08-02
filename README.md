@@ -118,6 +118,10 @@ E|--------3--------|-----------------|
 ```)
 ```
 
+Techniques are read inline: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )`
+for ghost notes. `7b9` bends to the pitch of fret 9; `3hb` and `3fb` spell the
+size out instead — half and full.
+
 ASCII tab carries no rhythm, so this gets no stems or beams — it is spaced from
 the source's own columns. Everything missing can be supplied, a little at a
 time. Column-aligned annotation rows are the main way:

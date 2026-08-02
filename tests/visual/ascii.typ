@@ -31,3 +31,14 @@ D|--2---2---2---2-|--5---5---------|
 A|--2---2---2---2-|--5---5---------|
 E|--0---0---0---0-|--3---3---12----|
 ```)
+
+// Bend sizes spelled out in letters rather than implied by a target fret, which
+// has to reach the arrow's label: `hb` half, `fb` full.
+#ascii-tab(theme: vt, ```
+e|------------------|
+B|------------------|
+G|--3hb---3fb---3b5-|
+D|------------------|
+A|------------------|
+E|------------------|
+```)
