@@ -8,9 +8,11 @@ spacing, string lines broken around the fret numbers, beams grouped by the beat,
 and the technique symbols of an engraved rock transcription — bends, slurs,
 harmonics, palm mutes, repeat signs with flared serifs.
 
-**No font is required.** Every music symbol is a vector curve, because Typst
-packages cannot ship fonts, and a package that demands one you must install by
-hand is a package that renders wrong for most people.
+**No music font is required.** Every music symbol — every flag, rest, arrowhead,
+repeat sign and articulation — is a vector curve. Typst packages cannot ship
+fonts, and a package that needs one you must install by hand is a package that
+renders wrong for most people. Text still needs a text font, of course; any sans
+will do, and the Fonts section below covers the default.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.png">
@@ -155,9 +157,15 @@ once a sheet is as intended.
 
 ## Fonts
 
-Running text looks best in Montserrat, which Typst does not bundle. Without it a
-sheet still sets correctly in the next font of the chain, but Typst prints an
-`unknown font family: montserrat` warning. Either install it:
+Only the text needs a font: fret numbers, chord names, section headings and the
+technique words. The default chain is
+`("Montserrat", "Noto Sans", "DejaVu Sans")`, and any of the three sets a correct
+sheet.
+
+Montserrat is the one the proportions were drawn against, and Typst does not
+bundle it. Without it a sheet still sets correctly in the next font of the chain,
+but Typst prints an `unknown font family: montserrat` warning naming what to
+install. Either install it:
 
 ```sh
 mkdir -p ~/.local/share/fonts/montserrat
