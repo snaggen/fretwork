@@ -9,4 +9,4 @@ repository = "https://github.com/snaggen/tablature"
 keywords = ["guitar", "tablature", "tab", "music", "notation"]
 categories = ["visualization"]
 compiler = "0.13.0"
-exclude = ["research", "examples", "tests", "SPEC.md"]
+exclude = ["research", "examples", "tests", "SPEC.md", "NEXT.md", ".gitignore"]
