@@ -61,18 +61,18 @@ beat, and a second beam covers only the notes fast enough to need it.
 w 0/6 | h 0/6 0/6 | q 0/6 0/6 0/6 0/6
 | e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6
 | s 0/6 0/6 0/6 0/6 e 0/6 0/6 q 0/6 0/6
-| t 0/6 0/6 0/6 0/6 s 0/6 0/6 e 0/6 h 0/6 |.
+| t 0/6 0/6 0/6 0/6 s 0/6 0/6 e 0/6 0/6 h 0/6 |.
 ```)
 
 Dots and rests. Anything longer than a quarter carries a hollow head — with no
 notation stave underneath there is nothing else to tell a half note from a
 quarter.
 
-#src("q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 h 3/6 | q 0/6 r 3/6 r |.")
+#src("q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 2/6 h 3/6 | q 0/6 r 3/6 r | …")
 
 #tab(```
-q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 h 3/6 | q 0/6 r 3/6 r
-| h r w r |.
+q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 2/6 h 3/6 | q 0/6 r 3/6 r
+| h r h r | w r |.
 ```)
 
 Tuplets are groups with a numeric name. `{3: … }` is three in the time of two;
@@ -100,7 +100,7 @@ follows its own measured width, so a bar mixing one- and two-digit frets keeps
 its columns straight.
 
 #tab(```
-q 10/6 12/5 e 11/4 9/3 7/2 5/1 q 24/1 0/6 |.
+q 10/6 12/5 e 11/4 9/3 7/2 5/1 | q 24/1 0/6 h 12/3 |.
 ```)
 
 #pagebreak()
@@ -166,7 +166,7 @@ An arpeggio `A` and a rake `R` are wavy lines beside the chord, spanning the
 strings they touch:
 
 #tab(```
-q (0/1 2/2 2/3 1/4)A h (3/1 3/2 0/3 0/4)R |.
+q (0/1 2/2 2/3 1/4)A h (3/1 3/2 0/3 0/4)R q (0/1 2/2 2/3 1/4)A |.
 ```)
 
 Palm mute `{PM: … }` and let ring `{LR: … }` bracket whatever they wrap, and a
@@ -226,7 +226,7 @@ strings or of four needs nothing else said.
 #tab(
   tuning: tunings.bass,
   ```
-  q 0/4 e 3/4 5/4 q 0/4 e 7/4 5/4 h 0/4 |.
+  q 0/4 e 3/4 5/4 q 0/4 e 7/4 5/4 | w 0/4 |.
   ```,
 )
 
@@ -285,12 +285,12 @@ signature, and a string spends note values event by event.
 
 #ascii-tab(
   ```
-  e|--------------------------|
-  B|--------------------------|
-  G|--------------------------|
-  D|--------------7-----------|
-  A|--0---2---3---------------|
-  E|--------------------------|
+  e|--------------------|
+  B|--------------------|
+  G|--------------------|
+  D|----7---7---9---7---|
+  A|--0---2---3---2-----|
+  E|--------------------|
   ```,
   rhythm: even(1 / 8),
 )
@@ -357,7 +357,7 @@ them on an opaque patch instead. The type and the ink colour are arguments too.
 #tab(
   theme: theme(mask: "box", color: rgb("#1b3a5c")),
   ```
-  q 10/6 12/5 e 11/4 9/3 7/2 5/1 q 24/1 0/6 |.
+  q 10/6 12/5 e 11/4 9/3 7/2 5/1 | q 24/1 0/6 h 12/3 |.
   ```,
 )
 
@@ -411,3 +411,15 @@ note value is reported as unchecked rather than as wrong.
   )),))
   note[`model.validate(…)` → #raw(repr(model.validate(short)))]
 }
+
+`tab` and `ascii-tab` print what it finds on the page, because Typst gives a
+package no other channel for a problem that must not stop the compile: `panic`
+is its only diagnostic and it is fatal. Every other stave in this document adds
+up, so this is the one place the report appears — `warn: false` silences it once
+a sheet is as intended.
+
+#src("q 0/6 2/6 3/6 |.")
+
+#tab(```
+q 0/6 2/6 3/6 |.
+```)

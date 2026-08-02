@@ -51,6 +51,9 @@
     fill: rgb("#fdf3f0"),
     stroke: (left: 2pt + rgb("#b4491f")),
     inset: (x: 7pt, y: 5pt),
+    // Sticky, so a page break can never strand the report on one page and the
+    // music it describes on the next.
+    sticky: true,
     text(
       font: thm.font,
       size: thm.technique-size,
