@@ -55,7 +55,12 @@ git commit -q -m "$name:$version"
 echo
 git show --stat --oneline HEAD | head -40
 echo
-git push -u origin "$name-$version"
+# Force, because the branch is rebuilt from upstream's tip every run rather than
+# added to: a package submission should be one commit, and re-running this after
+# a review comment should update the pull request instead of stacking fixups
+# onto it. The branch exists only for this submission and its content is
+# regenerated from the package repository, so nothing unique lives here.
+git push --force origin "$name-$version"
 
 cat <<EOF
 
