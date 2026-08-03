@@ -33,14 +33,16 @@ E|--0---0---0---0-|--3---3---12----|
 ```)
 
 // Bend sizes spelled out in letters rather than implied by a target fret, which
-// has to reach the arrow's label: `hb` half, `fb` full.
+// has to reach the arrow's label: `hb` half, `fb` full. The last pair is the
+// case that used to lose both marks — the size is spelled, so the 5 is the next
+// note and not the bend's target.
 #ascii-tab(theme: vt, ```
-e|------------------|
-B|------------------|
-G|--3hb---3fb---3b5-|
-D|------------------|
-A|------------------|
-E|------------------|
+e|--------------------------------|
+B|--------------------------------|
+G|---3hb----3fb----3b5----7fb5----|
+D|--------------------------------|
+A|--------------------------------|
+E|--------------------------------|
 ```)
 
 // Ending rows and a section heading in the middle of the piece. `1:`/`2:`

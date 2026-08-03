@@ -207,16 +207,20 @@ E|--------3--------|-----------------|
   are separate strikes. This is the universal convention and the only reading
   that makes sense of both `-11-` and `-1-1-`.
 - `|` becomes a barline.
-- Techniques are read inline: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )`
-  for ghost notes. `7b9` bends to the pitch of fret 9 — two frets to a step.
+- Techniques are read inline: `h` `p` `s` `/` `\` `b` `r` `~` `v` `x` `*` `t`,
+  and `( )` for ghost notes. `7b9` bends to the pitch of fret 9 — two frets to a
+  step.
 - A bend must rise: `5b3` attaches no arrow and is reported, since `(3−5)/2`
   steps is not a bend. The note itself survives.
+- A bend later in a chain measures from where the chain has arrived, not from
+  the struck fret: `5h7b9` bends the hammered 7 up to 9, one step.
 - `hb` and `fb` spell a bend's size out in letters instead of implying it from a
-  target fret: half and full. Despite `h` otherwise meaning a hammer-on this is
-  unambiguous, because a hammer-on always writes its target as digits, so an `h`
-  pressed directly against a `b` can only be a size. Where a tab gives both, as
-  in `3hb5`, the target wins — it names the pitch wanted rather than merely how
-  far to travel.
+  target fret: half bend and full bend. Despite `h` otherwise meaning a
+  hammer-on this is unambiguous, because a hammer-on always writes its target as
+  digits, so an `h` pressed directly against a `b` can only be a size. A spelled
+  size already says how far the bend goes, so digits after it are the next note:
+  `7fb5` is a full bend on the 7th fret and then the 5th. `fbr` and `hbr` fold
+  the release in, as with any other bend.
 - Blocks of N rows stacked one after another concatenate into one continuous
   passage, not into separate pieces.
 - Lines that are neither string rows nor known annotation rows are skipped with

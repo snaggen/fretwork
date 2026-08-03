@@ -182,15 +182,20 @@
 
       // A chain of techniques may follow, each optionally naming a target fret.
       let held = ()
+      // Where the chain has arrived. A hammer-on, pull-off or slide moves it, so
+      // a bend later in the chain measures from there: in `5h7b9` the bend runs
+      // from the hammered 7 up to 9, one step, not from the struck 5.
+      let reached = fret
       while i < chars.len() and chars.at(i) in _TECHNIQUE-CHARS {
         let mark = chars.at(i)
         i += 1
 
-        // `hb` and `fb` spell the size of a bend out in letters — half and full
-        // — instead of leaving it to be worked out from a target fret. Common
-        // enough in pasted tabs to be worth reading, and unambiguous despite `h`
-        // otherwise meaning a hammer-on: a hammer-on always writes its target as
-        // digits, so an `h` pressed directly against a `b` can only be this.
+        // `hb` and `fb` spell the size of a bend out in letters instead of
+        // leaving it to be worked out from a target fret: half bend and full
+        // bend, as the legends that define them put it. Unambiguous despite `h`
+        // otherwise meaning a hammer-on, because a hammer-on always writes its
+        // target as digits, so an `h` pressed directly against a `b` can only be
+        // this.
         let spelled = none
         if mark in ("h", "f") and i < chars.len() and chars.at(i) == "b" {
           spelled = if mark == "h" { r.rat(1, den: 2) } else { r.rat(1) }
@@ -199,33 +204,39 @@
         }
 
         let target = none
-        let d = i
-        while d < chars.len() and chars.at(d) in _DIGITS { d += 1 }
-        if d > i {
-          target = int(chars.slice(i, d).join())
-          i = d
+        // Digits after a spelled size are the next note, not a target: `7fb5` is
+        // a full bend on the 7th fret and then the 5th, and reading the 5 as a
+        // target both swallowed the note and refused the bend for not rising.
+        if spelled == none {
+          let d = i
+          while d < chars.len() and chars.at(d) in _DIGITS { d += 1 }
+          if d > i {
+            target = int(chars.slice(i, d).join())
+            i = d
+          }
         }
         if mark in _LINKING {
           // Resolved here when the target is adjacent, held for the next note
           // on the row when it is not.
-          if target != none { techniques.push(_resolve(mark, target)) } else { held.push(mark) }
+          if target != none {
+            techniques.push(_resolve(mark, target))
+            reached = target
+          } else { held.push(mark) }
         } else if mark == "b" {
           // `7b9` bends up to the pitch of fret 9: two frets to a whole step. A
-          // target says which pitch is wanted rather than merely how far to go,
-          // so it wins over a spelled size when a tab gives both; a bare `b` is
-          // a whole step, which is what an unqualified bend means.
-          if target != none and target <= fret {
+          // bare `b` is a whole step, which is what an unqualified bend means.
+          if target != none and target <= reached {
             // A bend can only rise. `5b3` used to come out as an upward arrow
             // labelled "−1" — nonsense set in ink. The note survives; only the
             // arrow is refused.
             warnings.push(
-              "bend " + str(fret) + "b" + str(target)
+              "bend " + str(reached) + "b" + str(target)
                 + " does not rise; ignored (a release is written "
-                + str(fret) + "b" + str(fret + 2) + "r" + str(fret) + ")",
+                + str(reached) + "b" + str(reached + 2) + "r" + str(reached) + ")",
             )
           } else {
             let amount = if target != none {
-              r.rat(target - fret, den: 2)
+              r.rat(target - reached, den: 2)
             } else if spelled != none {
               spelled
             } else {

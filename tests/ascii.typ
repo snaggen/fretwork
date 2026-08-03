@@ -265,18 +265,22 @@ E|---------|```).part.measures.first().events.len(),
 )
 
 // --- bend sizes spelled out in letters ------------------------------------
-// `hb` and `fb` are common in pasted tabs. The reading has to stay unambiguous
-// against `h` for hammer-on, which it is: a hammer-on always writes its target
-// as digits, so an `h` pressed directly against a `b` can only be a size.
+// `hb` and `fb` are common in pasted tabs: half bend and full bend. The reading
+// has to stay unambiguous against `h` for hammer-on, which it is: a hammer-on
+// always writes its target as digits, so an `h` pressed directly against a `b`
+// can only be a size.
 
-#let bends(row) = {
+#let row-src(row) = {
   let pad = "-------------"
-  let src = "e|" + pad + "|\nB|" + pad + "|\nG|" + row + "|\nD|" + pad + "|\nA|" + pad + "|\nE|" + pad + "|"
-  parse(src).part.measures.first().events.first().notes.first().techniques
+  "e|" + pad + "|\nB|" + pad + "|\nG|" + row + "|\nD|" + pad + "|\nA|" + pad + "|\nE|" + pad + "|"
 }
+#let events(row) = parse(row-src(row)).part.measures.first().events
+#let bends(row) = events(row).first().notes.first().techniques
 
 #eq(bends("--3hb--------").first().amount, r.rat(1, den: 2), "`hb` is a half bend")
 #eq(bends("--3fb--------").first().amount, r.rat(1), "`fb` is a full bend")
+#eq(bends("--3fbr-------").first().release, true, "`fbr` is a full bend and release")
+#eq(bends("--3fbr-------").first().amount, r.rat(1), "…still a whole step")
 #eq(bends("--3hb--------").first().kind, "bend", "…and nothing else comes of it")
 #eq(bends("--3hb--------").len(), 1, "in particular, no hammer-on is invented")
 #eq(bends("--3hbr-------").first().release, true, "a release still folds in after")
@@ -290,8 +294,24 @@ E|---------|```).part.measures.first().events.len(),
 #eq(bends("--3h5--------").first().fret, 5, "…pointing where it did")
 #eq(bends("--3bh5-------").len(), 2, "a bend followed by a hammer-on still reads as both")
 
-// A target names the pitch wanted, so it wins over a size given in letters.
-#eq(bends("--3hb5-------").first().amount, r.rat(1), "an explicit target beats `hb`")
+// A spelled size already says how far the bend goes, so digits after it are the
+// next note. `7fb5` is a full bend and then the 5th fret — reading the 5 as a
+// target swallowed the note and refused the bend for not rising.
+#eq(bends("--7fb5-------").first().amount, r.rat(1), "digits after `fb` leave the size alone")
+#eq(events("--7fb5-------").len(), 2, "…and the fret after it is a note of its own")
+#eq(events("--7fb5-------").last().notes.first().fret, 5, "…at the fret written")
+#eq(
+  parse(row-src("--7fb5-------")).warnings.len(),
+  0,
+  "…with nothing to report, since no bend was asked to fall",
+)
+
+// A bend later in a chain measures from where the chain has arrived, not from
+// the struck fret: `5h7b9` bends the hammered 7 up to 9, one step, not two.
+#let chain = bends("--5h7b9------")
+#eq(chain.first().kind, "hammer", "`5h7b9` still hammers first")
+#eq(chain.last().amount, r.rat(1), "…and bends a whole step from the hammered fret")
+
 // A stray `f` is not a technique and must leave the note alone.
 #eq(bends("--3f---------").len(), 0, "a bare `f` adds nothing")
 
