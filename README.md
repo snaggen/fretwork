@@ -178,7 +178,9 @@ fc-cache -f ~/.local/share/fonts
 or name a chain you already have:
 
 ```typst
-#tab(theme: theme(font: ("Noto Sans", "DejaVu Sans")), ```…```)
+#tab(theme: theme(font: ("Noto Sans", "DejaVu Sans")), ```
+q 0/6 e 2/5 2/4 h 3/6 |
+```)
 ```
 
 Montserrat ships as a variable font, which is why the manifest requires Typst

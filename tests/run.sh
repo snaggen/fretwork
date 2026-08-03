@@ -77,6 +77,13 @@ if [ $# -eq 0 ]; then
   fail=$((fail + $?))
 fi
 
+# The README is the package's Universe page, and Universe parses its snippets
+# with the Typst parser. A snippet that does not parse is a review comment.
+if [ $# -eq 0 ]; then
+  "$root/tests/readme.py"
+  fail=$((fail + $?))
+fi
+
 # Renders last: they are the slowest, and a difference in the output is only
 # worth reading once the model and the parsers are known to be right. The
 # runner prints its own results and exits with the number that differed.
