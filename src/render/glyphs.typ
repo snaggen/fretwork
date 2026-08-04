@@ -25,6 +25,14 @@
 /// Anchor a drawing at the glyph's top-left corner.
 #let _draw(el) = place(top + left, dx: 0pt, dy: 0pt, el)
 
+/// Place a filled rectangle by its top-left corner.
+#let _slab(x, y, w, h, fill) = place(
+  top + left,
+  dx: x,
+  dy: y,
+  rect(width: w, height: h, fill: fill, stroke: none),
+)
+
 /// Place a filled circle by its centre.
 #let _blob(cx, cy, r, fill) = place(
   top + left,
@@ -44,15 +52,39 @@
 // Rests
 // ---------------------------------------------------------------------------
 
-/// Whole rest: a block hanging below the line it is measured from.
-#let whole-rest(sp, fill: black) = _glyph(
-  1.15 * sp,
-  0.45 * sp,
-  _draw(rect(width: 1.15 * sp, height: 0.45 * sp, fill: fill, stroke: none)),
-)
+/// A whole or half rest: the block, and the line it is measured from.
+///
+/// The two are the same block and are told apart only by which side of a line
+/// it lies on — hanging below for a whole rest, sitting on top for a half. On a
+/// notation staff that line is the staff's own, and the glyph is just the
+/// block. The rhythm lane has no staff, so the glyph has to bring its own line;
+/// without it the block floats and the two rests are one picture.
+///
+/// The line sits at the glyph's vertical centre in both, so a caller that
+/// centres them puts the line at one height and the blocks on opposite sides.
+#let _block-rest(sp, fill, hanging) = {
+  // The line has to reach well past the block on both sides, or it reads as a
+  // serif on the block rather than as the line the block is measured from.
+  let w = 1.95 * sp
+  let block-w = 1.15 * sp
+  let mid = 0.50 * sp
+  _glyph(w, 1.0 * sp, {
+    _slab(0pt, mid - 0.05 * sp, w, 0.10 * sp, fill)
+    _slab(
+      (w - block-w) / 2,
+      if hanging { mid } else { mid - 0.45 * sp },
+      block-w,
+      0.45 * sp,
+      fill,
+    )
+  })
+}
 
-/// Half rest: the same block, sitting on its line.
-#let half-rest(sp, fill: black) = whole-rest(sp, fill: fill)
+/// Whole rest: a block hanging below the line it is measured from.
+#let whole-rest(sp, fill: black) = _block-rest(sp, fill, true)
+
+/// Half rest: the same block, sitting on that line.
+#let half-rest(sp, fill: black) = _block-rest(sp, fill, false)
 
 /// Quarter rest: the zigzag, ending in a curl.
 ///

@@ -76,8 +76,10 @@
 
         if ev.kind == "rest" {
           let rest = g.rest-for(sp, flags, fill: theme.color)
-          // Whole and half rests hang from and sit on the middle of the lane;
-          // the others are centred there.
+          // Centring is right for every rest: the flagged ones are drawn about
+          // their own middle, and the whole and half rests each carry the line
+          // they are measured from at their middle, so centring puts that line
+          // at one height and their blocks on opposite sides of it.
           place(
             top + left,
             dx: pe.x - rest.width / 2,
