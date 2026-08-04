@@ -120,7 +120,7 @@
           // fret number on the lowest string hangs below it. The staff lane
           // reserves both rather than overflowing into its neighbours.
           let over = tabstaff.overflow-above(thm, sys)
-          let under = tabstaff.overflow-below(thm, sys)
+          let under = tabstaff.overflow-below(thm, strings, sys)
           lane(over + tabstaff.height(thm, strings) + under, () => tabstaff.draw(
             thm,
             strings,

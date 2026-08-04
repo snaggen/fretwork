@@ -30,6 +30,11 @@
   q 5/3h7 7/3p5 5/3s7 5/3S7 |.
   ```)
 
+  caption[A tie hangs under its line — the mirror of the slur above, so neither can be read for the other:]
+  tab(theme: thm, ```
+  h 5/3~ q 5/3 7/3 | h (5/1 5/2 5/3)~ (5/1 5/2 5/3) |.
+  ```)
+
   caption[Bend, half-step bend, bend and release, pre-bend. Every arrow in a system ends level:]
   tab(theme: thm, ```
   q 7/3b 7/3b(1/2) 7/3br 7/3B |.

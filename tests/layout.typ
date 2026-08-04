@@ -146,6 +146,7 @@
     layout-part(thm, part, widths, 120mm, thm.tab-mark-width).first()
   }
   let over(src) = tabstaff.overflow-above(thm, system(src))
+  let under(src) = tabstaff.overflow-below(thm, 6, system(src))
 
   eq(over("q 0/6 0/6 0/6 0/6"), 0pt, "plain notes need no room above the staff")
   ok(over("q 7/1b 0/6 0/6 0/6") > 0pt, "a bend on the top string does")
@@ -171,9 +172,25 @@
     tabstaff.slur-apex(thm, span, side: true) < thm.staff-space,
     "…and below the line one space up, which is what it has to clear",
   )
+  // A tie is drawn under its line, so it reserves nothing above — and below only
+  // when it is on the lowest string, where it leaves the staff.
+  eq(over("q 5/1~ 5/1 0/6 0/6"), 0pt, "a tie asks for no room above the staff")
+  eq(
+    under("q 5/1~ 5/1 0/6 0/6"),
+    under("q 5/1 5/1 0/6 0/6"),
+    "…nor below, while it hangs inside the staff",
+  )
   ok(
-    over("q (5/1 5/2)~ 0/6 0/6 0/6") < over("q 5/1~ 0/6 0/6 0/6"),
-    "so a tied chord reserves less room above the staff than a tied lone note",
+    under("q 5/6~ 5/6 0/6 0/6") > under("q 5/1~ 5/1 0/6 0/6"),
+    "…but a tie on the lowest string hangs past it, and that has to be reserved",
+  )
+  ok(
+    tabstaff.tie-depth(thm, span, side: true) < tabstaff.tie-depth(thm, span),
+    "a chord's tie, leaving the numbers' flanks, dips less than a lone note's",
+  )
+  ok(
+    tabstaff.tie-depth(thm, span) < thm.staff-space,
+    "…and neither reaches the line below, which is what they must clear",
   )
 
   // An ornate repeat sign's serifs reach past the staff at both ends, so the
@@ -194,8 +211,8 @@
     "…but only where there is a repeat to draw",
   )
   ok(
-    tabstaff.overflow-below(ornate, ornate-system("|: q 0/6 0/6 0/6 0/6 :|"))
-      > tabstaff.overflow-below(thm, system("|: q 0/6 0/6 0/6 0/6 :|")),
+    tabstaff.overflow-below(ornate, 6, ornate-system("|: q 0/6 0/6 0/6 0/6 :|"))
+      > tabstaff.overflow-below(thm, 6, system("|: q 0/6 0/6 0/6 0/6 :|")),
     "and room below, which the plain style does not need",
   )
 }

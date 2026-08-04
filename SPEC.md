@@ -372,6 +372,16 @@ Looking good is a stated goal, so it is specified as testable requirements.
    attaches at the digit's upper part rather than level with its middle: level
    with the line, the arc and the line enclose a sliver and read as one closed
    shape.
+
+   **A tie hangs under its line and curves down**, mirroring the slur. Drawn
+   upward it is the same mark as a hammer-on's slur, and nothing in the picture
+   tells the reader which is meant. Hal Leonard never faces this, because it
+   draws no tie arcs in tablature at all — the held note is simply not struck
+   again, or is set in parentheses, with the tie left to the notation staff — so
+   the reference here is Songsterr, which renders tablature alone and flips the
+   tie. Ties stay shallow, inside their own string's space, since the line below
+   is close; a chord's tie leaves the flanks, shallower still, because under a
+   stacked number the next string is right there.
 10. **A bracketed span is closed by a tick that crosses its rule**, not one that
    merely hangs off it, and the dashed rule meets its label near the baseline
    rather than at the cap. Dash and gap are each about 0.3 staff spaces.

@@ -88,10 +88,16 @@ Tuplets are groups with a numeric name. `{3: … }` is three in the time of two;
 A chord is notes written in one column. `x` deadens a string, or all six at
 once. `~` ties a note into the next one on the same string.
 
-#src("q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)")
+A tie hangs *under* its line and curves down — the mirror of the slur that
+arches over a hammer-on above, so the two marks can never be read for each
+other. Under a stacked number there is no room, the next string being right
+there, so a chord's ties leave the numbers' flanks instead.
+
+#src("h 5/3~ q 5/3 7/3 | q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~")
 
 #tab(```
-q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)
+h 5/3~ q 5/3 7/3
+| q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~ | w (2/5 2/4 0/6)
 | q x x/5 (x/1 x/2 x/3) x |.
 ```)
 

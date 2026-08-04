@@ -48,6 +48,27 @@
 #let _SLUR-SIDE-RISE-MIN = 0.16
 #let _SLUR-SIDE-SLOPE = 0.07
 
+// A tie hangs *under* its note line, curving down — the mirror of the slur above
+// it. Drawn upward it is the same mark as a hammer-on's slur, and nothing in the
+// picture tells the reader which one is meant. Hal Leonard never faces this,
+// because it draws no tie arcs in tablature at all: the held note is simply not
+// struck again, or is set in parentheses, with the tie left to the notation
+// staff. A package with no staff to put it on has to draw it, so the reference
+// here is Songsterr, which renders tablature alone and flips the tie.
+//
+// Shallow, so it stays inside its own string's space whatever the span.
+#let _TIE-TAIL = 0.40
+#let _TIE-DROP-MAX = 0.30
+#let _TIE-DROP-MIN = 0.14
+#let _TIE-SLOPE = 0.07
+
+// Stacked numbers leave nothing under the digit to hang a tie from — the next
+// string's number is right there. A chord's tie leaves the flank instead, a
+// little below the middle so it is plainly this number's and not the line's, and
+// stays shallower so it clears the number below.
+#let _TIE-SIDE-TAIL = 0.20
+#let _TIE-SIDE-DROP-MAX = 0.25
+
 // A bend arrow leaves the side of its fret number rather than the top.
 #let _BEND-TAIL = 0.42 // how far above the note line it starts
 #let _BEND-MIN-RISE = 1.6 // the shortest arrow drawn, for notes near the top line
@@ -74,6 +95,18 @@
     apex = if apex < 1.0 { _SLUR-CLEAR-UNDER } else { _SLUR-CLEAR-OVER }
   }
   apex * sp
+}
+
+/// How far a tie dips below the note line, for a given horizontal span.
+///
+/// Bounded rather than growing with the span, unlike a slur: a tie must stay in
+/// its own string's space however long it is, since the line and the number
+/// below it are both close.
+#let tie-depth(theme, span, side: false) = {
+  let sp = theme.staff-space
+  let tail = if side { _TIE-SIDE-TAIL } else { _TIE-TAIL }
+  let most = if side { _TIE-SIDE-DROP-MAX } else { _TIE-DROP-MAX }
+  tail * sp + calc.max(_TIE-DROP-MIN * sp, calc.min(most * sp, span * _TIE-SLOPE))
 }
 
 /// Where a bend arrow's head sits, as a y in staff coordinates.
@@ -297,23 +330,23 @@
   }
 }
 
-/// The slur joining a hammer-on or pull-off to its target.
+/// The curve both slurs and ties are drawn as.
 ///
-/// Hal Leonard prints the same slur for both: which one it is follows from
-/// whether the pitch rises or falls, so no letter is needed.
-/// Drawn as a filled lens rather than a stroked curve, so it swells in the
-/// middle and tapers to a point at each end the way an engraved slur does. A
+/// A filled lens rather than a stroked curve, so it swells in the middle and
+/// tapers to a point at each end the way an engraved slur does. A
 /// constant-thickness stroke reads as a wire.
-#let _slur(theme, x0, x1, y, side: false) = {
-  let sp = theme.staff-space
+///
+/// `tail` is how far from the note line it leaves, `reach` how far from that
+/// line it gets at its furthest; `down` mirrors the whole thing under the line.
+#let _arc(theme, x0, x1, y, tail, reach, down: false) = {
+  let dir = if down { -1.0 } else { 1.0 }
   let span = x1 - x0
-  let tail = if side { _SLUR-SIDE-TAIL } else { _SLUR-TAIL }
-  let ends = y - tail * sp
+  let ends = y - dir * tail
   // A cubic peaks at three quarters of its control offset, so the controls sit
-  // higher than the apex they produce.
-  let lift = (slur-apex(theme, span, side: side) - tail * sp) * 4 / 3
-  let outer = ends - lift
-  let inner = outer + _SLUR-WEIGHT * sp * 4 / 3
+  // further from the line than the apex they produce.
+  let lift = (reach - tail) * 4 / 3
+  let outer = ends - dir * lift
+  let inner = outer + dir * _SLUR-WEIGHT * theme.staff-space * 4 / 3
 
   place(top + left, dx: 0pt, dy: 0pt, curve(
     fill: theme.color,
@@ -323,6 +356,21 @@
     curve.cubic((x0 + span * 0.7, inner), (x0 + span * 0.3, inner), (x0, ends)),
     curve.close(mode: "straight"),
   ))
+}
+
+/// The slur joining a hammer-on or pull-off to its target.
+///
+/// Hal Leonard prints the same slur for both: which one it is follows from
+/// whether the pitch rises or falls, so no letter is needed.
+#let _slur(theme, x0, x1, y, side: false) = {
+  let tail = (if side { _SLUR-SIDE-TAIL } else { _SLUR-TAIL }) * theme.staff-space
+  _arc(theme, x0, x1, y, tail, slur-apex(theme, x1 - x0, side: side))
+}
+
+/// The tie joining a note to the next strike of the same string.
+#let _tie(theme, x0, x1, y, side: false) = {
+  let tail = (if side { _TIE-SIDE-TAIL } else { _TIE-TAIL }) * theme.staff-space
+  _arc(theme, x0, x1, y, tail, tie-depth(theme, x1 - x0, side: side), down: true)
 }
 
 /// The diagonal joining a slide to its target.
@@ -468,20 +516,6 @@
         // with the span, so an upper bound reserves enough.
         over = calc.max(over, slur-apex(theme, pe.alloc, side: side) + 0.15 * sp - y)
       }
-      if n.techniques.any(t => t.kind == "tie") {
-        // A tie is different: it runs to the next event that plays this string,
-        // which may be several events away — over rests, past other strings'
-        // notes — so its span can far exceed the allocation. Reserving by the
-        // allocation let a tie over rests run through the rhythm lane above.
-        let span = pe.alloc
-        for j in range(i + 1, placed.len()) {
-          if placed.at(j).event.notes.any(o => o.string == n.string) {
-            span = calc.max(span, placed.at(j).x - pe.x)
-            break
-          }
-        }
-        over = calc.max(over, slur-apex(theme, span, side: side) + 0.15 * sp - y)
-      }
       if n.techniques.any(t => t.kind == "rake") {
         over = calc.max(over, 0.45 * sp + theme.technique-size * 1.3 - y)
       }
@@ -493,16 +527,37 @@
 /// How far the drawing reaches below the bottom string line.
 ///
 /// A fret number is centred on its line, so half of one on the lowest string
-/// hangs below the staff. Unlike `overflow-above` this does not depend on the
-/// music — every system has a bottom string — but it must still be reserved, or
-/// the count row rides up into the numbers.
+/// hangs below the staff whatever the music does. A tie on that lowest string
+/// hangs further, since ties are drawn under their line.
 ///
 /// Must be called from a context: the fret label is measured.
-#let overflow-below(theme, system) = {
-  let below = measure(fret-label(theme, 0)).height / 2 + 0.15 * theme.staff-space
+#let overflow-below(theme, strings, system) = {
+  let sp = theme.staff-space
+  let bottom = string-y(theme, strings)
+  let below = measure(fret-label(theme, 0)).height / 2 + 0.15 * sp
   if _has-repeat(theme, system) {
-    calc.max(below, repeat-serif-reach(theme))
-  } else { below }
+    below = calc.max(below, repeat-serif-reach(theme))
+  }
+  let placed = system.measures.map(m => m.events).flatten()
+  for (i, pe) in placed.enumerate() {
+    for n in pe.event.notes {
+      if not n.techniques.any(t => t.kind == "tie") { continue }
+      // A tie runs to the next event that plays this string, which may be
+      // several events away — over rests, past other strings' notes — so its
+      // span can far exceed the allocation, and the dip grows with the span.
+      let span = pe.alloc
+      for j in range(i + 1, placed.len()) {
+        if placed.at(j).event.notes.any(o => o.string == n.string) {
+          span = calc.max(span, placed.at(j).x - pe.x)
+          break
+        }
+      }
+      let side = pe.event.notes.len() > 1
+      let reach = string-y(theme, n.string) + tie-depth(theme, span, side: side) + 0.15 * sp
+      below = calc.max(below, reach - bottom)
+    }
+  }
+  below
 }
 
 /// The vertical TAB mark that opens every system.
@@ -715,7 +770,7 @@
     bars.push(place(top + left, dx: m.end - b.width, dy: 0pt, b.body))
   }
 
-  box(width: width, height: overflow + h + overflow-below(theme, system), place(top + left, dy: overflow, box(
+  box(width: width, height: overflow + h + overflow-below(theme, strings, system), place(top + left, dy: overflow, box(
     width: width,
     height: h,
     {
@@ -776,6 +831,8 @@
           // them attaches wherever the event's shape allows.
           _slide-line(theme, c.edge.at(0), c.edge.at(1), c.y, c.rising)
           if c.legato { _slur(theme, c.from, c.to, c.y, side: c.side) }
+        } else if c.kind == "tie" {
+          _tie(theme, c.from, c.to, c.y, side: c.side)
         } else {
           _slur(theme, c.from, c.to, c.y, side: c.side)
         }
