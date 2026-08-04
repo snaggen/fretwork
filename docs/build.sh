@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Render the README illustrations, light and dark, and crop each to its ink.
+# Render the README illustrations and the user guide, light and dark.
 #
 # Typst Universe renders the README in the reader's own colour scheme, so every
 # figure exists twice and the README picks between them with a <picture> element.
 # The images are committed (Universe needs them) but excluded from the package
 # bundle, since nothing importing the package ever reads them.
+#
+# The README figures are cropped to their ink so they carry no arbitrary white
+# space; the guide's pages are not, being pages rather than figures.
 #
 # Usage: docs/build.sh
 set -euo pipefail
@@ -44,6 +47,31 @@ for mode in light dark; do
   render techniques showcase.typ "$mode" "--input figure=techniques"
   render ascii showcase.typ "$mode" "--input figure=ascii"
 done
+
+# The guide is many pages and goes straight to docs/, uncropped. 130 dpi rather
+# than the figures' resolution: 195 mm at 130 dpi is just under a thousand
+# pixels, about what a browser gives a markdown column, and every pixel past
+# that is bytes in the repository for nothing on the screen.
+rm -f "$root/docs"/guide-*.png
+for mode in light dark; do
+  typst compile --root "$root" "$root/docs/guide.typ" \
+    "$root/docs/guide-$mode-{0p}.png" --ppi 130 --input "mode=$mode"
+done
+
+# GUIDE.md is generated rather than maintained, because it is nothing but a list
+# of the pages that were just rendered. Written by hand it would quietly lose
+# the last page the first time the guide grew by one.
+pages=$(ls -1 "$root/docs"/guide-light-*.png | wc -l)
+{
+  cat "$root/docs/guide-preamble.md"
+  for p in $(seq 1 "$pages"); do
+    printf '\n<picture>\n'
+    printf '  <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-%s.png">\n' "$p"
+    printf '  <img alt="fretwork guide, page %s of %s" src="docs/guide-light-%s.png" width="100%%">\n' \
+      "$p" "$pages" "$p"
+    printf '</picture>\n'
+  done
+} > "$root/GUIDE.md"
 
 python3 - "$tmp" "$root/docs" <<'PY'
 import pathlib

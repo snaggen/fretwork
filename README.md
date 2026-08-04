@@ -188,13 +188,19 @@ Montserrat ships as a variable font, which is why the manifest requires Typst
 numbers as thin outlines. Music symbols are unaffected either way — they are
 vectors, not glyphs.
 
+## The whole syntax
+
+[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/GUIDE.md) is a
+table of every construct the package understands, with what each one draws set
+beside it — rendered from the same string, so a row cannot be out of date.
+
 ## Scope
 
 Version 0.1 is tablature only: no notation staff, chord diagrams or lyrics. The
 model and layout engine were built so a notation staff can be added as one more
 lane without rewriting them —
 [`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/SPEC.md) says how,
-and documents the syntax in full.
+and gives the reasoning behind the design.
 
 ## Examples
 

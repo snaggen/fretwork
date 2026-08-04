@@ -11,7 +11,7 @@ This reads the rendered PDFs rather than the sources, so it asserts exactly what
 a reader sees. `demo.typ` ends with one report on purpose, where the text
 explains it; that one is expected and its count is pinned.
 
-    tests/examples.py            check every example
+    tests/examples.py            check every example and docs source
     tests/examples.py demo       check one
 """
 
@@ -22,7 +22,10 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-EXAMPLES = ROOT / "examples"
+# The docs sources are checked alongside the examples. They render the README
+# figures and the guide, so a construct that stops compiling breaks the
+# package's own documentation before anyone reads it.
+SOURCE_DIRS = ("examples", "docs")
 
 # How many diagnostics each example is allowed to print. Anything not listed
 # must print none.
@@ -71,24 +74,26 @@ def diagnostics(path: pathlib.Path) -> list[str] | None:
 
 def main() -> int:
     names = sys.argv[1:]
+    all_files = [p for d in SOURCE_DIRS for p in sorted((ROOT / d).glob("*.typ"))]
     files = (
-        [EXAMPLES / f"{n.removesuffix('.typ')}.typ" for n in names]
+        [p for p in all_files if p.stem in {n.removesuffix(".typ") for n in names}]
         if names
-        else sorted(EXAMPLES.glob("*.typ"))
+        else all_files
     )
     failed = 0
     for path in files:
+        label = f"{path.parent.name}/{path.stem}"
         found = diagnostics(path)
         if found is None:
-            print(f"  FAIL  examples/{path.stem} (does not compile)")
+            print(f"  FAIL  {label} (does not compile)")
             failed += 1
             continue
         allowed = EXPECTED.get(path.stem, 0)
         if len(found) == allowed:
             note = f" ({allowed} expected)" if allowed else ""
-            print(f"  ok    examples/{path.stem}{note}")
+            print(f"  ok    {label}{note}")
         else:
-            print(f"  FAIL  examples/{path.stem}: {len(found)} diagnostic(s), expected {allowed}")
+            print(f"  FAIL  {label}: {len(found)} diagnostic(s), expected {allowed}")
             for f in found:
                 print(f"        {f}")
             failed += 1
