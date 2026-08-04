@@ -251,6 +251,24 @@
   )),
 )
 
+/// Fermata: a shallow arc with a dot beneath its apex — "hold this".
+///
+/// The arc is drawn as a stroke of even weight rather than as a tapered lens,
+/// unlike a slur. A fermata is a sign, not a line joining two notes, and at
+/// this size a taper reads as a printing fault.
+#let fermata(sp, fill: black) = {
+  let w = 1.30 * sp
+  let h = 0.72 * sp
+  _glyph(w, h, {
+    _draw(curve(
+      stroke: _stroke(sp, 0.11, fill),
+      curve.move((0.04 * sp, h)),
+      curve.cubic((0.10 * sp, 0.02 * sp), (w - 0.10 * sp, 0.02 * sp), (w - 0.04 * sp, h)),
+    ))
+    _blob(w / 2, h - 0.15 * sp, 0.11 * sp, fill)
+  })
+}
+
 /// Downstroke: the square bracket of a down pick.
 #let downstroke(sp, fill: black) = _glyph(
   0.55 * sp,

@@ -57,13 +57,23 @@
   names
 }
 
-/// Techniques of a kind carried by any note of an event.
-#let _event-techniques(ev, kind) = ev.notes.map(n => get-technique(n, kind)).filter(t => t != none)
+/// Techniques of a kind carried by an event, whether written on one of its
+/// notes or on the event itself.
+///
+/// A rest and a bare mute have no note to hang a suffix on, so theirs are
+/// recorded on the event — which is the only way a fermata can hold a rest.
+#let _event-techniques(ev, kind) = {
+  let own = ev.at("techniques", default: ()).filter(t => t.kind == kind)
+  own + ev.notes.map(n => get-technique(n, kind)).filter(t => t != none)
+}
 
 #let _ARTICULATIONS = ("accent", "marcato", "staccato", "tenuto", "stroke")
 
 /// Marks that print as a word followed by a wavy line running over the event.
-#let _WAVY-LABELS = (trill: "tr", scrape: "P.S.")
+#let _WAVY-LABELS = (trill: "tr", scrape: "P.S.", bar-vibrato: "w/ bar")
+
+/// Bass right-hand techniques, which print as a letter over the note.
+#let _BASS-LABELS = (slap: "S", pop: "P", dead-slap: "DS")
 
 /// Vertical clearance between two levels of marks.
 #let _LEVEL-GAP = 0.15
@@ -129,6 +139,25 @@
     }
   }
   if artic.len() > 0 { groups.push(artic) }
+
+  // --- the bass right hand: a letter over the note it strikes ---
+  let bass = ()
+  for pe in placed {
+    for kind in _BASS-LABELS.keys() {
+      if _event-techniques(pe.event, kind).len() == 0 { continue }
+      let body = _label(theme, _BASS-LABELS.at(kind))
+      let w = measure(body).width
+      let x = pe.x - w / 2
+      bass.push((
+        x0: x,
+        x1: x + w,
+        height: theme.technique-size * 1.3,
+        draw: y => place(top + left, dx: x, dy: y, body),
+      ))
+      break
+    }
+  }
+  if bass.len() > 0 { groups.push(bass) }
 
   // --- vibrato ---
   let vibrato = ()
@@ -240,6 +269,24 @@
     }
   }
   if spans.len() > 0 { groups.push(spans) }
+
+  // --- fermata ---
+  // Last, so it takes the outermost level: a fermata governs everything written
+  // under it, and printing it below an accent or a palm mute bracket would read
+  // as though it applied only to what is between them.
+  let holds = ()
+  for pe in placed {
+    if _event-techniques(pe.event, "fermata").len() == 0 { continue }
+    let glyph = g.fermata(sp, fill: theme.color)
+    let x = pe.x - glyph.width / 2
+    holds.push((
+      x0: x,
+      x1: x + glyph.width,
+      height: glyph.height,
+      draw: y => place(top + left, dx: x, dy: y, glyph.body),
+    ))
+  }
+  if holds.len() > 0 { groups.push(holds) }
 
   groups
 }

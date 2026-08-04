@@ -32,7 +32,10 @@
   ("PH", "harmonic-pinch"),
   ("HH", "harmonic-harp"),
   ("PS", "scrape"),
+  ("PO", "pop"),
   ("TP", "tremolo"),
+  ("SL", "slap"),
+  ("DS", "dead-slap"),
   ("tr", "trill"),
   ("br", "bend-release"),
   ("Br", "prebend-release"),
@@ -56,6 +59,8 @@
   ("R", "rake"),
   ("n", "stroke-down"),
   ("u", "stroke-up"),
+  ("F", "fermata"),
+  ("W", "bar-vibrato"),
 )
 
 // Suffixes that must be followed by a fret number.
@@ -346,22 +351,21 @@
       continue
     }
 
+    // A rest and a bare mute have no note to hang a suffix on, so theirs go on
+    // the event. That is what lets `rF` hold a rest — the one mark that is at
+    // least as common over silence as over a note.
     if c == "r" {
-      if not _is-sep(chars, i + 1) {
-        errors.fail("tab", loc, "unknown token '" + _word-at(chars, i) + "'", source: source)
-      }
-      tokens.push((kind: "rest", loc: loc))
-      i += 1
+      let suffixes = _scan-suffixes(chars, i + 1, loc, source)
+      tokens.push((kind: "rest", techniques: suffixes.v, loc: loc))
+      i = suffixes.i
       continue
     }
 
     // A bare `x` mutes every string; `x/5` mutes one.
     if c == "x" and next != "/" {
-      if not _is-sep(chars, i + 1) {
-        errors.fail("tab", loc, "unknown token '" + _word-at(chars, i) + "'", source: source)
-      }
-      tokens.push((kind: "mute-all", loc: loc))
-      i += 1
+      let suffixes = _scan-suffixes(chars, i + 1, loc, source)
+      tokens.push((kind: "mute-all", techniques: suffixes.v, loc: loc))
+      i = suffixes.i
       continue
     }
 
@@ -646,6 +650,7 @@
       tuplet: tuplet,
       chord: pending-chord,
       text: pending-text,
+      techniques: tok.at("techniques", default: ()),
     ))
     pending-chord = none
     pending-text = none
@@ -724,7 +729,13 @@
     "^"
   } else if t.kind == "staccato" { "!" } else if t.kind == "tenuto" {
     "-"
-  } else if t.kind == "tap" { "T" } else { "" }
+  } else if t.kind == "tap" { "T" } else if t.kind == "fermata" {
+    "F"
+  } else if t.kind == "bar-vibrato" { "W" } else if t.kind == "slap" {
+    "SL"
+  } else if t.kind == "pop" { "PO" } else if t.kind == "dead-slap" {
+    "DS"
+  } else { "" }
 }
 
 #let _write-note(n) = {
@@ -734,9 +745,12 @@
 
 /// Write one event, without its note value.
 #let _write-event(ev, strings) = {
-  if ev.kind == "rest" { return "r" }
-  if ev.notes.len() == 0 { return "r" }
-  if ev.notes.len() == strings and ev.notes.all(n => n.fret == m.MUTED) { return "x" }
+  // A rest and a bare mute carry their suffixes on the event, having no note to
+  // put them on, so they are written back on the `r` or the `x`.
+  let own = ev.at("techniques", default: ()).map(_technique-suffix).join()
+  let own = if own == none { "" } else { own }
+  if ev.kind == "rest" or ev.notes.len() == 0 { return "r" + own }
+  if ev.notes.len() == strings and ev.notes.all(n => n.fret == m.MUTED) { return "x" + own }
   if ev.notes.len() == 1 { return _write-note(ev.notes.first()) }
   "(" + ev.notes.map(_write-note).join(" ") + ")"
 }

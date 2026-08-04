@@ -259,3 +259,37 @@
   "an unmarked measure declares nothing; the part's own signature covers it",
 )
 #round-trip("[7/8] e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 | [4/4] q 3/6 5/6 7/6 8/6")
+
+// --- fermata, tremolo bar and the bass right hand --------------------------
+
+#eq(
+  first("q 7/3F").events.first().notes.first().techniques,
+  (m.technique("fermata"),),
+  "'F' is a fermata",
+)
+#eq(
+  first("q rF").events.first().techniques,
+  (m.technique("fermata"),),
+  "a rest has no note to hold the suffix, so it goes on the event",
+)
+#eq(
+  first("q xF").events.first().techniques,
+  (m.technique("fermata"),),
+  "…and so does a bare mute's",
+)
+#eq(
+  first("q 7/3W").events.first().notes.first().techniques,
+  (m.technique("bar-vibrato"),),
+  "'W' is vibrato with the tremolo bar",
+)
+#eq(
+  first("q 0/4SL 3/3PO x/3DS").events.map(ev => ev.notes.first().techniques.first().kind),
+  ("slap", "pop", "dead-slap"),
+  "the bass right hand: slap, pop and dead slap",
+)
+// `PO` has to beat `p` and `PH`, and `SL` has to beat `S`, or the longest-first
+// table is not doing its job and `0/4SL` reads as a slide with no target.
+#eq(first("q 5/3p3").events.first().notes.first().techniques.first().kind, "pull", "…without shadowing the pull-off")
+#eq(first("q 5/3S7").events.first().notes.first().techniques.first().kind, "slide", "…or the shift slide")
+
+#round-trip("q 7/3F rF xF | q 7/3W 0/4SL 3/3PO x/3DS")

@@ -27,3 +27,15 @@ q 7/3v 7/3V 7/3tr9 7/3tr | 7/3TP 7/3PS 5/3PH 7/3HH
 #tab(theme: vt, ```
 {PM: q 0/6 0/6 0/6 0/6} | q "Harm." 12/3* 12/4* 12/5* 12/6*
 ```)
+
+// A fermata takes the outermost level whatever else is there, since it governs
+// everything written under it — including over a rest and over a bare mute,
+// which have no note to carry a suffix and hold theirs on the event.
+#tab(theme: vt, ```
+q 7/3F 7/3>F rF xF | h 7/3W q 7/3 7/3v
+```)
+
+// The bass right hand.
+#tab(theme: vt, tuning: tunings.bass, ```
+q 0/4SL 3/3PO 0/4SL x/3DS | e 0/4SL 3/3PO 0/4SL 3/3PO q 5/2PO 0/4SL
+```)
