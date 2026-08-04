@@ -186,6 +186,23 @@
   )
 }
 
+/// The glyph a rest event prints, or `none` for anything else.
+///
+/// One definition for both the spacing pass and the drawing pass, so a rest
+/// cannot be measured at one size and drawn at another. `none` covers both a
+/// note and a rest whose length is unknown — an imported tab with no rhythm
+/// cannot say how long a silence is, and drawing a guess would be worse.
+#let rest-glyph(theme, ev, fill: black) = {
+  if ev.kind != "rest" { return none }
+  let flags = flags-of(ev)
+  if flags == none { return none }
+  g.rest-for(
+    theme.staff-space * (if flags < 0 { 1.0 } else { _REST-SCALE }),
+    flags,
+    fill: fill,
+  )
+}
+
 /// The frets a note is linked to by a hammer-on, pull-off or slide.
 ///
 /// These print as further numbers on the same string, joined to the first by a
@@ -214,6 +231,11 @@
 ///
 /// Must be called from a context, since it measures type.
 #let event-metrics(theme, ev) = {
+  // A rest takes room on the staff like a number does, and has to claim it here
+  // or the fast ones — whose duration buys them almost no width — are drawn on
+  // top of their neighbours.
+  let rest = rest-glyph(theme, ev)
+  if rest != none { return (total: rest.width, anchor: rest.width) }
   if ev.notes.len() == 0 { return (total: 0pt, anchor: 0pt) }
   let gap = _link-gap(theme)
   let grace = ev.at("grace", default: none) != none
@@ -681,16 +703,9 @@
   let rests = ()
   let anchor = rest-anchor(theme, strings)
   for pe in placed {
-    if pe.event.kind != "rest" { continue }
+    let glyph = rest-glyph(theme, pe.event, fill: theme.color)
+    if glyph == none { continue }
     let flags = flags-of(pe.event)
-    // No note value, no rest glyph: an imported tab with no rhythm cannot say
-    // how long the silence is, and guessing would be worse than leaving it.
-    if flags == none { continue }
-    let glyph = g.rest-for(
-      theme.staff-space * (if flags < 0 { 1.0 } else { _REST-SCALE }),
-      flags,
-      fill: theme.color,
-    )
     // A whole rest hangs below its line and a half rest sits on it; everything
     // else is centred where a note would be.
     let top = if flags <= -2 {

@@ -92,6 +92,7 @@
   row("Eighth, sixteenth, thirty-second", "e 5/3 5/3 s 5/3 5/3 5/3 5/3 t 5/3 5/3 5/3 5/3"),
   row("Values are sticky until changed", "e 5/3 5/3 q 7/3 7/3"),
   row("Dotted, doubly dotted", "q. 5/3 e 5/3 h.. 7/3"),
+  row("Every rest value, whole to thirty-second", "w r | h r | q r | e r | s r | t r"),
   row("Rests take the value in force", "h r q r e r r"),
   row("A tuplet", "{3: e 5/3 7/3 8/3} q 5/3"),
   row("…with an explicit ratio", "{5/4: s 5/3 7/3 8/3 7/3 5/3}"),

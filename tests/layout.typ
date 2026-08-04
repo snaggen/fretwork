@@ -211,6 +211,24 @@
   ok(rhythm.lane-for(thm, system("q r 0/6 r 0/6"), 120mm).height > 0pt,
      "…but one note in it brings the lane back for that note's stem")
 
+  // A rest is drawn on the staff, so it has to claim the room its glyph needs.
+  // Optical spacing alone buys a thirty-second almost none, and the glyph is
+  // wider than a fret number — left unclaimed, fast rests overlap each other.
+  ok(
+    event-natural(thm, events("t r").first(), 0pt) >= tabstaff.rest-glyph(thm, events("t r").first()).width,
+    "a rest is never narrower than the glyph it prints",
+  )
+  eq(
+    tabstaff.rest-glyph(thm, events("q 0/6").first()),
+    none,
+    "a note prints no rest glyph",
+  )
+  eq(
+    tabstaff.rest-glyph(thm, m.event(rest: true)),
+    none,
+    "…nor does a rest whose length is unknown",
+  )
+
   // A ghost note prints in parentheses, so it is wider than the bare number and
   // the gap in the string line has to follow.
   ok(
