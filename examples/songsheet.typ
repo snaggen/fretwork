@@ -21,6 +21,8 @@
 
 #section("Intro")
 
+// The time signature is printed here and nowhere else: it is one fact about
+// the piece, and repeating it over every section would read as a change.
 #tab(
   count-in: true,
   ```
@@ -31,7 +33,7 @@
 
 #section("Main Riff")
 
-#tab(```
+#tab(show-time: false, ```
 |: @E5 e 0/6 0/6 {PM: 0/6 0/6 0/6 0/6 0/6 0/6}
  |  @G5 q 3/6 3/6 @A5 5/6 5/6
  |  @E5 e 0/6 0/6 {PM: 0/6 0/6 0/6 0/6 0/6 0/6}
@@ -40,7 +42,7 @@
 
 #section("Bridge")
 
-#tab(```
+#tab(show-time: false, ```
 |: @Am q (0/1 1/2 2/3 2/4) e 0/1 1/2 q (0/1 1/2 2/3 2/4) e 0/1 1/2
  |  @C   q (0/1 1/2 0/3 2/4) e 0/1 1/2 q (0/1 1/2 0/3 2/4) e 0/1 1/2
  |  @G   q (3/1 0/2 0/3 0/4) e 3/1 0/2 q (3/1 0/2 0/3 0/4) e 3/1 0/2
@@ -50,9 +52,9 @@
 
 #section("Solo")
 
-#tab(```
+#tab(show-time: false, ```
 q 5/3h7 7/3p5 e 5/2h7 7/2p5 q 7/3b
 | e 7/3br 5/3s7 q 12/3* h 7/3V
 | {3: e 5/6 7/6 8/6} {3: e 7/6 8/6 10/6} q 12/6PS 7/3tr9
-| "let ring" w (0/1 2/2 2/3 1/4)A |.
+| "let ring" w (0/1 2/2 2/3 1/4)An |.
 ```)
