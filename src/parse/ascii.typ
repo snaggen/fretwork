@@ -26,7 +26,7 @@
 #import "../model.typ" as m
 #import "../tuning.typ": string-count, tunings
 #import "errors.typ"
-#import "dsl.typ": source-text
+#import "dsl.typ": DYNAMICS, source-text
 
 #let _DIGITS = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
 
@@ -36,6 +36,7 @@
   "C", // chord names
   "S", // section heading
   "T", // free playing instruction
+  "D", // dynamics
   "PM", // palm mute span
   "LR", // let ring span
   "1", // first ending
@@ -586,6 +587,10 @@
       .at("T", default: ())
       .map(a => _phrases-with-columns(a.text, a.offset))
       .flatten()
+    let dynamics-at = annotations
+      .at("D", default: ())
+      .map(a => _tokens-with-columns(a.text, a.offset))
+      .flatten()
     let spans-at = ()
     for key in ("PM", "LR") {
       for a in annotations.at(key, default: ()) {
@@ -681,6 +686,17 @@
         warnings.push("instruction '" + token.token + "' has no note within 3 columns; ignored")
       }
     }
+    let dynamic-at = (:)
+    for token in dynamics-at {
+      let col = nearest-event(token.col)
+      if col == none {
+        warnings.push("dynamic '" + token.token + "' has no note within 3 columns; ignored")
+      } else if token.token not in DYNAMICS {
+        warnings.push("unknown dynamic '" + token.token + "'; ignored")
+      } else {
+        dynamic-at.insert(str(col), token.token)
+      }
+    }
 
     for (idx, col) in all-columns.enumerate() {
       if str(col) in bar-columns and str(col) not in by-column {
@@ -715,6 +731,7 @@
         tuplet: tuplet-at.at(str(col), default: none),
         chord: chord-at.at(str(col), default: none),
         text: text-at.at(str(col), default: none),
+        dynamic: dynamic-at.at(str(col), default: none),
         column-span: span,
       ))
       event-cols.push(col)

@@ -106,6 +106,21 @@
 #ok("PM" in ann.at(0).spans, "the PM row marks the columns it covers")
 #ok("PM" not in ann.at(3).spans, "…and stops where it stops")
 
+// The D row carries dynamics, attaching to the column each one sits over.
+#let dyn = parse("D:   mf      ff\n" + block("--0---2---3-5---"))
+#let devs = dyn.part.measures.first().events
+#eq(devs.at(0).dynamic, "mf", "the D row marks a dynamic at its column")
+#eq(devs.at(2).dynamic, "ff", "…and the next at its own")
+#eq(devs.at(1).dynamic, none, "columns with no dynamic get none")
+// A misspelling is reported rather than printed: the reader cannot tell a
+// dynamic that means nothing from one they do not know.
+#let bad-dyn = parse("D:   loud\n" + block("--0---2---3-5---"))
+#ok(
+  bad-dyn.warnings.any(w => w.contains("unknown dynamic")),
+  "an unrecognised dynamic is reported, not set",
+)
+#eq(bad-dyn.part.measures.first().events.at(0).dynamic, none, "…and does not reach the model")
+
 // A tuplet is opened with a count and a colon, which stays column-aligned.
 #let tuplets = parse("R:   3:  e   e   e\n" + block("--0---2---3-----"))
 #let tevs = tuplets.part.measures.first().events

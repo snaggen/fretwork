@@ -339,3 +339,11 @@
   "a gradual change is an ordinary span",
 )
 #round-trip("!mf q 0/6 2/6 {cresc: 3/6 5/6} | !ff q 7/6 8/6 {dim: 10/6 8/6}")
+
+// Everything added at once, through the writer and back. `ascii-to-dsl` prints
+// what `write` produces, so a construct the writer drops is one a user loses
+// the moment they graduate an imported tab to the native syntax.
+#round-trip(
+  "!mf [7/8] g 5/3F e 7/3W (0/1 2/2)Au 0/4SL rF xF {cresc: e 3/6 5/6}"
+    + " | [4/4] G 3/3h5 q 7/3 5/3PO x/3DS",
+)

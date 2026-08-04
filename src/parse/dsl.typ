@@ -72,7 +72,7 @@
 // The dynamics that may be written, loudest last. A closed set on purpose: a
 // typo in a dynamic is silent otherwise, and there is nothing else `!ff` could
 // have been trying to say.
-#let _DYNAMICS = ("ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "sf", "sfz", "fp")
+#let DYNAMICS = ("ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "sf", "sfz", "fp")
 
 // Suffixes that may be followed by a stroke direction, `n` down or `u` up —
 // the same two letters that write a pickstroke, since they mean the same
@@ -380,11 +380,11 @@
       if word == none or word == "" {
         errors.fail("tab", loc, "'!' must be followed by a dynamic, as in '!mf'", source: source)
       }
-      if word not in _DYNAMICS {
+      if word not in DYNAMICS {
         errors.fail(
           "tab",
           loc,
-          "unknown dynamic '" + word + "' — one of " + _DYNAMICS.join(" "),
+          "unknown dynamic '" + word + "' — one of " + DYNAMICS.join(" "),
           source: source,
         )
       }

@@ -171,7 +171,7 @@
 /// - **Column-aligned annotation rows** inside the block, which is the primary
 ///   mechanism because a fact attaches to exactly the column it describes:
 ///   `R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-///   instruction, `PM:` and `LR:` bracketed spans.
+///   instruction, `D:` dynamics, `PM:` and `LR:` bracketed spans.
 /// - **Named arguments** for facts about the whole piece: `tuning`, `time`,
 ///   `tempo`, `capo`, `anacrusis`.
 /// - **`rhythm:`** for the common cases: `even(1/8)`, `fill`, or an explicit
