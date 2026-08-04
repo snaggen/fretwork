@@ -123,6 +123,10 @@
 /// `grace` is `none`, `"before"` or `"on"`. A grace event is an ornament, not a
 /// beat: it is set small, it takes no time from the bar, and it is spaced by a
 /// fixed narrow width rather than by its note value.
+///
+/// `dynamic` is `none` or a name such as `"mf"`. It marks where the dynamic
+/// *changes*; what is in force between two marks is whatever the last one
+/// said.
 #let event(
   notes: (),
   duration: none,
@@ -134,6 +138,7 @@
   text: none,
   column-span: none,
   grace: none,
+  dynamic: none,
 ) = {
   assert(
     duration == none or r.is-rat(duration),
@@ -162,6 +167,9 @@
     // beat, `"on"` starts on it and delays what follows. Either way it takes no
     // time from the bar, which is what `sounding-duration` enforces.
     grace: grace,
+    // A dynamic taking effect here and holding until the next one, printed
+    // below the staff: `"mf"`, `"ff"`, and so on.
+    dynamic: dynamic,
   )
 }
 

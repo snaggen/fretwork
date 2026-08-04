@@ -321,3 +321,21 @@
 )
 #eq(first("q 5/3g").events.first().grace, none, "…and marks no grace note")
 #round-trip("q g 5/3 7/3 5/3 3/3 5/3 | G 3/3h5 q 7/3 5/3 3/3 5/3")
+
+// --- dynamics -------------------------------------------------------------
+
+#eq(first("q !mf 0/6 2/6").events.first().dynamic, "mf", "'!mf' attaches to the next event")
+#eq(first("q !mf 0/6 2/6").events.last().dynamic, none, "…and only to that one")
+// Inside a token `!` is still the staccato dot.
+#eq(
+  first("q 5/3!").events.first().notes.first().techniques,
+  (m.technique("staccato"),),
+  "'!' inside a token is unchanged",
+)
+#eq(first("q 5/3!").events.first().dynamic, none, "…and marks no dynamic")
+#eq(
+  first("{cresc: q 0/6 2/6}").events.first().spans,
+  ("cresc",),
+  "a gradual change is an ordinary span",
+)
+#round-trip("!mf q 0/6 2/6 {cresc: 3/6 5/6} | !ff q 7/6 8/6 {dim: 10/6 8/6}")

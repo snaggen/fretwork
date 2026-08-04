@@ -15,7 +15,9 @@
 // a lane above the staff are drawn here.
 
 #import "../model.typ": get-technique, has-technique
-#import "../layout/lanes.typ": empty-lane, lane
+#import "marks.typ": draw-levels, label as _label, levels-of, span-mark, span-names, span-runs
+#import "marks.typ"
+#import "dynamics.typ"
 #import "glyphs.typ" as g
 
 /// Labels for bracketed spans. Unknown names are printed as written.
@@ -23,39 +25,6 @@
   PM: "P.M.",
   LR: "let ring",
 )
-
-/// All events of a system in one list, with their x-positions.
-///
-/// Techniques are flattened across measures on purpose: a palm mute bracket
-/// runs from where it starts to where it stops, and barlines do not interrupt it.
-#let _flatten(system) = system.measures.map(m => m.events).flatten()
-
-/// Maximal runs of consecutive events carrying the given span.
-#let _span-runs(placed, name) = {
-  let runs = ()
-  let current = ()
-  for pe in placed {
-    if name in pe.event.spans {
-      current.push(pe)
-    } else {
-      if current.len() > 0 { runs.push(current) }
-      current = ()
-    }
-  }
-  if current.len() > 0 { runs.push(current) }
-  runs
-}
-
-/// Every span name used anywhere in the system, in first-seen order.
-#let _span-names(placed) = {
-  let names = ()
-  for pe in placed {
-    for s in pe.event.spans {
-      if s not in names { names.push(s) }
-    }
-  }
-  names
-}
 
 /// Techniques of a kind carried by an event, whether written on one of its
 /// notes or on the event itself.
@@ -75,25 +44,11 @@
 /// Bass right-hand techniques, which print as a letter over the note.
 #let _BASS-LABELS = (slap: "S", pop: "P", dead-slap: "DS")
 
-/// Vertical clearance between two levels of marks.
-#let _LEVEL-GAP = 0.15
-
 /// A vibrato squiggle, drawn from its left edge with `y` at its top.
 #let _vibrato-mark(theme, x, y, w, wide) = {
   let wave = g.wavy(theme.staff-space, w, amp: if wide { 0.30 } else { 0.18 }, fill: theme.color)
   place(top + left, dx: x, dy: y, wave.body)
 }
-
-/// A short label, set in the technique face.
-#let _label(theme, body, italic: false) = text(
-  font: theme.font,
-  size: theme.technique-size,
-  style: if italic { "italic" } else { "normal" },
-  fill: theme.color,
-  top-edge: "cap-height",
-  bottom-edge: "baseline",
-  body,
-)
 
 /// Every mark the lane has to place.
 ///
@@ -231,41 +186,13 @@
 
   // --- bracketed spans ---
   let spans = ()
-  for name in _span-names(placed) {
+  for name in span-names(placed) {
+    // A `cresc.` is a span too, but it belongs to the dynamics lane below the
+    // staff, which draws it. Left in, it would print here as well.
+    if name in dynamics.HAIRPIN-LABELS { continue }
     let body = _label(theme, SPAN-LABELS.at(name, default: name))
-    let label-w = measure(body).width
-    for run in _span-runs(placed, name) {
-      let x0 = run.first().x - 0.2 * sp
-      let x1 = run.last().x + 0.3 * sp
-      let rule-x = x0 + label-w + 0.3 * sp
-      spans.push((
-        x0: x0,
-        x1: calc.max(x1, rule-x),
-        height: 1.15 * sp,
-        draw: y => {
-          place(top + left, dx: x0, dy: y, body)
-          // A dashed rule to the last event, closed by a tick that crosses it
-          // rather than merely hanging off it. Dash and gap are each about a
-          // third of a staff space, and the rule meets the label near its
-          // baseline rather than at its cap.
-          if x1 > rule-x {
-            let rule-y = y + 0.5 * sp
-            place(top + left, dx: rule-x, dy: rule-y, line(
-              length: x1 - rule-x,
-              stroke: (
-                paint: theme.color,
-                thickness: 0.07 * sp,
-                dash: (array: (0.30 * sp, 0.30 * sp), phase: 0pt),
-              ),
-            ))
-            place(top + left, dx: x1, dy: rule-y - 0.28 * sp, line(
-              angle: 90deg,
-              length: 1.05 * sp,
-              stroke: (paint: theme.color, thickness: 0.07 * sp),
-            ))
-          }
-        },
-      ))
+    for run in span-runs(placed, name) {
+      spans.push(span-mark(theme, run, body))
     }
   }
   if spans.len() > 0 { groups.push(spans) }
@@ -291,83 +218,16 @@
   groups
 }
 
-/// Pack groups of marks into as few levels as the horizontal room allows.
-///
-/// Published sheets pack sideways: a mark sits as close to the staff as it fits,
-/// and things only stack where they are actually in each other's way. Reserving
-/// a level per kind for the whole system instead makes a system taller than it
-/// needs to be whenever two marks are in different bars.
-///
-/// A whole group moves together, so every palm mute in a system stays at one
-/// height. Groups are offered the levels in the order `_marks` returns them, so
-/// when two do collide the closer-to-the-staff kind wins the lower level.
-///
-/// `pad` is the least horizontal air between two marks sharing a level; without
-/// it, two that merely fit end up touching.
-#let _pack(groups, pad) = {
-  let levels = ()
-  for group in groups {
-    let target = none
-    for (i, level) in levels.enumerate() {
-      let clear = group.all(m => level.all(o => m.x1 + pad <= o.x0 or m.x0 >= o.x1 + pad))
-      if clear {
-        target = i
-        break
-      }
-    }
-    if target == none {
-      levels.push(group)
-    } else {
-      levels.at(target) = levels.at(target) + group
-    }
-  }
-  levels
-}
-
-/// The levels of a system, each with the height it needs.
-#let _levels(theme, system) = {
-  _pack(_marks(theme, _flatten(system)), 0.35 * theme.staff-space).map(level => (
-    marks: level,
-    height: level.fold(0pt, (acc, m) => calc.max(acc, m.height)),
-  ))
-}
+/// The levels of the technique lane.
+#let _levels(theme, system) = levels-of(theme, system, _marks)
 
 /// Total height of the lane.
-#let height(theme, system) = {
-  let levels = _levels(theme, system)
-  if levels.len() == 0 { return 0pt }
-  let gap = _LEVEL-GAP * theme.staff-space
-  levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
-}
+#let height(theme, system) = marks.stack-height(theme, _levels(theme, system))
 
 /// Draw the technique lane for one placed system.
 #let draw(theme, system, width, levels: none) = {
-  let levels = if levels != none { levels } else { _levels(theme, system) }
-  if levels.len() == 0 { return box(width: width, height: 0pt) }
-
-  let gap = _LEVEL-GAP * theme.staff-space
-  let total = levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
-
-  box(width: width, height: total, {
-    // Level 0 sits closest to the staff, so the stack is laid out upwards from
-    // the bottom of the lane.
-    let bottom = total
-    for level in levels {
-      let y = bottom - level.height
-      for m in level.marks {
-        (m.draw)(y)
-      }
-      bottom = y - gap
-    }
-  })
+  draw-levels(theme, if levels != none { levels } else { _levels(theme, system) }, width)
 }
 
 /// The technique lane, collapsing when nothing needs it.
-#let lane-for(theme, system, width) = {
-  // Packed once and handed to `draw`, rather than worked out twice.
-  let levels = _levels(theme, system)
-  if levels.len() == 0 { return empty-lane }
-  let gap = _LEVEL-GAP * theme.staff-space
-  let total = levels.fold(0pt, (acc, l) => acc + l.height) + gap * (levels.len() - 1)
-  lane(total, () => draw(theme, system, width, levels: levels))
-}
+#let lane-for(theme, system, width) = marks.lane-of(theme, system, width, _marks)

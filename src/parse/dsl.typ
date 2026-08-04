@@ -69,6 +69,11 @@
 // Suffixes that may take a fret number but do not require one.
 #let _OPTIONAL-FRET = ("trill",)
 
+// The dynamics that may be written, loudest last. A closed set on purpose: a
+// typo in a dynamic is silent otherwise, and there is nothing else `!ff` could
+// have been trying to say.
+#let _DYNAMICS = ("ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "sf", "sfz", "fp")
+
 // Suffixes that may be followed by a stroke direction, `n` down or `u` up —
 // the same two letters that write a pickstroke, since they mean the same
 // motion of the hand. Omitted, the stroke is downward, which is both the
@@ -365,6 +370,29 @@
       continue
     }
 
+    // A dynamic, written `!mf`, attaching to the next event. `!` inside a token
+    // is the staccato dot; alone it opens a dynamic, and the two never meet.
+    if c == "!" {
+      let start = i + 1
+      let j = start
+      while not _is-sep(chars, j) { j += 1 }
+      let word = chars.slice(start, j).join()
+      if word == none or word == "" {
+        errors.fail("tab", loc, "'!' must be followed by a dynamic, as in '!mf'", source: source)
+      }
+      if word not in _DYNAMICS {
+        errors.fail(
+          "tab",
+          loc,
+          "unknown dynamic '" + word + "' — one of " + _DYNAMICS.join(" "),
+          source: source,
+        )
+      }
+      tokens.push((kind: "dynamic", value: word, loc: loc))
+      i = j
+      continue
+    }
+
     // A standalone `g` marks the *next* event as a grace note, the way `@E5`
     // and `"Harm."` attach to the one after them. Inside a token `g` stays the
     // ghost note; the two never meet, because a token holds no whitespace.
@@ -572,6 +600,7 @@
   let pending-chord = none
   let pending-text = none
   let pending-grace = none
+  let pending-dynamic = none
   let start-repeat = false
   // A time signature belongs to the measure it opens, and only where it
   // changes: `none` means "carry on with whatever is in force".
@@ -625,6 +654,11 @@
 
     if tok.kind == "grace" {
       pending-grace = tok.when
+      continue
+    }
+
+    if tok.kind == "dynamic" {
+      pending-dynamic = tok.value
       continue
     }
 
@@ -682,10 +716,12 @@
       text: pending-text,
       techniques: tok.at("techniques", default: ()),
       grace: pending-grace,
+      dynamic: pending-dynamic,
     ))
     pending-chord = none
     pending-text = none
     pending-grace = none
+    pending-dynamic = none
   }
 
   if stack.len() > 0 {
@@ -858,6 +894,7 @@
         open.push(name)
       }
 
+      if ev.at("dynamic", default: none) != none { parts.push("!" + ev.dynamic) }
       if ev.chord != none { parts.push("@" + _write-chord-name(ev.chord)) }
       if ev.text != none { parts.push("\"" + ev.text + "\"") }
       if ev.duration != none and ev.duration != duration {

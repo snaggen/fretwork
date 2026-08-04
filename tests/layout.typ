@@ -7,6 +7,7 @@
 #import "/src/layout/system.typ": justify-factor, layout-part, pack
 #import "/src/parse/dsl.typ": parse, parse-measures
 #import "/src/render/tabstaff.typ"
+#import "/src/render/dynamics.typ"
 
 #let thm = theme(staff-space: 3mm)
 #let events(src) = parse-measures(src).first().events
@@ -192,6 +193,15 @@
     tabstaff.tie-depth(thm, span) < thm.staff-space,
     "…and neither reaches the line below, which is what they must clear",
   )
+
+  // The dynamics lane costs nothing at all until something is written in it,
+  // which is what lets it be added below every staff unconditionally.
+  eq(dynamics.lane-for(thm, system("q 0/6 0/6 0/6 0/6"), 120mm).height, 0pt,
+     "no dynamic, no lane")
+  ok(dynamics.lane-for(thm, system("!mf q 0/6 0/6 0/6 0/6"), 120mm).height > 0pt,
+     "…and a dynamic opens one")
+  ok(dynamics.lane-for(thm, system("{cresc: q 0/6 0/6 0/6 0/6}"), 120mm).height > 0pt,
+     "…as does a gradual change on its own")
 
   // An ornate repeat sign's serifs reach past the staff at both ends, so the
   // lane has to reserve room for them too.

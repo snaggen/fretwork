@@ -21,6 +21,7 @@
 #import "render/rhythm.typ"
 #import "render/chordnames.typ"
 #import "render/techniques.typ"
+#import "render/dynamics.typ"
 #import "render/voltas.typ"
 #import "page.typ": song, section, credits
 
@@ -119,9 +120,10 @@
       // trailing string lines out to the margin.
       let w = sys.width
 
-      // Bottom to top: the count row under the staff, technique marks directly
-      // above it, then the rhythm, then chord names, and the endings furthest
-      // out, as they bracket whole measures rather than single events.
+      // Bottom to top: the count row, then the dynamics under the staff,
+      // technique marks directly above it, then the rhythm, then chord names,
+      // and the endings furthest out, as they bracket whole measures rather
+      // than single events.
       let lanes = (
         voltas.lane-for(thm, sys, w),
         chordnames.lane-for(thm, sys, w),
@@ -142,6 +144,7 @@
             overflow: over,
           ))
         },
+        dynamics.lane-for(thm, sys, w),
         rhythm.count-lane-for(thm, sys, w, enabled: count-in and i == 0),
       )
       // A system must never be split by a page break.
