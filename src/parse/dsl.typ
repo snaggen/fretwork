@@ -69,6 +69,12 @@
 // Suffixes that may take a fret number but do not require one.
 #let _OPTIONAL-FRET = ("trill",)
 
+// Suffixes that may be followed by a stroke direction, `n` down or `u` up —
+// the same two letters that write a pickstroke, since they mean the same
+// motion of the hand. Omitted, the stroke is downward, which is both the
+// commoner roll and the one an engraver leaves unmarked.
+#let _OPTIONAL-DIR = ("arpeggiate", "rake")
+
 // ---------------------------------------------------------------------------
 // Low-level scanning
 // ---------------------------------------------------------------------------
@@ -167,6 +173,8 @@
     m.technique("stroke", dir: "down")
   } else if kind == "stroke-up" {
     m.technique("stroke", dir: "up")
+  } else if kind in _OPTIONAL-DIR {
+    m.technique(kind, dir: arg)
   } else {
     m.technique(kind)
   }
@@ -214,6 +222,12 @@
       let scanned = _scan-bend-amount(chars, i, loc, source)
       arg = scanned.v
       i = scanned.i
+    } else if matched.kind in _OPTIONAL-DIR {
+      arg = "down"
+      if i < chars.len() and chars.at(i) in ("n", "u") {
+        arg = if chars.at(i) == "n" { "down" } else { "up" }
+        i += 1
+      }
     }
     techs.push(_make-technique(matched.kind, arg))
   }
@@ -721,8 +735,13 @@
     "tr" + (if t.at("fret", default: none) == none { "" } else { str(t.fret) })
   } else if t.kind == "tremolo" { "TP" } else if t.kind == "scrape" {
     "PS"
-  } else if t.kind == "arpeggiate" { "A" } else if t.kind == "rake" {
-    "R"
+  } else if t.kind in ("arpeggiate", "rake") {
+    // The direction is always written out, even when it is the default: the
+    // writer's job is to produce source that reads back identically, not the
+    // shortest source that happens to.
+    let mark = if t.kind == "arpeggiate" { "A" } else { "R" }
+    let dir = if t.at("dir", default: "down") == "down" { "n" } else { "u" }
+    mark + dir
   } else if t.kind == "tie" { "~" } else if t.kind == "ghost" {
     "g"
   } else if t.kind == "accent" { ">" } else if t.kind == "marcato" {

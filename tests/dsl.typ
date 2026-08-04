@@ -293,3 +293,16 @@
 #eq(first("q 5/3S7").events.first().notes.first().techniques.first().kind, "slide", "…or the shift slide")
 
 #round-trip("q 7/3F rF xF | q 7/3W 0/4SL 3/3PO x/3DS")
+
+// --- arpeggio and rake direction ------------------------------------------
+
+#let arp(src) = first(src).events.first().notes.first().techniques.first()
+#eq(arp("q (0/1 2/2)A").dir, "down", "a bare 'A' rolls thick string to thin")
+#eq(arp("q (0/1 2/2)An").dir, "down", "…which is what 'n' spells out")
+#eq(arp("q (0/1 2/2)Au").dir, "up", "…and 'u' reverses")
+#eq(arp("q (0/1 2/2)Ru").kind, "rake", "a rake takes a direction too")
+#eq(arp("q (0/1 2/2)Ru").dir, "up", "…and reads it the same way")
+// The direction letter is consumed by the arpeggio, so it cannot also be read
+// as a pickstroke — `Au` is one technique, not two.
+#eq(first("q (0/1 2/2)Au").events.first().notes.first().techniques.len(), 1, "'Au' is one technique")
+#round-trip("q (0/1 2/2)Au (0/1 2/2)An (0/1 2/2)Ru")

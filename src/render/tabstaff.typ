@@ -715,7 +715,8 @@
 
   for pe in placed {
     for kind in ("arpeggiate", "rake") {
-      if not pe.event.notes.any(n => n.techniques.any(t => t.kind == kind)) { continue }
+      let found = pe.event.notes.map(n => get-technique(n, kind)).find(t => t != none)
+      if found == none { continue }
       let rows = pe.event.notes.map(n => n.string)
       let widest = pe
         .event
@@ -724,6 +725,11 @@
         .fold(0pt, calc.max)
       strokes.push((
         kind: kind,
+        // A downstroke runs thick string to thin — from the bottom of the staff
+        // to the top — so its arrowhead is the upper one. That is also the
+        // unmarked default an engraver assumes, which is why a bare `A` means
+        // it.
+        dir: found.at("dir", default: "down"),
         x: pe.x - widest / 2 - 0.45 * sp,
         top: string-y(theme, calc.min(..rows)) - 0.45 * sp,
         bottom: string-y(theme, calc.max(..rows)) + 0.45 * sp,
@@ -819,8 +825,15 @@
       }
 
       for st in strokes {
-        let wave = g.wavy(sp, st.bottom - st.top, vertical: true, fill: theme.color)
-        place(top + left, dx: st.x - wave.width, dy: st.top, wave.body)
+        // The head eats into the line, so the wave stops short of the end it
+        // caps rather than running under it.
+        let head = 0.45 * sp
+        let up = st.dir == "down"
+        let y0 = st.top + (if up { head } else { 0pt })
+        let y1 = st.bottom - (if up { 0pt } else { head })
+        let wave = g.wavy(sp, y1 - y0, vertical: true, fill: theme.color)
+        place(top + left, dx: st.x - wave.width, dy: y0, wave.body)
+        _arrowhead(theme, st.x - wave.width / 2, if up { st.top } else { st.bottom }, down: not up)
         if st.kind == "rake" {
           place(
             top + left,

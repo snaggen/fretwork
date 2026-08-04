@@ -35,6 +35,14 @@ q 7/3v 7/3V 7/3tr9 7/3tr | 7/3TP 7/3PS 5/3PH 7/3HH
 q 7/3F 7/3>F rF xF | h 7/3W q 7/3 7/3v
 ```)
 
+// An arpeggio and a rake carry an arrowhead at the end they travel to. A
+// downstroke runs thick string to thin, so its head is the upper one — the
+// unmarked default, which is why a bare `A` draws it.
+#tab(theme: vt, ```
+q (2/5 2/4 0/6)A (2/5 2/4 0/6)Au 3/6 5/6
+| (0/1 2/2 2/3 1/4)Rn (0/1 2/2 2/3 1/4)Ru 3/6 5/6
+```)
+
 // The bass right hand.
 #tab(theme: vt, tuning: tunings.bass, ```
 q 0/4SL 3/3PO 0/4SL x/3DS | e 0/4SL 3/3PO 0/4SL 3/3PO q 5/2PO 0/4SL

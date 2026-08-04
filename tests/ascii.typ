@@ -181,7 +181,9 @@
 )
 #eq(
   write(m.part(measures: parse-measures("q 7/3tr9 7/3TP 7/3PS 7/3A 7/3R"))),
-  "q 7/3tr9 7/3TP 7/3PS 7/3A 7/3R |",
+  // The writer spells the arpeggio's direction out even when it is the
+  // default, so what it emits reads back as exactly what it was given.
+  "q 7/3tr9 7/3TP 7/3PS 7/3An 7/3Rn |",
   "the later technique additions round-trip too",
 )
 #eq(
