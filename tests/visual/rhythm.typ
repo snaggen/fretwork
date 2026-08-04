@@ -20,9 +20,14 @@ s 0/6 0/6 0/6 0/6 e 0/6 0/6 q. 0/6 e 0/6 | t 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 e 0
 q r 0/6 e r 0/6 0/6 r | h r q 0/6 r
 ```)
 
-// Every rest value in one row. The pin here is that the whole rest and the half
-// rest are *not* the same picture: the block hangs below its line in one and
-// sits on it in the other, and for a long time both drew identically.
+// Every rest value in one row.
+//
+// Two pins. Rests are drawn *inside* the staff and carry no stem — the rhythm
+// lane above describes notes that sound, and a rest is not one of them; the
+// published sheet in research/TNT_0001.png sets them exactly so. And the whole
+// rest and the half rest are not the same picture: the block hangs below its
+// line in one and sits on it in the other, which is the only thing that tells
+// them apart, and for a long time both drew identically.
 #tab(theme: vt, ```
 w r | h r r | q r r r r | e r r r r r r r r
 ```)

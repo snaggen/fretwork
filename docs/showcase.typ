@@ -26,33 +26,48 @@
 
 #let techniques = {
   caption[Hammer-on, pull-off, legato and shift slide — one slur for both, direction tells which:]
-  tab(theme: thm, ```
+  tab(theme: thm, show-time: false, ```
   q 5/3h7 7/3p5 5/3s7 5/3S7 |.
   ```)
 
   caption[A tie hangs under its line — the mirror of the slur above, so neither can be read for the other:]
-  tab(theme: thm, ```
+  tab(theme: thm, show-time: false, ```
   h 5/3~ q 5/3 7/3 | h (5/1 5/2 5/3)~ (5/1 5/2 5/3) |.
   ```)
 
   caption[Bend, half-step bend, bend and release, pre-bend. Every arrow in a system ends level:]
-  tab(theme: thm, ```
+  tab(theme: thm, show-time: false, ```
   q 7/3b 7/3b(1/2) 7/3br 7/3B |.
   ```)
 
+  caption[Grace notes lean on the beat without taking any of it, and a fermata holds:]
+  tab(theme: thm, show-time: false, ```
+  q g 3/3 5/3 7/3 G 5/3 7/3 g 3/3h5 5/3 | h 7/3F rF |.
+  ```)
+
+  caption[Dynamics sit below the staff, where nothing else is competing for the room:]
+  tab(theme: thm, show-time: false, ```
+  !mf q 0/6 2/6 3/6 5/6 | {cresc: q 3/6 5/6 7/6 8/6} | !ff q 10/6 8/6 7/6 5/6 |.
+  ```)
+
   caption[Vibrato, wide vibrato, natural and pinch harmonic, tapping, ghost note:]
-  tab(theme: thm, ```
+  tab(theme: thm, show-time: false, ```
   q 7/3v 7/3V 12/3* 5/3PH | q 7/3T 7/3g h 7/3v |.
   ```)
 
   caption[Palm mute and let ring bracket what they wrap; a free instruction goes in quotes:]
-  tab(theme: thm, ```
+  tab(theme: thm, show-time: false, ```
   {PM: e 0/6 0/6 0/6 0/6} {LR: e (0/1 2/2 2/3) 0/6 0/6 0/6}
   | "w/ bar" h 7/3V q 5/3s12 5/3 |.
   ```)
 
+  caption[A time signature is set on the staff, and can change at any bar:]
+  tab(theme: thm, ```
+  [3/4] q 0/6 2/6 3/6 | [7/8] e 0/6 2/6 3/6 5/6 7/6 8/6 10/6 |.
+  ```)
+
   caption[Repeats, endings and repeat counts — `repeat-style: "ornate"` flares the serifs:]
-  tab(theme: theme(color: ink, faint: faint, repeat-style: "ornate"), ```
+  tab(theme: theme(color: ink, faint: faint, repeat-style: "ornate"), show-time: false, ```
   |: q 0/6 0/6 0/6 0/6
    | {V1: q 3/6 3/6 3/6 3/6 :|x3}
      {V2: q 5/6 5/6 h 7/6 ||}

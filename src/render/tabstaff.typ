@@ -11,8 +11,9 @@
 //
 // Callers must be inside a context, since glyph widths are measured.
 
-#import "../model.typ": get-technique, MUTED
+#import "../model.typ": get-technique, has-technique, MUTED
 #import "../rational.typ" as r
+#import "../layout/beams.typ": flags-of
 #import "glyphs.typ" as g
 #import "meter.typ"
 
@@ -131,6 +132,32 @@
 /// y-position of a string's line, counted from the top of the staff.
 #let string-y(theme, string) = (string - 1) * theme.staff-space
 
+// A rest is drawn *inside* the staff, in the place a note would have taken —
+// not in the rhythm lane, which carries only what describes a note that sounds.
+// Read off `research/TNT_0001.png`, a tab-only sheet in exactly this format: its
+// eighth rests span 1.50 to 2.67 staff spaces below the top line, so their
+// centre sits at 2.08 of a five-space staff, a little above its middle. Nothing
+// is drawn above them at all — no stem and no flag, the rest glyph carrying its
+// own duration.
+#let _REST-CENTRE = 0.417 // of the staff height
+// The reference's eighth rest is 1.17 spaces tall where this package's is 1.75,
+// which is the size it was drawn at for a lane with room to spare. Inside the
+// staff it has to fit between the lines.
+#let _REST-SCALE = 0.67
+
+/// Where a rest is centred, and the line a whole or half rest is measured from.
+///
+/// Both fall out of `_REST-CENTRE`: the block rests round it to an actual line,
+/// since hanging under or sitting on one is the only thing that tells them
+/// apart, and the rest are centred on the unrounded height.
+#let rest-anchor(theme, strings) = {
+  let h = height(theme, strings)
+  (
+    centre: _REST-CENTRE * h,
+    line: calc.round(_REST-CENTRE * (strings - 1)) * theme.staff-space,
+  )
+}
+
 /// How much smaller a grace note's fret number is set than a real one.
 ///
 /// Small enough to read at a glance as an ornament rather than as a beat, but
@@ -142,17 +169,20 @@
 /// The edges are pinned to the glyph itself rather than to the line box, so the
 /// measured height *is* the cap height and centring the box on a string line
 /// centres the digits on it exactly.
-#let fret-label(theme, fret, grace: false) = {
+#let fret-label(theme, fret, grace: false, ghost: false) = {
   let muted = fret == MUTED
+  let body = if muted { "x" } else { str(fret) }
   text(
     font: theme.font,
     size: theme.fret-size * (if grace { GRACE-SCALE } else { 1.0 }),
     weight: 500,
     fill: theme.color,
     number-width: "tabular",
-    top-edge: if muted { "x-height" } else { "cap-height" },
-    bottom-edge: "baseline",
-    if muted { "x" } else { str(fret) },
+    // Parentheses reach below the baseline and above the cap, so pinning the
+    // edges to the digit would clip them. A ghost note measures its own box.
+    top-edge: if ghost { "bounds" } else if muted { "x-height" } else { "cap-height" },
+    bottom-edge: if ghost { "bounds" } else { "baseline" },
+    if ghost { "(" + body + ")" } else { body },
   )
 }
 
@@ -187,13 +217,16 @@
   if ev.notes.len() == 0 { return (total: 0pt, anchor: 0pt) }
   let gap = _link-gap(theme)
   let grace = ev.at("grace", default: none) != none
-  let label(fret) = fret-label(theme, fret, grace: grace)
-  let anchor = ev.notes.map(n => measure(label(n.fret)).width).fold(0pt, calc.max)
+  // A note's own number may be parenthesised; a fret it is linked to is not,
+  // the ghost mark belonging to the strike rather than to the run.
+  let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
+  let own(n) = label(n.fret, ghost: has-technique(n, "ghost"))
+  let anchor = ev.notes.map(n => measure(own(n)).width).fold(0pt, calc.max)
   let total = ev
     .notes
     .map(n => {
       let widths = (
-        (measure(label(n.fret)).width,)
+        (measure(own(n)).width,)
           + link-targets(n).map(t => measure(label(t.fret)).width)
       )
       widths.fold(0pt, (a, b) => a + b) + gap * (widths.len() - 1)
@@ -644,13 +677,36 @@
   // An arpeggio or a rake is a wavy line beside the chord, spanning the strings
   // it touches — string-anchored, so it belongs here rather than in a lane.
   let strokes = ()
+  // Rests, which stand where a note would have stood.
+  let rests = ()
+  let anchor = rest-anchor(theme, strings)
+  for pe in placed {
+    if pe.event.kind != "rest" { continue }
+    let flags = flags-of(pe.event)
+    // No note value, no rest glyph: an imported tab with no rhythm cannot say
+    // how long the silence is, and guessing would be worse than leaving it.
+    if flags == none { continue }
+    let glyph = g.rest-for(
+      theme.staff-space * (if flags < 0 { 1.0 } else { _REST-SCALE }),
+      flags,
+      fill: theme.color,
+    )
+    // A whole rest hangs below its line and a half rest sits on it; everything
+    // else is centred where a note would be.
+    let top = if flags <= -2 {
+      anchor.line
+    } else if flags == -1 {
+      anchor.line - glyph.height
+    } else { anchor.centre - glyph.height / 2 }
+    rests.push((x: pe.x - glyph.width / 2, top: top, glyph: glyph))
+  }
   for (i, pe) in placed.enumerate() {
     // A grace note's numbers — its own and any it is linked to — are set small,
     // which is the whole of how the staff shows that it is an ornament.
     let grace = pe.event.at("grace", default: none) != none
-    let label(fret) = fret-label(theme, fret, grace: grace)
+    let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
     for n in pe.event.notes {
-      let body = label(n.fret)
+      let body = label(n.fret, ghost: has-technique(n, "ghost"))
       let size = measure(body)
       let y = string-y(theme, n.string)
       labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
@@ -771,7 +827,21 @@
           end: l.x + l.w / 2 + theme.gap-padding,
         ))
     } else { () }
-    lines.push(_line-with-gaps(theme, y, width, _merge(mark-gaps + number-gaps)))
+    // A rest crosses whatever lines it happens to span, so the gap is taken
+    // from its extent rather than from a string number. The block rests are the
+    // exception: they are *measured* from their line, so it has to run behind
+    // them or there is nothing left to tell a whole rest from a half one.
+    let rest-gaps = rests
+      .filter(rest => (
+        rest.glyph.height > 0.5 * sp
+          and y > rest.top - theme.gap-padding
+          and y < rest.top + rest.glyph.height + theme.gap-padding
+      ))
+      .map(rest => (
+        start: rest.x - theme.gap-padding,
+        end: rest.x + rest.glyph.width + theme.gap-padding,
+      ))
+    lines.push(_line-with-gaps(theme, y, width, _merge(mark-gaps + number-gaps + rest-gaps)))
   }
 
   // 3. Barlines. Every system opens with one at the staff edge; each measure
@@ -834,6 +904,10 @@
           dy: string-y(theme, l.string) - l.h / 2,
           l.body,
         )
+      }
+
+      for rest in rests {
+        place(top + left, dx: rest.x, dy: rest.top, rest.glyph.body)
       }
 
       for st in strokes {

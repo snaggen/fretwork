@@ -80,6 +80,8 @@ A note is always `fret/string`, string 1 being the highest-sounding.
 | `r` | rest |
 | `@E5` | names a chord above the next event; `@"C#m7 add9"` when it contains spaces |
 | `"Harm."` | a playing instruction above the next event |
+| `!mf` | a dynamic, below the staff, holding until the next one |
+| `g` `G` | the next event is a grace note — before the beat, or on it |
 | `//` | comment to end of line |
 
 ### Techniques
@@ -101,8 +103,12 @@ Suffixes, always after the string number.
 | `7/3tr9` `7/3tr` | trill, to the given fret or unspecified |
 | `7/3TP` | tremolo picking |
 | `7/3PS` | pick scrape |
-| `(…)A` `(…)R` | arpeggiate / rake — a wavy line beside the chord |
+| `7/3W` | vibrato with the tremolo bar, printed `w/ bar` |
+| `7/3F` `rF` `xF` | fermata — over a note, a rest or a bare mute |
+| `(…)A` `(…)An` `(…)Au` | arpeggiate, thick string to thin or the reverse |
+| `(…)R` `(…)Rn` `(…)Ru` | rake, likewise |
 | `7/3n` `7/3u` | downstroke ⊓ / upstroke ∨ |
+| `0/4SL` `3/3PO` `x/3DS` | bass: slap / pop / dead slap |
 
 A hammer-on, pull-off or slide target prints as a further number on the same
 string, joined by a slur or a slide line, and shares the parent event's note
@@ -110,6 +116,15 @@ value. Notes needing independent rhythm are written as separate events.
 
 Suffixes chain — `5/3h7v` — and a suffix after a closing parenthesis binds to
 every note of the chord: `(2/5 2/4 0/6)~`.
+
+A rest and a bare mute have no note to hang a suffix on, so `r` and `x` take a
+suffix chain of their own and record it on the event. That is what lets `rF`
+hold a rest, the one place a fermata is as common as it is over a note.
+
+An arpeggio's direction letter is consumed by the arpeggio, so `Au` is one
+technique rather than an arpeggio followed by a stray upstroke. Songsterr
+separates a *brush* from an arpeggio by speed alone and draws the two
+identically; this is the one mark, not two the page could not tell apart.
 
 ### Groups
 
@@ -121,16 +136,23 @@ One mechanism for spans, tuplets and endings.
 {3: e 0/6 2/6 3/6}          triplet — a numeric name is a tuplet
 {7/4: … }                   an explicit tuplet ratio
 {V1: … } {V2: … }           first and second endings
+{cresc: … } {dim: … }       growing louder or quieter
 ```
 
 Groups nest. Spans and tuplets are recorded on each event rather than as index
 ranges, so a group split across a system break still draws correctly on both
 halves.
 
-### Barlines
+### Barlines and the time signature
 
 `|` single · `||` double · `|.` final · `|:` repeat start · `:|` repeat end ·
-`:|x3` with a repeat count.
+`:|x3` with a repeat count, printed as "Play 3 times" over the sign.
+
+`[7/8]` at the start of a measure sets the time signature there. Brackets,
+because the grammar has already spoken for a bare `7/8` — that is fret seven on
+string eight — and because nothing else in either syntax uses one. `tab(time:)`
+sets it for a whole passage; either way it is printed once, at the start, and
+`show-time: false` suppresses it on the second and later blocks of one piece.
 
 ### Unambiguity
 
@@ -262,6 +284,7 @@ e|---0---2---3-5---------7--|
 | `PM:` `LR:` | bracketed spans — a run of dashes marks the extent |
 | `1:` `2:` | first and second endings — a run of dashes marks the measures, which get volta brackets |
 | `T:` | free playing instruction (`Harm.`, `w/ bar`) |
+| `D:` | dynamics — a misspelt one is reported rather than printed, since a reader cannot tell one that means nothing from one they do not know |
 
 `R:` reuses the DSL's tokens deliberately: no second notation to learn and no
 second parser to keep in step. `C:` and `T:` rows split on runs of two or more
@@ -296,25 +319,31 @@ reported. Uneven column counts are the most reliable signal of a broken source.
 
 ## Technique symbols
 
-Following the Hal Leonard legend.
+Following the Hal Leonard legend, and — where the legend is silent because it
+always has a notation staff to fall back on — the Songsterr guide, which
+renders tablature alone.
 
 **Supported.** Hammer-on, pull-off, legato and shift slide, bend,
 bend-and-release, pre-bend and pre-bend-and-release, vibrato and wide vibrato,
-palm mute, let ring, dead string, tie, ghost notes in parentheses, natural,
-pinch and harp harmonics, accent, marcato, staccato and tenuto, down- and
-upstroke, tapping, trill, tremolo picking, pick scrape, arpeggiate, rake, first
-and second endings, repeat signs and repeat counts.
+tremolo-bar vibrato, palm mute, let ring, dead string, tie, ghost notes in
+parentheses, natural, pinch and harp harmonics, accent, marcato, staccato and
+tenuto, down- and upstroke, tapping, trill, tremolo picking, pick scrape,
+arpeggiate and rake with a direction, bass slap, pop and dead slap, fermata,
+grace notes before and on the beat, dynamics and gradual changes, the time
+signature and changes to it, first and second endings, repeat signs and repeat
+counts.
 
 **Not supported**, with the reason:
 
 | From the legend | Why not |
 |---|---|
 | Rhythm slashes, musical staff | Out of phase 1 by design |
-| Grace-note bend | Grace notes are not in the model; adding them touches the rhythm engine, not just a renderer |
 | Unison bend | Two notes bent to one pitch needs a bend that spans strings, not one anchored to a note |
-| Vibrato bar dive / scoop / dip | Needs a pitch-contour sub-model, not a technique flag |
+| Vibrato bar dive / scoop / dip | Needs a pitch-contour sub-model, not a technique flag. `7/3W` covers the plain bar vibrato, which is the one member of the family that is only a flag |
 | D.S., D.C., Coda, Fine | The segno and coda glyphs are drawn and exported; the navigation markup that would place them is not built |
 | Rhy. Fig., Riff, Fill, tacet labels | Available as free text via `"…"`, not as first-class labels |
+| Rasgueado, golpe, wah-wah, sustain pedal | Niche enough that the syntax would cost more than the marks are worth |
+| The swing-feel graphic | `song(tempo-words: "Swing 8ths")` carries the text form, which is what a tab reader acts on |
 
 ## Visual requirements
 
@@ -390,7 +419,33 @@ Looking good is a stated goal, so it is specified as testable requirements.
    number whichever string it is on, and adding an accent elsewhere in the
    system must not move it. A pre-bend is already bent when struck, so its
    arrow is straight where an ordinary bend's curves.
-12. **Two-digit frets are centred on their column** and get a correspondingly
+12. **The time signature is set on the staff, not above it**, with the string
+   lines running behind the numerals as they run behind the `TAB` mark. Read off
+   `research/TNT_0001.png`: each numeral is 1.22 staff spaces tall and the two
+   stack tight against the staff's middle, all but touching, so the pair reads
+   as one mark. Printed at the start of a passage and wherever it changes — not
+   on every system, which a clef does but a signature does not, since it does
+   not affect how the notes in front of the reader are read.
+
+13. **A grace note is an ornament, not a beat.** Its numbers are set at two
+   thirds size, its stem is short and always flagged whatever value it was
+   written with, and it is never beamed to the note it leans on — beaming the
+   two would say they share a beat, which is the one thing a grace note does
+   not do. It is spaced by a fixed narrow width rather than by its note value,
+   and `sounding-duration` returns zero for it so that a bar containing one
+   stays *checked* rather than becoming unmeasurable.
+
+14. **A rest is drawn inside the staff, and carries no stem.** It stands where
+   a note would have stood, because that is what it is; the rhythm lane above
+   describes notes that sound, and a rest is not one of them. Measured off
+   `research/TNT_0001.png`, a tab-only sheet in exactly this format: its eighth
+   rests span 1.50 to 2.67 staff spaces below the top line, centred a little
+   above the staff's middle, with nothing at all above them. A whole rest hangs
+   below the nearest line and a half rest sits on it — the only thing that tells
+   the two apart, and the reason the line runs behind them where it is broken
+   around every other rest.
+
+15. **Two-digit frets are centred on their column** and get a correspondingly
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
 
@@ -467,11 +522,14 @@ src/
     lanes.typ        vertical stacking
   render/
     glyphs.typ       vector glyphs
-    tabstaff.typ     string lines with gaps, TAB mark, fret numbers,
+    tabstaff.typ     string lines with gaps, TAB mark, fret numbers, rests,
                      and everything anchored to a string: slurs, slides, bends
-    rhythm.typ       stems, beams, rests, count row
-    techniques.typ   marks that belong to a lane: spans, vibrato, articulations
-    voltas.typ       the numbered brackets over first and second endings
+    meter.typ        the time signature's stacked numerals
+    rhythm.typ       stems, beams, grace stems, count row
+    marks.typ        the lane machinery both mark lanes are built from
+    techniques.typ   marks in the lane above: spans, vibrato, articulations
+    dynamics.typ     marks in the lane below: dynamics, cresc. and dim.
+    voltas.typ       the brackets over endings, and the repeat counts
     chordnames.typ   chord names with accidentals and raised figures
 ```
 
@@ -483,7 +541,11 @@ The split between the two technique renderers is by what a mark is positioned
 against. Anything anchored to a **string** — the second number of a hammer-on,
 the line of a slide, a bend arrow — is drawn by `tabstaff.typ`, because its
 height depends on which string the note is on. Anything belonging to a **lane**
-above the staff is drawn by `techniques.typ`. Marks anchored to a string reach
+above the staff is drawn by `techniques.typ`, and one belonging to the lane
+below it by `dynamics.typ`. Those two share `marks.typ`, which owns the packing
+rule, the labelled dashed span and the lane plumbing: a mark is
+`(x0, x1, height, draw: y => …)` and nothing in there cares what it is. Marks
+anchored to a string reach
 outside the staff, so `tabstaff.typ` reports how far with `overflow-above` and
 `overflow-below`, and the staff's lane reserves exactly that much instead of
 relying on the box not clipping.

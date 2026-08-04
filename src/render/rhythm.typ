@@ -1,4 +1,7 @@
-// The rhythm lane: stems, beams, flags, rests and the count row.
+// The rhythm lane: stems, beams, flags and the count row.
+//
+// Rests are not here: they are drawn inside the staff, where they take the
+// place of a note rather than describing one.
 //
 // Rock tab shows rhythm above the staff without a notation staff underneath, so
 // there are no noteheads to hang the values on. Stems descend from a beam at the
@@ -13,10 +16,14 @@
 #import "../layout/lanes.typ": empty-lane, lane
 #import "glyphs.typ" as g
 
-/// Whether the lane has anything to draw: a note value anywhere, or a grace
-/// note, which is drawn whether or not one is in force.
+/// Whether the lane has anything to draw: a *sounding* event with a note value,
+/// or a grace note, which is drawn whether or not one is in force.
+///
+/// Rests are excluded because they are not drawn here at all — they carry their
+/// own duration inside the staff, and a bar of nothing but rests needs no lane.
 #let _has-rhythm(system) = system.measures.any(m => m.events.any(pe => (
-  pe.event.duration != none or pe.event.at("grace", default: none) != none
+  (pe.event.duration != none and pe.event.kind != "rest")
+    or pe.event.at("grace", default: none) != none
 )))
 
 /// Whether the system contains a tuplet, which needs room for its numeral.
@@ -100,7 +107,7 @@
       let groups = group-beams(events, m.time)
       let beamed = groups.filter(gr => gr.len() > 1).flatten()
 
-      // Stems, flags and rests.
+      // Stems and flags.
       for (i, pe) in m.events.enumerate() {
         let ev = pe.event
         let flags = flags-of(ev)
@@ -114,20 +121,11 @@
         }
         if flags == none { continue }
 
-        if ev.kind == "rest" {
-          let rest = g.rest-for(sp, flags, fill: theme.color)
-          // Centring is right for every rest: the flagged ones are drawn about
-          // their own middle, and the whole and half rests each carry the line
-          // they are measured from at their middle, so centring puts that line
-          // at one height and their blocks on opposite sides of it.
-          place(
-            top + left,
-            dx: pe.x - rest.width / 2,
-            dy: beam-y + (theme.stem-length - rest.height) / 2,
-            rest.body,
-          )
-          continue
-        }
+        // A rest gets no stem and no flag. The rest glyph itself says how long
+        // the silence is, and it is drawn inside the staff by `tabstaff.typ` —
+        // which is where the published sheets put it, and where a reader looks
+        // for it, since it takes the place of a note rather than describing one.
+        if ev.kind == "rest" { continue }
 
         if flags > -2 {
           _bar(theme, pe.x - theme.stem / 2, beam-y, theme.stem, foot - beam-y)

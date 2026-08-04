@@ -48,14 +48,19 @@ for mode in light dark; do
   render ascii showcase.typ "$mode" "--input figure=ascii"
 done
 
-# The guide is many pages and goes straight to docs/, uncropped. 130 dpi rather
-# than the figures' resolution: 195 mm at 130 dpi is just under a thousand
-# pixels, about what a browser gives a markdown column, and every pixel past
-# that is bytes in the repository for nothing on the screen.
+# The guide is many pages and goes straight to docs/, uncropped.
+#
+# Its own resolution, for the same reason the figures have theirs and computed
+# the same way: the guide sets a 2.1 mm staff, so the space has to be a whole
+# number of pixels or the lines rasterise in different sub-pixel phases and the
+# thinnest of them disappear. 16 px per space needs 16 × 25.4 / 2.1 dpi, which
+# leaves 1.2 px of ink in a line — the smallest of the whole-pixel candidates
+# that still draws every line solidly.
+GUIDE_PPI=193.5238
 rm -f "$root/docs"/guide-*.png
 for mode in light dark; do
   typst compile --root "$root" "$root/docs/guide.typ" \
-    "$root/docs/guide-$mode-{0p}.png" --ppi 130 --input "mode=$mode"
+    "$root/docs/guide-$mode-{0p}.png" --ppi "$GUIDE_PPI" --input "mode=$mode"
 done
 
 # GUIDE.md is generated rather than maintained, because it is nothing but a list

@@ -169,10 +169,24 @@ q 7/3tr9 e 7/3TP 7/3TP q 12/6PS 7/3v |.
 ```)
 
 An arpeggio `A` and a rake `R` are wavy lines beside the chord, spanning the
-strings they touch:
+strings they touch. The arrowhead says which way it is rolled: `An` runs thick
+string to thin, which is what a bare `A` means, and `Au` reverses it.
 
 #tab(```
-q (0/1 2/2 2/3 1/4)A h (3/1 3/2 0/3 0/4)R q (0/1 2/2 2/3 1/4)A |.
+q (0/1 2/2 2/3 1/4)An h (3/1 3/2 0/3 0/4)Au q (0/1 2/2 2/3 1/4)Rn |.
+```)
+
+Vibrato with the tremolo bar is `W`, and a fermata is `F` — over a note, over a
+rest, or over a bare mute, since `r` and `x` take suffixes of their own:
+
+#tab(```
+h 7/3W 7/3 | q 7/3F rF xF 5/3 |.
+```)
+
+On bass, slap `SL`, pop `PO` and dead slap `DS` print over the note they strike:
+
+#tab(tuning: tunings.bass, ```
+q 0/4SL 3/3PO 0/4SL x/3DS | e 0/4SL 3/3PO 0/4SL 3/3PO q 5/2PO 0/4SL |.
 ```)
 
 Palm mute `{PM: … }` and let ring `{LR: … }` bracket whatever they wrap, and a
@@ -183,17 +197,58 @@ free instruction goes in quotes:
 | "w/ bar" h 7/3V q 5/3s12 5/3 |.
 ```)
 
+= Grace notes
+
+A grace note is an ornament rather than a beat: it is squeezed out of its
+neighbour's time and takes none of the bar's, so a bar full of them is still
+full. A standalone `g` marks the next event as one played before the beat, `G`
+as one starting on it — the slash through the stem is the difference. Inside a
+token `g` is still the ghost note; the two never meet, because a token holds no
+whitespace.
+
+#src("q g 3/3 5/3 7/3 G 5/3 7/3 g 3/3h5 5/3")
+
+#tab(```
+q g 3/3 5/3 7/3 G 5/3 7/3 g 3/3h5 5/3 | q 5/3 g 7/3 5/3 g 3/3 h 5/3 |.
+```)
+
+= Dynamics
+
+Dynamics go below the staff, where nothing else is competing for the room. A
+dynamic holds until the next one; `{cresc: … }` and `{dim: … }` mark the
+stretches that change gradually.
+
+#src("!mf q 0/6 2/6 3/6 5/6 | {cresc: q 3/6 5/6 7/6 8/6} | !ff q 10/6 …")
+
+#tab(```
+!mf q 0/6 2/6 3/6 5/6 | {cresc: q 3/6 5/6 7/6 8/6}
+| !ff q 10/6 8/6 {dim: 7/6 5/6} | !p q 3/6 2/6 h 0/6 |.
+```)
+
 = Barlines, repeats and endings
 
 `|` single · `||` double · `|.` final · `|:` opens a repeat · `:|` closes one ·
-`:|x3` says how many times · `{V1: … }` and `{V2: … }` are first and second
-endings.
+`:|x3` says how many times, and prints it · `{V1: … }` and `{V2: … }` are first
+and second endings.
 
 #tab(```
 |: q 0/6 0/6 0/6 0/6
  | {V1: q 3/6 3/6 3/6 3/6 :|x3}
    {V2: q 5/6 5/6 h 7/6 ||}
  | q 7/6 5/6 h 0/6 |.
+```)
+
+= The time signature
+
+`tab(time: …)` sets it for a whole passage, and `[7/8]` at the start of a
+measure changes it there. Brackets, because a bare `7/8` is already fret seven
+on string eight. It is printed once, at the start; pass `show-time: false` on
+the second and later blocks of one piece.
+
+#src("[3/4] q 0/6 2/6 3/6 | [7/8] e 0/6 2/6 3/6 5/6 7/6 8/6 10/6")
+
+#tab(```
+[3/4] q 0/6 2/6 3/6 | [7/8] e 0/6 2/6 3/6 5/6 7/6 8/6 10/6 | [4/4] q 0/6 2/6 h 3/6 |.
 ```)
 
 #pagebreak()

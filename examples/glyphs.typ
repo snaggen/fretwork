@@ -40,7 +40,7 @@
 
 #v(4mm)
 
-#row("whole / half rest", sp => g.whole-rest(sp))
+#row("whole / half rest", sp => g.block-rest(sp))
 #row("quarter rest", sp => g.quarter-rest(sp))
 #row("eighth rest", sp => g.eighth-rest(sp))
 #row("sixteenth rest", sp => g.sixteenth-rest(sp))

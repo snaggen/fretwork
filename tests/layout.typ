@@ -8,6 +8,7 @@
 #import "/src/parse/dsl.typ": parse, parse-measures
 #import "/src/render/tabstaff.typ"
 #import "/src/render/dynamics.typ"
+#import "/src/render/rhythm.typ"
 
 #let thm = theme(staff-space: 3mm)
 #let events(src) = parse-measures(src).first().events
@@ -202,6 +203,21 @@
      "…and a dynamic opens one")
   ok(dynamics.lane-for(thm, system("{cresc: q 0/6 0/6 0/6 0/6}"), 120mm).height > 0pt,
      "…as does a gradual change on its own")
+
+  // Rests are drawn inside the staff, so a bar of nothing but them needs no
+  // rhythm lane at all — and a bar that mixes them with notes still does.
+  eq(rhythm.lane-for(thm, system("q r r r r"), 120mm).height, 0pt,
+     "a bar of rests asks for no rhythm lane")
+  ok(rhythm.lane-for(thm, system("q r 0/6 r 0/6"), 120mm).height > 0pt,
+     "…but one note in it brings the lane back for that note's stem")
+
+  // A ghost note prints in parentheses, so it is wider than the bare number and
+  // the gap in the string line has to follow.
+  ok(
+    tabstaff.event-metrics(thm, events("q 5/3g").first()).anchor
+      > tabstaff.event-metrics(thm, events("q 5/3").first()).anchor,
+    "a ghost note claims the width of its parentheses",
+  )
 
   // An ornate repeat sign's serifs reach past the staff at both ends, so the
   // lane has to reserve room for them too.

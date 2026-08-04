@@ -71,11 +71,18 @@ suffix after a closing parenthesis binds to every note of a chord.
 | `7/3n` `7/3u` | downstroke / upstroke |
 | `7/3T` `7/3g` | tapping / ghost note |
 | `7/3tr9` `7/3TP` `7/3PS` | trill / tremolo picking / pick scrape |
-| `(…)A` `(…)R` | arpeggiate / rake |
+| `7/3W` `7/3F` | tremolo-bar vibrato / fermata — `rF` and `xF` too |
+| `(…)An` `(…)Au` `(…)Rn` | arpeggiate or rake, thick string to thin or back |
+| `0/4SL` `3/3PO` `x/3DS` | bass: slap / pop / dead slap |
 
-Groups are one mechanism doing four jobs: `{PM: … }` and `{LR: … }` are palm mute
+A standalone `g` or `G` makes the next event a grace note, before the beat or on
+it. `!mf` sets a dynamic, printed below the staff. `[7/8]` at the start of a
+measure changes the time signature there.
+
+Groups are one mechanism doing five jobs: `{PM: … }` and `{LR: … }` are palm mute
 and let ring, `{3: … }` is a triplet, `{7/4: … }` states a tuplet ratio outright,
-and `{V1: … }` `{V2: … }` are first and second endings. They nest.
+`{V1: … }` `{V2: … }` are first and second endings, and `{cresc: … }` `{dim: … }`
+are the stretches that change in loudness. They nest.
 
 ## Importing ASCII tab
 
@@ -97,6 +104,7 @@ exactly the column it sits over:
 S:  Main Riff
 R:  q   q   q   q    q   q   h
 C:  E5               G5
+D:  mf               ff
 PM: ---------
 e|----------------|----------------|
 B|----------------|----------------|
@@ -108,8 +116,9 @@ E|--0---0---0---0-|--3---3---12----|
 ```
 
 `R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-instruction, `PM:`/`LR:` spans, `1:`/`2:` first and second endings. `R:` uses the
-same tokens as the native syntax, so there is no second notation to learn.
+instruction, `D:` dynamics, `PM:`/`LR:` spans, `1:`/`2:` first and second
+endings. `R:` uses the same tokens as the native syntax, so there is no second
+notation to learn.
 
 When the rhythm is regular one argument replaces the row — `rhythm: even(1/8)`,
 `rhythm: fill`, or `rhythm: "q q e e"`. Facts about the whole piece are named
