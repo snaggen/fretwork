@@ -379,6 +379,40 @@
       continue
     }
 
+    // A time signature, written `[7/8]`. Brackets rather than a bare `7/8`,
+    // which the grammar has already spoken for: it is fret seven on string
+    // eight. Nothing else in either syntax uses a bracket.
+    if c == "[" {
+      let close = i + 1
+      while close < chars.len() and chars.at(close) != "]" { close += 1 }
+      if close >= chars.len() {
+        errors.fail("tab", loc, "unclosed time signature", source: source)
+      }
+      let body = chars.slice(i + 1, close).join().trim()
+      let parts = body.split("/")
+      let bad = parts.len() != 2 or parts.any(p => p == "" or p.clusters().any(d => d not in _DIGITS))
+      if bad {
+        errors.fail(
+          "tab",
+          loc,
+          "time signature '[" + body + "]' is not 'beats/unit', as in '[7/8]'",
+          source: source,
+        )
+      }
+      let (beats, unit) = (int(parts.at(0)), int(parts.at(1)))
+      if beats < 1 or unit not in (1, 2, 4, 8, 16, 32) {
+        errors.fail(
+          "tab",
+          loc,
+          "time signature '[" + body + "]' needs at least one beat and a unit of 1, 2, 4, 8, 16 or 32",
+          source: source,
+        )
+      }
+      tokens.push((kind: "time", time: (beats, unit), loc: loc))
+      i = close + 1
+      continue
+    }
+
     if c == "{" {
       let j = i + 1
       while j < chars.len() and chars.at(j) != ":" and chars.at(j) != "}" { j += 1 }
@@ -510,6 +544,9 @@
   let pending-chord = none
   let pending-text = none
   let start-repeat = false
+  // A time signature belongs to the measure it opens, and only where it
+  // changes: `none` means "carry on with whatever is in force".
+  let time = none
 
   for tok in tokens {
     if tok.kind == "barline" {
@@ -522,6 +559,7 @@
       if events.len() > 0 or start-repeat {
         measures.push(m.measure(
           events: events,
+          time: time,
           start-repeat: start-repeat,
           end-repeat: tok.style == "repeat-end",
           end: if tok.style in ("double", "final") { tok.style } else { "single" },
@@ -530,6 +568,7 @@
         ))
         events = ()
         start-repeat = false
+        time = none
       }
       if tok.style == "repeat-start" { start-repeat = true }
       continue
@@ -537,6 +576,11 @@
 
     if tok.kind == "duration" {
       duration = tok.value
+      continue
+    }
+
+    if tok.kind == "time" {
+      time = tok.time
       continue
     }
 
@@ -613,6 +657,7 @@
   if events.len() > 0 or start-repeat {
     measures.push(m.measure(
       events: events,
+      time: time,
       start-repeat: start-repeat,
       end-repeat: false,
       end: "single",
@@ -739,6 +784,11 @@
   for (mi, measure) in part.measures.enumerate() {
     let parts = ()
     if measure.start-repeat { parts.push("|:") }
+    // The signature goes after the repeat sign and before the ending bracket,
+    // which is the order the tokenizer reads them back in.
+    if measure.time != none {
+      parts.push("[" + str(measure.time.at(0)) + "/" + str(measure.time.at(1)) + "]")
+    }
     if measure.volta != none and measure.volta != open-volta {
       parts.push("{V" + str(measure.volta.first()) + ":")
       open-volta = measure.volta

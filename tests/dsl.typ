@@ -235,3 +235,27 @@
   true,
   "a bare chord name stays unquoted",
 )
+
+// --- time signatures ------------------------------------------------------
+
+#eq(
+  parse-measures("[7/8] e 0/6 | q 3/6").first().time,
+  (7, 8),
+  "a bracketed signature lands on the measure it opens",
+)
+#eq(
+  parse-measures("[7/8] e 0/6 | q 3/6").last().time,
+  none,
+  "…and not on the next, which merely inherits it",
+)
+#eq(
+  parse-measures("q 0/6 | [12/8] e 3/6").last().time,
+  (12, 8),
+  "a change mid-piece belongs to the measure after the barline",
+)
+#eq(
+  parse("q 0/6 | [3/4] q 3/6", time: (4, 4)).measures.first().time,
+  none,
+  "an unmarked measure declares nothing; the part's own signature covers it",
+)
+#round-trip("[7/8] e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 | [4/4] q 3/6 5/6 7/6 8/6")

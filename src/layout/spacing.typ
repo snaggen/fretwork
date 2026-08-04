@@ -47,6 +47,39 @@
   (events: widths, total: total)
 }
 
+/// Cap height of one time-signature numeral.
+///
+/// Measured off the published sheet in `research/TNT_0001.png`, where the pair
+/// spans 1.18 to 3.71 staff spaces on a six-string staff: each numeral is 1.22
+/// spaces tall, and the two nearly touch at the staff's middle. That is a
+/// constant in staff spaces rather than a fraction of the staff, so a bass tab
+/// prints the same size of signature as a guitar one and merely fills more of
+/// its shorter staff. The clamp only bites on a staff too short to hold it.
+#let meter-cap(theme, strings) = {
+  let h = (strings - 1) * theme.staff-space
+  calc.min(1.22 * theme.staff-space, h / 2 * 0.92)
+}
+
+/// Whether a measure prints a time signature.
+///
+/// Printed where it changes, and at the start of the piece — the convention a
+/// clef does not follow. Repeating it on every system would be a reminder the
+/// reader has not asked for, since unlike a clef it does not affect how the
+/// notes in front of them are read.
+#let prints-meter(measure, first) = first or measure.time != none
+
+/// Width claimed by a printed time signature, or zero where none is printed.
+///
+/// The same sheet leaves about 1.3 staff spaces of air on either side of the
+/// numerals. The drawn ones are measured and centred within this, so the
+/// estimate here only has to be close and a shade generous — a hair of extra
+/// air beats a numeral touching the first fret number.
+#let meter-allowance(theme, strings, measure, time, first) = {
+  if time == none or not prints-meter(measure, first) { return 0pt }
+  let digits = calc.max(str(time.at(0)).len(), str(time.at(1)).len())
+  digits * 0.86 * meter-cap(theme, strings) + 1.8 * theme.staff-space
+}
+
 /// Extra width claimed by a measure's opening and closing barlines.
 ///
 /// Repeat signs are wide, and a system whose measures all carry them must make

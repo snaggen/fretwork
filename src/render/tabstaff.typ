@@ -14,6 +14,7 @@
 #import "../model.typ": get-technique, MUTED
 #import "../rational.typ" as r
 #import "glyphs.typ" as g
+#import "meter.typ"
 
 // Vertical geometry shared by the drawing code and by `overflow-above`, in
 // staff spaces measured from the string's own line. Keeping the numbers in one
@@ -781,6 +782,18 @@
       lines.join()
       bars.join()
       place(top + left, dx: 0pt, dy: 0pt, mark.body)
+
+      // Time signatures, drawn over the lines rather than knocking them out —
+      // the same choice the TAB mark makes, and what the reference sheets do.
+      for pm in system.measures {
+        if pm.meter == none { continue }
+        place(top + left, dx: pm.meter.x, dy: 0pt, meter.draw(
+          theme,
+          strings,
+          pm.time,
+          pm.meter.width,
+        ))
+      }
 
       for l in labels {
         // An opaque patch instead of a broken line, when asked for.

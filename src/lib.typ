@@ -68,6 +68,11 @@
 /// `source` is either DSL source — a raw block or a string — or an already
 /// parsed part, which lets callers build one programmatically.
 ///
+/// `time` sets the signature for the whole passage; `[7/8]` in the source
+/// changes it at a measure. Either way it is printed once, at the start —
+/// pass `show-time: false` on the second and later blocks of one piece, so the
+/// reader is told the meter once rather than at every heading.
+///
 /// ```typc
 /// tab(```
 /// q (2/5 2/4 0/6)  q x  e 0/3 3/6 0/6 0/6
@@ -81,6 +86,7 @@
   capo: 0,
   anacrusis: false,
   count-in: false,
+  show-time: true,
   theme: default-theme,
   warn: true,
 ) = {
@@ -98,7 +104,14 @@
   layout(size => {
     let strings = string-count(part.tuning)
     let widths = _glyph-widths(thm, part)
-    let systems = layout-part(thm, part, widths, size.width, thm.tab-mark-width)
+    let systems = layout-part(
+      thm,
+      part,
+      widths,
+      size.width,
+      thm.tab-mark-width,
+      show-time: show-time,
+    )
 
     for (i, sys) in systems.enumerate() {
       // Every lane is drawn to the system's own width, not to the full line: an
@@ -139,10 +152,11 @@
 }
 
 /// Render a part programmatically, bypassing the DSL.
-#let render(part, theme: default-theme, count-in: false) = tab(
+#let render(part, theme: default-theme, count-in: false, show-time: true) = tab(
   part,
   theme: theme,
   count-in: count-in,
+  show-time: show-time,
 )
 
 /// Typeset a pasted ASCII tab.
@@ -217,8 +231,10 @@
       ),
       theme: theme,
       // The count row belongs to the pick-up into the piece, not to every
-      // section.
+      // section — and neither does the time signature, which is one piece of
+      // information however many sections it has been cut into.
       count-in: count-in and from == 0,
+      show-time: from == 0,
       warn: false,
     )
   }
