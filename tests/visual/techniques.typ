@@ -28,6 +28,16 @@ q 7/3v 7/3V 7/3tr9 7/3tr | 7/3TP 7/3PS 5/3PH 7/3HH
 {PM: q 0/6 0/6 0/6 0/6} | q "Harm." 12/3* 12/4* 12/5* 12/6*
 ```)
 
+// A repeat count shares the volta lane, written out rather than set as "x3",
+// and held clear of the boundary where a following ending's bracket starts.
+#tab(theme: vt, ```
+|: q 5/3 5/3 7/3 7/3 :|x4
+```)
+
+#tab(theme: vt, ```
+|: q 5/3 5/3 7/3 7/3 {V1: q 8/3 8/3 5/3 5/3 :|x3} {V2: q 3/3 3/3 5/3 5/3 |.}
+```)
+
 // A fermata takes the outermost level whatever else is there, since it governs
 // everything written under it — including over a rest and over a bare mute,
 // which have no note to carry a suffix and hold theirs on the event.

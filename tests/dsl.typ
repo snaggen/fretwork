@@ -347,3 +347,6 @@
   "!mf [7/8] g 5/3F e 7/3W (0/1 2/2)Au 0/4SL rF xF {cresc: e 3/6 5/6}"
     + " | [4/4] G 3/3h5 q 7/3 5/3PO x/3DS",
 )
+
+#eq(parse-measures("|: q 0/6 :|x3").first().repeat-count, 3, "a repeat count is parsed")
+#eq(parse-measures("|: q 0/6 :|").first().repeat-count, none, "…and absent when not written")
