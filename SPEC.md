@@ -439,8 +439,14 @@ Looking good is a stated goal, so it is specified as testable requirements.
    a note would have stood, because that is what it is; the rhythm lane above
    describes notes that sound, and a rest is not one of them. Measured off
    `research/TNT_0001.png`, a tab-only sheet in exactly this format: its eighth
-   rests span 1.50 to 2.67 staff spaces below the top line, centred a little
-   above the staff's middle, with nothing at all above them. A whole rest hangs
+   rests are centred a little above the staff's middle, at 0.417 of the staff
+   height, with nothing at all above them. The glyphs themselves are traced
+   outlines rather than strokes, because an engraved rest has a thick-to-thin
+   contrast along its length that a constant-weight stroke cannot express and
+   reads as spindly beside the fret numbers without. They are set a fifth
+   larger than the traced size, which puts an eighth rest a little above the
+   1.17 staff spaces the sheet measures — at the traced size it sits too quiet
+   on the page. A whole rest hangs
    below the nearest line and a half rest sits on it — the only thing that tells
    the two apart, and the reason the line runs behind them where it is broken
    around every other rest.

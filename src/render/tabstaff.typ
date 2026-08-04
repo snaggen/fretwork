@@ -140,11 +140,6 @@
 // is drawn above them at all — no stem and no flag, the rest glyph carrying its
 // own duration.
 #let _REST-CENTRE = 0.417 // of the staff height
-// The reference's eighth rest is 1.17 spaces tall where this package's is 1.75,
-// which is the size it was drawn at for a lane with room to spare. Inside the
-// staff it has to fit between the lines.
-#let _REST-SCALE = 0.67
-
 /// Where a rest is centred, and the line a whole or half rest is measured from.
 ///
 /// Both fall out of `_REST-CENTRE`: the block rests round it to an actual line,
@@ -196,11 +191,7 @@
   if ev.kind != "rest" { return none }
   let flags = flags-of(ev)
   if flags == none { return none }
-  g.rest-for(
-    theme.staff-space * (if flags < 0 { 1.0 } else { _REST-SCALE }),
-    flags,
-    fill: fill,
-  )
+  g.rest-for(theme.staff-space, flags, fill: fill)
 }
 
 /// The frets a note is linked to by a hammer-on, pull-off or slide.

@@ -214,9 +214,18 @@
   // A rest is drawn on the staff, so it has to claim the room its glyph needs.
   // Optical spacing alone buys a thirty-second almost none, and the glyph is
   // wider than a fret number — left unclaimed, fast rests overlap each other.
+  // Fed the same width the renderer measures, as the layout engine does.
+  let natural-of(src) = {
+    let ev = events(src).first()
+    event-natural(thm, ev, tabstaff.event-metrics(thm, ev).total)
+  }
   ok(
-    event-natural(thm, events("t r").first(), 0pt) >= tabstaff.rest-glyph(thm, events("t r").first()).width,
+    natural-of("t r") >= tabstaff.rest-glyph(thm, events("t r").first()).width,
     "a rest is never narrower than the glyph it prints",
+  )
+  ok(
+    natural-of("t r") > natural-of("t 0/6"),
+    "…and a thirty-second rest is wider than a thirty-second note, its glyph being wider",
   )
   eq(
     tabstaff.rest-glyph(thm, events("q 0/6").first()),
