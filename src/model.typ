@@ -119,6 +119,10 @@
 /// systems.
 ///
 /// `tuplet` is `none` or `(count: 3, of: 2)`, read the same way.
+///
+/// `grace` is `none`, `"before"` or `"on"`. A grace event is an ornament, not a
+/// beat: it is set small, it takes no time from the bar, and it is spaced by a
+/// fixed narrow width rather than by its note value.
 #let event(
   notes: (),
   duration: none,
@@ -129,10 +133,15 @@
   techniques: (),
   text: none,
   column-span: none,
+  grace: none,
 ) = {
   assert(
     duration == none or r.is-rat(duration),
     message: "event: duration must be a rational or none",
+  )
+  assert(
+    grace in (none, "before", "on"),
+    message: "event: grace must be none, \"before\" or \"on\"",
   )
   (
     kind: if rest { "rest" } else { "note" },
@@ -149,6 +158,10 @@
     // Set by the ASCII importer so a tab with no note values is still spaced
     // the way its author laid it out, instead of evenly.
     column-span: column-span,
+    // An ornament rather than a beat: `"before"` is squeezed in ahead of the
+    // beat, `"on"` starts on it and delays what follows. Either way it takes no
+    // time from the bar, which is what `sounding-duration` enforces.
+    grace: grace,
   )
 }
 
@@ -156,7 +169,13 @@
 ///
 /// Inside a triplet each written eighth sounds for two thirds of an eighth, so
 /// bar-length validation must use this rather than `event.duration`.
+///
+/// A grace note counts for nothing: it is squeezed out of its neighbour's time,
+/// and a bar containing one is neither long nor unmeasurable. Returning `none`
+/// here instead would make every such bar "not checked", which is exactly the
+/// silence bar validation exists to break.
 #let sounding-duration(ev) = {
+  if ev.at("grace", default: none) != none { return r.zero }
   if ev.duration == none { return none }
   if ev.tuplet == none { return ev.duration }
   r.scale(ev.duration, ev.tuplet.of, ev.tuplet.count)

@@ -54,7 +54,11 @@
 
   for (i, ev) in events.enumerate() {
     let flags = flags-of(ev)
-    let beamable = flags != none and flags >= 1 and ev.kind != "rest"
+    // A grace note carries its own small flag and is never beamed to the note
+    // it ornaments: beaming the two would say they share a beat, which is the
+    // one thing a grace note does not do.
+    let grace = ev.at("grace", default: none) != none
+    let beamable = flags != none and flags >= 1 and ev.kind != "rest" and not grace
 
     // A group ends at a beat boundary, so beams keep showing where the beats
     // are even in a bar of unbroken sixteenths.

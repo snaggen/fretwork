@@ -306,3 +306,18 @@
 // as a pickstroke — `Au` is one technique, not two.
 #eq(first("q (0/1 2/2)Au").events.first().notes.first().techniques.len(), 1, "'Au' is one technique")
 #round-trip("q (0/1 2/2)Au (0/1 2/2)An (0/1 2/2)Ru")
+
+// --- grace notes ----------------------------------------------------------
+
+#eq(first("q g 5/3 7/3").events.first().grace, "before", "a bare 'g' marks the next event")
+#eq(first("q G 5/3 7/3").events.first().grace, "on", "…and 'G' the on-beat kind")
+#eq(first("q g 5/3 7/3").events.last().grace, none, "…only the next one")
+// Inside a token `g` is still the ghost note: the two never meet, because a
+// token holds no whitespace.
+#eq(
+  first("q 5/3g").events.first().notes.first().techniques,
+  (m.technique("ghost"),),
+  "'g' inside a token is unchanged",
+)
+#eq(first("q 5/3g").events.first().grace, none, "…and marks no grace note")
+#round-trip("q g 5/3 7/3 5/3 3/3 5/3 | G 3/3h5 q 7/3 5/3 3/3 5/3")

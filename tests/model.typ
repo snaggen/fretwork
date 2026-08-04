@@ -116,3 +116,18 @@
 )
 
 #report("model")
+
+// --- grace notes take no time from the bar ---------------------------------
+
+#let graced = m.measure(events: (
+  m.event(notes: (m.note(3, 5),), duration: m.durations.q, grace: "before"),
+  m.event(notes: (m.note(3, 7),), duration: m.durations.q),
+  m.event(notes: (m.note(3, 5),), duration: m.durations.q),
+  m.event(notes: (m.note(3, 3),), duration: m.durations.q),
+  m.event(notes: (m.note(3, 5),), duration: m.durations.q),
+))
+#eq(m.sounding-duration(graced.events.first()), r.zero, "a grace note sounds for no time")
+#eq(m.measure-duration(graced), r.rat(1), "…so the bar it ornaments is still full")
+// The point of counting it as zero rather than as unknown: a bar with a grace
+// note in it stays checked.
+#eq(m.validate(m.part(measures: (graced,))), (), "…and validation still has something to say about it")

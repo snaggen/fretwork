@@ -22,6 +22,13 @@
 /// back to the width of a quarter, optionally stretched by `column-span` so that
 /// the source's own column positions still shape the result.
 #let event-natural(theme, ev, glyph-width) = {
+  // A grace note is spaced as the ornament it is: narrow and the same width
+  // whatever value it is written with, since it is squeezed into its
+  // neighbour's time rather than given any of its own. Spacing it from its
+  // note value would hand a grace quarter the room of a real one.
+  if ev.at("grace", default: none) != none {
+    return calc.max(theme.quarter-width * 0.45, glyph-width + theme.min-event-gap * 0.6)
+  }
   let d = sounding-duration(ev)
   let base = if d == none {
     let span = ev.at("column-span", default: none)

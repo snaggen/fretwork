@@ -13,8 +13,11 @@
 #import "../layout/lanes.typ": empty-lane, lane
 #import "glyphs.typ" as g
 
-/// Whether any event in the system carries a note value at all.
-#let _has-rhythm(system) = system.measures.any(m => m.events.any(pe => pe.event.duration != none))
+/// Whether the lane has anything to draw: a note value anywhere, or a grace
+/// note, which is drawn whether or not one is in force.
+#let _has-rhythm(system) = system.measures.any(m => m.events.any(pe => (
+  pe.event.duration != none or pe.event.at("grace", default: none) != none
+)))
 
 /// Whether the system contains a tuplet, which needs room for its numeral.
 #let _has-tuplet(system) = system.measures.any(m => m.events.any(pe => pe.event.tuplet != none))
@@ -31,6 +34,35 @@
   dy: y,
   rect(width: w, height: h, fill: theme.color, stroke: none),
 )
+
+// A grace note's stem is short and thin, and always flagged whatever value the
+// event was written with — an ornament is drawn as one however long the note it
+// leans on. A stroke through the flag marks the kind that is squeezed in ahead
+// of the beat; one that starts *on* the beat is written plain, which is the
+// distinction the two have carried since they were called acciaccatura and
+// appoggiatura.
+#let _GRACE-STEM = 0.60
+#let _GRACE-FLAG = 0.72
+
+/// A grace note's stem, hanging from the same foot as a full one.
+#let _grace-stem(theme, x, foot, slashed) = {
+  let sp = theme.staff-space
+  let head = foot - theme.stem-length * _GRACE-STEM
+  place(top + left, dx: x - theme.stem * 0.4, dy: head, rect(
+    width: theme.stem * 0.8,
+    height: foot - head,
+    fill: theme.color,
+    stroke: none,
+  ))
+  let f = g.flag(sp * 0.85 * _GRACE-FLAG, fill: theme.color)
+  place(top + left, dx: x, dy: head, f.body)
+  if not slashed { return }
+  place(top + left, dx: 0pt, dy: 0pt, curve(
+    stroke: (paint: theme.color, thickness: theme.stem * 0.9, cap: "butt"),
+    curve.move((x - 0.32 * sp, head + 0.62 * sp)),
+    curve.line((x + 0.42 * sp, head + 0.08 * sp)),
+  ))
+}
 
 /// The hollow head marking a half or whole note.
 ///
@@ -72,6 +104,14 @@
       for (i, pe) in m.events.enumerate() {
         let ev = pe.event
         let flags = flags-of(ev)
+
+        // Before the `flags == none` guard: a grace note is drawn whether or
+        // not a note value is in force, since it is an ornament rather than a
+        // measured beat and has one shape either way.
+        if ev.at("grace", default: none) != none and ev.kind != "rest" {
+          _grace-stem(theme, pe.x, foot, ev.grace == "before")
+          continue
+        }
         if flags == none { continue }
 
         if ev.kind == "rest" {

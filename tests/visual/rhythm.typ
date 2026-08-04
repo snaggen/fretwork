@@ -31,6 +31,14 @@ w r | h r r | q r r r r | e r r r r r r r r
 {3: e 0/6 2/6 3/6} {3: e 5/6 3/6 2/6} q 0/6 {5: s 0/6 2/6 3/6 5/6 7/6}
 ```)
 
+// Grace notes: small numbers on a short flagged stem, never beamed to the note
+// they ornament, and taking no room in the bar — which is why neither of these
+// bars is reported short. `g` is squeezed in before the beat and carries the
+// slash; `G` starts on it and does not.
+#tab(theme: vt, ```
+q g 5/3 7/3 5/3 3/3 5/3 | G 3/3h5 q 7/3 e 5/3 3/3 q 5/3 g 7/3 3/3
+```)
+
 #tab(theme: vt, count-in: true, ```
 q 0/6 2/6 3/6 5/6
 ```)

@@ -365,6 +365,16 @@
       continue
     }
 
+    // A standalone `g` marks the *next* event as a grace note, the way `@E5`
+    // and `"Harm."` attach to the one after them. Inside a token `g` stays the
+    // ghost note; the two never meet, because a token holds no whitespace.
+    // `g` is squeezed in before the beat, `G` starts on it.
+    if (c == "g" or c == "G") and _is-sep(chars, i + 1) {
+      tokens.push((kind: "grace", when: if c == "g" { "before" } else { "on" }, loc: loc))
+      i += 1
+      continue
+    }
+
     // A rest and a bare mute have no note to hang a suffix on, so theirs go on
     // the event. That is what lets `rF` hold a rest — the one mark that is at
     // least as common over silence as over a note.
@@ -561,6 +571,7 @@
   let stack = ()
   let pending-chord = none
   let pending-text = none
+  let pending-grace = none
   let start-repeat = false
   // A time signature belongs to the measure it opens, and only where it
   // changes: `none` means "carry on with whatever is in force".
@@ -609,6 +620,11 @@
 
     if tok.kind == "text" {
       pending-text = tok.text
+      continue
+    }
+
+    if tok.kind == "grace" {
+      pending-grace = tok.when
       continue
     }
 
@@ -665,9 +681,11 @@
       chord: pending-chord,
       text: pending-text,
       techniques: tok.at("techniques", default: ()),
+      grace: pending-grace,
     ))
     pending-chord = none
     pending-text = none
+    pending-grace = none
   }
 
   if stack.len() > 0 {
@@ -849,6 +867,10 @@
           duration = ev.duration
         }
       }
+      // After the note value, since the marker attaches to the event and the
+      // value is sticky across it.
+      let grace = ev.at("grace", default: none)
+      if grace != none { parts.push(if grace == "before" { "g" } else { "G" }) }
       parts.push(_write-event(ev, strings))
     }
 

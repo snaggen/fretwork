@@ -131,16 +131,22 @@
 /// y-position of a string's line, counted from the top of the staff.
 #let string-y(theme, string) = (string - 1) * theme.staff-space
 
+/// How much smaller a grace note's fret number is set than a real one.
+///
+/// Small enough to read at a glance as an ornament rather than as a beat, but
+/// not so small it stops being legible against the string lines it sits on.
+#let GRACE-SCALE = 0.68
+
 /// A fret number, set for measurement and for drawing.
 ///
 /// The edges are pinned to the glyph itself rather than to the line box, so the
 /// measured height *is* the cap height and centring the box on a string line
 /// centres the digits on it exactly.
-#let fret-label(theme, fret) = {
+#let fret-label(theme, fret, grace: false) = {
   let muted = fret == MUTED
   text(
     font: theme.font,
-    size: theme.fret-size,
+    size: theme.fret-size * (if grace { GRACE-SCALE } else { 1.0 }),
     weight: 500,
     fill: theme.color,
     number-width: "tabular",
@@ -180,13 +186,15 @@
 #let event-metrics(theme, ev) = {
   if ev.notes.len() == 0 { return (total: 0pt, anchor: 0pt) }
   let gap = _link-gap(theme)
-  let anchor = ev.notes.map(n => measure(fret-label(theme, n.fret)).width).fold(0pt, calc.max)
+  let grace = ev.at("grace", default: none) != none
+  let label(fret) = fret-label(theme, fret, grace: grace)
+  let anchor = ev.notes.map(n => measure(label(n.fret)).width).fold(0pt, calc.max)
   let total = ev
     .notes
     .map(n => {
       let widths = (
-        (measure(fret-label(theme, n.fret)).width,)
-          + link-targets(n).map(t => measure(fret-label(theme, t.fret)).width)
+        (measure(label(n.fret)).width,)
+          + link-targets(n).map(t => measure(label(t.fret)).width)
       )
       widths.fold(0pt, (a, b) => a + b) + gap * (widths.len() - 1)
     })
@@ -637,8 +645,12 @@
   // it touches — string-anchored, so it belongs here rather than in a lane.
   let strokes = ()
   for (i, pe) in placed.enumerate() {
+    // A grace note's numbers — its own and any it is linked to — are set small,
+    // which is the whole of how the staff shows that it is an ornament.
+    let grace = pe.event.at("grace", default: none) != none
+    let label(fret) = fret-label(theme, fret, grace: grace)
     for n in pe.event.notes {
-      let body = fret-label(theme, n.fret)
+      let body = label(n.fret)
       let size = measure(body)
       let y = string-y(theme, n.string)
       labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
@@ -652,7 +664,7 @@
       let from-fret = n.fret
       let from-x = if stacked { cursor } else { pe.x }
       for target in link-targets(n) {
-        let tbody = fret-label(theme, target.fret)
+        let tbody = label(target.fret)
         let tsize = measure(tbody)
         let tx = cursor + _link-gap(theme) + tsize.width / 2
         labels.push((x: tx, string: n.string, w: tsize.width, h: tsize.height, body: tbody))
