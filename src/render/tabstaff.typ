@@ -56,18 +56,22 @@
 // staff. A package with no staff to put it on has to draw it, so the reference
 // here is Songsterr, which renders tablature alone and flips the tie.
 //
-// Shallow, so it stays inside its own string's space whatever the span.
+// Shallow, so it stays inside its own string's space whatever the span. The
+// reference dips 0.83 spaces at its deepest and leaves the line at 0.42, read
+// off the same SVG; the cap here is just short of that, leaving a fifth of a
+// space to the line below.
 #let _TIE-TAIL = 0.40
-#let _TIE-DROP-MAX = 0.30
-#let _TIE-DROP-MIN = 0.14
-#let _TIE-SLOPE = 0.07
+#let _TIE-DROP-MAX = 0.40
+#let _TIE-DROP-MIN = 0.22
+#let _TIE-SLOPE = 0.09
 
 // Stacked numbers leave nothing under the digit to hang a tie from — the next
 // string's number is right there. A chord's tie leaves the flank instead, a
 // little below the middle so it is plainly this number's and not the line's, and
-// stays shallower so it clears the number below.
+// stays shallower so it clears the number below, whose cap reaches about 0.65
+// spaces up towards it.
 #let _TIE-SIDE-TAIL = 0.20
-#let _TIE-SIDE-DROP-MAX = 0.25
+#let _TIE-SIDE-DROP-MAX = 0.30
 
 // A bend arrow leaves the side of its fret number rather than the top.
 #let _BEND-TAIL = 0.42 // how far above the note line it starts
