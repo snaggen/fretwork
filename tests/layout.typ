@@ -89,6 +89,23 @@
 )
 #eq(tuplet-runs(events("q 0/6 0/6")), (), "no tuplet, no runs")
 
+// Two triplets in a row carry identical records, so only the beat grid parts
+// them — and it has to, or one bracket is drawn across both groups.
+#let pair = events("{3: e 0/6 2/6 3/6} {3: e 5/6 7/6 8/6} h 0/6")
+#eq(tuplet-runs(pair).len(), 1, "without a signature two triplets read as one run")
+#eq(
+  tuplet-runs(pair, time: (4, 4)).map(run => run.indices),
+  ((0, 1, 2), (3, 4, 5)),
+  "in 4/4 each triplet fills a beat and gets its own run",
+)
+// A triplet that does not begin on a beat is still one run: the rule parts runs
+// at beat boundaries, it does not require one at the start.
+#eq(
+  tuplet-runs(events("e 0/6 {3: e 2/6 3/6 5/6}"), time: (4, 4)).map(run => run.indices),
+  ((1, 2, 3),),
+  "a syncopated triplet stays whole",
+)
+
 // --- optical spacing ------------------------------------------------------
 // Width grows with duration, but far more slowly: a whole note is nowhere near
 // eight times as wide as an eighth.
@@ -210,6 +227,33 @@
      "a bar of rests asks for no rhythm lane")
   ok(rhythm.lane-for(thm, system("q r 0/6 r 0/6"), 120mm).height > 0pt,
      "…but one note in it brings the lane back for that note's stem")
+
+  // A whole note is written as nothing at all in this notation, so a bar of
+  // them must collapse the lane too. Confirmed in the reference music, where
+  // eight bars of one tied whole note each carry no ink in the rhythm row.
+  eq(rhythm.lane-for(thm, system("w 0/6 | w 0/6"), 120mm).height, 0pt,
+     "a bar of whole notes asks for no rhythm lane either")
+  ok(rhythm.lane-for(thm, system("h 0/6 0/6"), 120mm).height > 0pt,
+     "…while a half note, which is a stem cut in two, still needs one")
+  // A tuplet brackets below the beam, which is room the plain lane does not
+  // have.
+  ok(
+    rhythm.lane-for(thm, system("{3: e 0/6 2/6 3/6} q 0/6 0/6"), 120mm).height
+      > rhythm.lane-for(thm, system("e 0/6 2/6 q 0/6 0/6 0/6"), 120mm).height,
+    "a tuplet claims room below the beam for its bracket",
+  )
+  // An augmentation mark claims none: it sits in the slot above the beam stack,
+  // which is inside the stem's own length however many beams the note carries.
+  eq(
+    rhythm.lane-for(thm, system("q. 0/6 e 2/6 q 0/6 0/6"), 120mm).height,
+    rhythm.lane-for(thm, system("q 0/6 0/6 0/6 0/6"), 120mm).height,
+    "an augmentation mark costs the lane nothing",
+  )
+  eq(
+    rhythm.lane-for(thm, system("s. 0/6 t 2/6 e 3/6 q 0/6 0/6 0/6"), 120mm).height,
+    rhythm.lane-for(thm, system("q 0/6 0/6 0/6 0/6"), 120mm).height,
+    "…not even on a sixteenth, whose mark clears two beams",
+  )
 
   // A rest is drawn on the staff, so it has to claim the room its glyph needs.
   // Optical spacing alone buys a thirty-second almost none, and the glyph is

@@ -24,7 +24,7 @@ That whole sheet is one `song` show rule and four `tab` calls.
 ## Quick start
 
 ```typst
-#import "@preview/fretwork:0.1.0": *
+#import "@preview/fretwork:0.2.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",
@@ -62,10 +62,12 @@ suffix after a closing parenthesis binds to every note of a chord.
 |---|---|
 | `5/3h7` `7/3p5` | hammer-on / pull-off to a fret |
 | `5/3s7` `5/3S7` | legato slide / shift slide |
+| `5/3h` `5/3s` | …running to the next event on that string instead of naming a fret, which is what crosses a barline |
+| `5/3sU` `5/3sN` | slide out of the note, up or down, reaching nothing |
 | `7/3b` `7/3b(1/2)` `7/3b(1/4)` | bend — a whole step, or the size given |
 | `7/3br` `7/3B` `7/3Br` | bend and release / pre-bend / pre-bend and release |
 | `7/3v` `7/3V` | vibrato / wide vibrato |
-| `12/3*` `5/3PH` `7/3HH` | natural / pinch / harp harmonic |
+| `12/3*` `5/3PH` `5/3AH` `7/3HH` `7/3TH` | natural / pinch / artificial / harp / tap harmonic |
 | `7/3~` | tie into the next note on that string |
 | `7/3>` `7/3^` `7/3!` `7/3-` | accent / marcato / staccato / tenuto |
 | `7/3n` `7/3u` | downstroke / upstroke |
@@ -83,6 +85,27 @@ Groups are one mechanism doing five jobs: `{PM: … }` and `{LR: … }` are palm
 and let ring, `{3: … }` is a triplet, `{7/4: … }` states a tuplet ratio outright,
 `{V1: … }` `{V2: … }` are first and second endings, and `{cresc: … }` `{dim: … }`
 are the stretches that change in loudness. They nest.
+
+## Lyrics
+
+Syllables are not written among the notes — they would drown them. They run
+parallel to the music instead, spent one per sung note:
+
+```typst
+#tab(lyrics: "Some- thing I can ne- ver say _", ```
+q 0/6 2/6 e 3/6 3/6 q 5/6 h 3/6
+```)
+```
+
+Rests, grace notes and the far end of a tie are passed over, since none of them
+is sung. A trailing `-` hyphenates into the next syllable, and the hyphen is
+drawn centred in the gap between the two. `_` spends a note without printing
+anything, which is how a word held over several notes is written — published
+sheets write it once and draw no line after it.
+
+Several verses are `lyrics: ("verse one …", "verse two …")`, one lane each at the
+foot of the system. Syllables left over after the last note are reported on the page,
+because miscounting a verse against the music is the mistake this makes easy.
 
 ## Importing ASCII tab
 
@@ -115,15 +138,24 @@ E|--0---0---0---0-|--3---3---12----|
 ```)
 ```
 
-`R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-instruction, `D:` dynamics, `PM:`/`LR:` spans, `1:`/`2:` first and second
-endings. `R:` uses the same tokens as the native syntax, so there is no second
-notation to learn.
+`R:` note values, `C:` chord names, `L:` sung syllables — one row per verse —
+`S:` a section heading, `T:` a playing instruction, `D:` dynamics, `PM:`/`LR:`
+spans, `1:`/`2:` first and second endings. `R:` uses the same tokens as the
+native syntax, so there is no second notation to learn. A value in it standing
+over a column where nothing is struck is a rest that long, which is the only way
+ASCII tab can say silence at all.
+
+Structure written into the rows themselves is read too: `|:` opens a repeat,
+`:|` closes one, `:|:` does both, and `:|x3` says how many times to play it.
+Ultimate Guitar's harmonic marks are read against the fret — `7PH`, `5AH`,
+`12NH`, `9HH`, `7TH` — and a fret in parentheses that repeats the note before it
+on the same string is a tie rather than a ghost note.
 
 When the rhythm is regular one argument replaces the row — `rhythm: even(1/8)`,
-`rhythm: fill`, or `rhythm: "q q e e"`. Facts about the whole piece are named
-arguments: `tuning`, `time`, `tempo`, `capo`, `anacrusis`. `enrich` takes the
-parsed part and hands back a modified one, for whatever those do not cover.
+`rhythm: fill`, or `rhythm: "q q e e"`, and `lyrics:` likewise for a source with
+no `L:` rows to align against. Facts about the whole piece are named arguments:
+`tuning`, `time`, `tempo`, `capo`, `anacrusis`. `enrich` takes the parsed part
+and hands back a modified one, for whatever those do not cover.
 
 Once a tab is fully annotated it is as complete as one written by hand, and
 `#ascii-to-dsl(source)` prints it back as native source, ready to keep.
@@ -136,7 +168,7 @@ and `tuning("E4 B3 G3 D3 A2 E2 B1", name: "7-string")` builds any other. The
 number of staff lines follows from the tuning, so a bass or seven-string tab
 needs nothing else said.
 
-Pitch is in the model even though version 0.1 renders tablature only: string,
+Pitch is in the model even though no notation staff is rendered yet: string,
 fret and tuning already determine the sounding pitch, and `to-pitch` is public.
 
 ## Themes
@@ -199,21 +231,23 @@ vectors, not glyphs.
 
 ## The whole syntax
 
-[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/GUIDE.md) is a
+[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/GUIDE.md) is a
 table of every construct the package understands, with what each one draws set
 beside it — rendered from the same string, so a row cannot be out of date.
 
 ## Scope
 
-Version 0.1 is tablature only: no notation staff, chord diagrams or lyrics. The
-model and layout engine were built so a notation staff can be added as one more
-lane without rewriting them —
-[`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.1.0/SPEC.md) says how,
+Version 0.2 is tablature and lyrics: no notation staff and no chord diagrams.
+The model and layout engine were built so a notation staff can be added as one
+more lane without rewriting them —
+[`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/SPEC.md) says how,
 and gives the reasoning behind the design.
+[`CHANGELOG.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/CHANGELOG.md)
+lists what each release changed.
 
 ## Examples
 
-The [repository](https://github.com/snaggen/fretwork/tree/v0.1.0/examples)
+The [repository](https://github.com/snaggen/fretwork/tree/v0.2.0/examples)
 carries five example documents. They are not part of the published bundle, so
 clone it to compile them:
 
@@ -235,5 +269,5 @@ say otherwise.
 ## Licence
 
 EUPL-1.2 — see
-[`LICENSE`](https://github.com/snaggen/fretwork/blob/v0.1.0/LICENSE).
+[`LICENSE`](https://github.com/snaggen/fretwork/blob/v0.2.0/LICENSE).
 Copyright © 2026 Mattias Eriksson.

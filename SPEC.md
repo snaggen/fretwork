@@ -10,15 +10,16 @@ reference for how professional guitar books notate technique.
 
 ## Scope
 
-Phase 1 is **tablature only**. There is no notation staff, no chord diagrams and
-no lyrics. The data model and the layout engine are nevertheless built so that a
-notation staff can be added later without rewriting either — see
+Phase 1 is **tablature only**. There is no notation staff and no chord diagrams.
+The data model and the layout engine are nevertheless built so that a notation
+staff can be added later without rewriting either — see
 [Room for a notation staff](#room-for-a-notation-staff).
 
 | | |
 |---|---|
 | In phase 1 | Tab systems, barlines, repeats and endings, technique symbols, section headings, title block, rhythm stems and the count row, chord names as text, ASCII tab import |
-| Not in phase 1 | Chord diagrams, lyrics, several simultaneous guitars, rhythm slashes |
+| Added in 0.2 | Lyrics under the staff, one lane per verse |
+| Not in phase 1 | Chord diagrams, several simultaneous guitars, rhythm slashes |
 | Distribution | Own use first; publication on Typst Universe later |
 | Licence | EUPL-1.2 |
 
@@ -35,7 +36,7 @@ so it is styleable, autocompleting and type-checked. Note-level content is a
 compact string, because writing a riff as nested function calls is unbearable.
 
 ```typst
-#import "@preview/fretwork:0.1.0": *
+#import "@preview/fretwork:0.2.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",
@@ -92,10 +93,12 @@ Suffixes, always after the string number.
 |---|---|
 | `5/3h7` `7/3p5` | hammer-on / pull-off to the given fret |
 | `5/3s7` `5/3S7` | legato slide / shift slide |
+| `5/3h` `5/3s` | the same, running to the next event on that string instead of naming a fret — the form that joins two notes with values of their own, and the only one that crosses a barline |
+| `5/3sU` `5/3sN` | slide *out* of the note, up or down — it reaches nothing, so it names a direction where a link derives one |
 | `7/3b` `7/3b(1/2)` | bend, a whole step or the size given |
 | `7/3br` `7/3B` `7/3Br` | bend and release / pre-bend / pre-bend and release |
 | `7/3v` `7/3V` | vibrato / wide vibrato |
-| `12/3*` `5/3PH` `7/3HH` | natural / pinch / harp harmonic |
+| `12/3*` `5/3PH` `5/3AH` `7/3HH` `7/3TH` | natural / pinch / artificial / harp / tap harmonic |
 | `7/3~` | tie to the next note on that string |
 | `7/3g` | ghost note, printed in parentheses |
 | `7/3>` `7/3^` `7/3!` `7/3-` | accent / marcato / staccato / tenuto |
@@ -153,6 +156,34 @@ because the grammar has already spoken for a bare `7/8` — that is fret seven o
 string eight — and because nothing else in either syntax uses one. `tab(time:)`
 sets it for a whole passage; either way it is printed once, at the start, and
 `show-time: false` suppresses it on the second and later blocks of one piece.
+
+### Lyrics
+
+Syllables are **not** written inline. They would drown the notes, and there is
+already a pattern for data that runs parallel to the music and lines up with it
+event by event — the ASCII annotation rows and the `rhythm:` argument. Lyrics
+follow it:
+
+```typst
+#tab(lyrics: "Some- thing I can ne- ver say _", ```
+q 0/6 2/6 e 3/6 3/6 …
+```)
+```
+
+Space-separated syllables, spent in order over the events that are actually
+sung. Rests and grace notes are passed over, and so is the far end of a tie: it
+is not a new attack, and it keeps the syllable of the note it is held from. A
+trailing `-` hyphenates into the next syllable; `_` spends a note without
+printing anything on it, which is how a word held over several notes is written.
+
+Several verses are `lyrics: ("verse one …", "verse two …")`, one lane each.
+Syllables left over after the last note are reported on the page rather than
+dropped in silence — miscounting a verse against the music is the one mistake
+this syntax makes easy.
+
+The syllable is stored **on the event**, as `chord` and `text` are, rather than
+in a parallel array: an array would reintroduce exactly the index bookkeeping
+across system breaks that spans and tuplets are recorded per event to avoid.
 
 ### Unambiguity
 
@@ -228,14 +259,86 @@ E|--------3--------|-----------------|
 - **Multi-digit frets**: adjacent digits are one fret, digits parted by filler
   are separate strikes. This is the universal convention and the only reading
   that makes sense of both `-11-` and `-1-1-`.
-- `|` becomes a barline.
+
+  Adjacent digits are one fret only as far as that fret exists, since half the
+  sources hand-typed anywhere write `-33-333-` for eighth notes on the third.
+  A number is at most two digits, no higher than the 24th and never opened by a
+  `0`, so `-77-` is two sevenths, `-333-` three thirds and `-010-` the open
+  string then the tenth. What remains ambiguous is the pair that reads both
+  ways — `-11-`, `-22-` — where the convention wins and can be wrong. Brackets
+  delimit the number explicitly: inside `( )` or `< >` the digits are one fret
+  however many there are, which is also how a fret above the 24th is still
+  written and still reported.
+- `|` becomes a barline, and the repeat colons around one are read as music:
+  `|:` opens a repeat, `:|` closes one, `:|:` closes one and opens the next where
+  a repeated section runs straight into another, and `:|x3` names how many times
+  to play it. A count is read only after `:|`, since `x` is also a dead string —
+  `|x3` mid-row is a muted string and then the third fret. Adjacent strokes are
+  one mark, so a repeat written against a double barline (`||:`) keeps it.
 - Techniques are read inline: `h` `p` `s` `/` `\` `b` `r` `~` `v` `x` `*` `t`,
-  and `( )` for ghost notes. `7b9` bends to the pitch of fret 9 — two frets to a
-  step.
+  `( )` for ghost notes and ties, `< >` for a natural harmonic. `7b9` bends to
+  the pitch of fret 9 — two frets to a step.
+- **A mark with no note left to reach is the note slid off**: `-15\-------` at
+  the end of a row is a slide out, and the arrow says which way the pitch leaves
+  — `/` climbs, `\` falls, and a bare `s` names no direction and falls, which is
+  what sliding out of a note ordinarily does. A hammer-on or pull-off to nowhere
+  means nothing and is still dropped. The mark used to be dropped in every case,
+  so a figure that trails away came out as a plain note.
+- **A linking mark's target is a second number inside the event unless the source
+  says otherwise**, in one of two ways. Filler between the mark and its target —
+  `5-h-7`, and above all a target in the *next bar* — makes it an event of its
+  own, joined by an arc that runs from one to the other; that case used to
+  produce both, a phantom fret beside the first note and the real one after the
+  barline. A note value over the target's column says the same thing about the
+  adjacent form: `3/7` with a `q` over the 7 is a slide into a note that has its
+  own rhythm, while `3/7` left alone is the compact pair the legend sets.
+
+  Nothing else can say it. In ASCII every character has a column, so `3/7` spends
+  one on its target exactly as `3-/-7` does, and the `R:` row is the only place
+  the source can give that column a value of its own. Reading it as a label
+  regardless left the target with no rhythm — it is not an event — and the value
+  written over it, claimed by no note, came out as a rest the source never had.
+- **A fret in parentheses that repeats the note before it on the same string is
+  a tie**, and any other fret in them is a ghost note. There is no other way to
+  write a held note in ASCII tab: `~` is vibrato there, whatever the native
+  syntax uses it for, and the convention that survives is to set the note that is
+  not struck again in brackets — which is also how this package prints the far
+  end of a tie, so what it writes reads back. The two print alike either way, the
+  arc being what separates them, so the reading only matters to the model; but
+  reading it wrong turns a note held over into a second strike.
+
+  The tie is attached to the note the string is held *from*, which is where the
+  native syntax writes it and where `mark-tie-targets` starts. A note struck in
+  between ends what the first was sounding, so `-5-7-(5)-` is a ghost note.
+  Barlines do not interrupt the run, since a tie across one is ordinary
+  notation, but the end of a *block* does: the reading is made row by row, as
+  every other linking mark in a row is, so a note held across a system break
+  arrives as a ghost note.
+- `<12>` is how Power Tab and Guitar Pro export a natural harmonic where the
+  native syntax writes `12/3*`. It is a dialect of ASCII tab rather than of any
+  one site, so it is read here rather than left to whatever fetched the file.
+- Ultimate Guitar's own harmonic marks are read against the fret: `NH` `PH` `AH`
+  `HH` `TH`, natural, pinch, artificial, harp and tap. Capitals collide with
+  nothing, since every technique letter in the chain is lower case, and a
+  harmonic names no target fret, so `7PH5` is the harmonic and then the fifth.
+  They used to reach a tab only through a `T:` row, which put the right word over
+  the right column and left the model none the wiser; now the model carries what
+  the source said and `ascii-to-dsl` writes it back out.
+
+  A source that writes the mark on a line of its own above the staff still needs
+  the `T:` row: recognising an unprefixed line of marks and placing it on the
+  right note is a separate design, and guessing at it would be worse than asking
+  for the prefix.
 - A bend must rise: `5b3` attaches no arrow and is reported, since `(3−5)/2`
   steps is not a bend. The note itself survives.
 - A bend later in a chain measures from where the chain has arrived, not from
   the struck fret: `5h7b9` bends the hammered 7 up to 9, one step.
+- `pb` is a pre-bend and `pbr` a pre-bend and release, which is Ultimate
+  Guitar's own spelling. Unambiguous for the same reason `hb` is: a pull-off
+  always writes its target as digits, so a `p` against a `b` can only be this.
+  Read as a plain `p` the row was *misread* rather than impoverished — the
+  pull-off was held for the next note and hung off it, inventing a slur the
+  source never had.
 - `hb` and `fb` spell a bend's size out in letters instead of implying it from a
   target fret: half bend and full bend. Despite `h` otherwise meaning a
   hammer-on this is unambiguous, because a hammer-on always writes its target as
@@ -243,13 +346,26 @@ E|--------3--------|-----------------|
   size already says how far the bend goes, so digits after it are the next note:
   `7fb5` is a full bend on the 7th fret and then the 5th. `fbr` and `hbr` fold
   the release in, as with any other bend.
+- A syllable with no note near it gets a **column of its own** rather than being
+  dropped: a singer carries on where the guitar stops, and a bar the
+  transcription leaves empty is exactly where that happens. The event built
+  there is a rest with no duration — nothing sounds on the guitar, and the
+  source says when a word is sung but not for how long — so it draws no glyph
+  and the bar stays empty under the words.
+- A bar with nothing written in it is a bar of **silence**, and becomes one
+  measure holding a rest as long as the bar. A bar carrying only syllables is
+  one too, and keeps that rest ahead of them. It used to be dropped, which lost a
+  whole block when every bar was empty — an outro where the guitar has stopped
+  and only the voice carries on then left no trace. Adjacent barlines are one
+  mark: `||` closes a measure once, not twice with a bar of rest between.
 - Blocks of N rows stacked one after another concatenate into one continuous
   passage, not into separate pieces.
 - Lines that are neither string rows nor known annotation rows are skipped with
   a warning; real tabs are full of headings and comments.
 
 **The honest limitation:** ASCII tab carries almost nothing beyond fret
-positions — no note values, time signature, tuning, sections, repeats or chords.
+positions and the barlines between them — no note values, time signature,
+tuning, sections or chords.
 Without note values there are no stems, no beams and no optical spacing, so the
 default is to space the staff from the source's own column positions:
 considerably better than monospaced text, but with no rhythm lane.
@@ -269,7 +385,7 @@ to count events and a tab can be annotated partially.
 #ascii-tab(```
 S:   Main Riff
 C:   E5          G5      A5
-R:   q   q   e e h       q
+R:   q   q   e e e       e
 PM:  --------
 e|---0---2---3-5---------7--|
 …
@@ -278,8 +394,9 @@ e|---0---2---3-5---------7--|
 
 | Prefix | Content |
 |---|---|
-| `R:` | note values — **the DSL's own tokens** (`w h q e s t`, dots), plus `3:` to open a tuplet over the next three events |
+| `R:` | note values — **the DSL's own tokens** (`w h q e s t`, dots), in either case, plus `3:` to open a tuplet over the next three events. A value over a column where nothing is struck is a rest that long |
 | `C:` | chord names |
+| `L:` | sung syllables — one row per verse, in the order they appear |
 | `S:` | section heading |
 | `PM:` `LR:` | bracketed spans — a run of dashes marks the extent |
 | `1:` `2:` | first and second endings — a run of dashes marks the measures, which get volta brackets |
@@ -287,9 +404,52 @@ e|---0---2---3-5---------7--|
 | `D:` | dynamics — a misspelt one is reported rather than printed, since a reader cannot tell one that means nothing from one they do not know |
 
 `R:` reuses the DSL's tokens deliberately: no second notation to learn and no
-second parser to keep in step. `C:` and `T:` rows split on runs of two or more
+second parser to keep in step. Case is ignored, which is what lets a Power Tab
+or Guitar Pro export's own duration line — `W H Q E S`, dotted the same way —
+be pasted in unchanged, so an exported tab arrives with real rhythm instead of
+being spaced from its columns. `C:` and `T:` rows split on runs of two or more
 spaces, so an instruction may contain single spaces. Each token attaches to the
 single nearest event, so two events a column apart cannot both claim it.
+
+**A block may carry more than one `R:` row**, and they are read together, column
+by column. That is what makes `3:` writable in a densely spaced tab: a tuplet
+opener needs whitespace on both sides, and a row whose events stand four columns
+apart has no room for it between two values. Written on a row of its own it lands
+on the column it belongs to and the values keep theirs:
+
+```typst
+R:          3:
+R:  q   q   q   q   q
+C|--3---3---5---3---2--|
+```
+
+Three quarters in the time of two, which is what lets a bar of five quarters add
+up to four beats — and the bar disagreeing with the meter is how a missing tuplet
+announces itself.
+
+**Rests are written in the `R:` row**, because ASCII tab spells silence as
+filler and has nowhere else to put them. A value standing over a column where
+nothing is struck is a rest that long: `R: q q q q` over a bar holding one note
+says the other three beats are silent, which is what lets such a bar add up to
+its meter. A bar with nothing said about it is still one bar-long rest; one whose
+rests are named is divided as the row says, without a whole-bar rest ahead of
+them.
+
+**The notes claim their tokens**, each taking the nearest one within reach, and
+what no note claimed is a rest where it stands. The obvious rule — a token with
+no note within reach is a rest — cannot read a densely spaced row at all: where
+events stand two columns apart, a value written over the gap between two of them
+is within reach of both. *Animal I Have Become*, eight eighths over seven notes,
+lost its rest that way and came out a beat short in every bar. Letting the notes
+choose leaves over exactly the tokens no note wanted, whatever the spacing.
+
+The reach is still the three columns the other rows resolve by, so a token that
+merely misses its note is claimed rather than left to become a silence beside it.
+What the rule cannot recover is a row shifted *as a whole*: with every token a
+column off, each note takes the neighbour on the wrong side and the leftover
+comes out at the end of the bar rather than in the gap it was written over. The
+bar's length is right, its silence is in the wrong place, and the fix is to align
+the row.
 
 **2. Named arguments** for facts about the whole piece, which have no column:
 `tuning:`, `time:`, `tempo:`, `capo:`, `anacrusis:`.
@@ -302,6 +462,8 @@ is not busywork:
 - `rhythm: fill` — spread each bar's events evenly across the time signature.
   Often musically wrong, which is why it must be asked for.
 - `rhythm: "q q e e | h h"` — an explicit sequence, spent event by event.
+- `lyrics: "Some- thing I can ne- ver say _"` — one string per verse, spent
+  syllable by syllable, for a source with no `L:` rows to align against.
 
 Annotation rows win over named arguments, which win over inference: a value
 already set is never overwritten.
@@ -326,12 +488,12 @@ renders tablature alone.
 **Supported.** Hammer-on, pull-off, legato and shift slide, bend,
 bend-and-release, pre-bend and pre-bend-and-release, vibrato and wide vibrato,
 tremolo-bar vibrato, palm mute, let ring, dead string, tie, ghost notes in
-parentheses, natural, pinch and harp harmonics, accent, marcato, staccato and
-tenuto, down- and upstroke, tapping, trill, tremolo picking, pick scrape,
-arpeggiate and rake with a direction, bass slap, pop and dead slap, fermata,
-grace notes before and on the beat, dynamics and gradual changes, the time
-signature and changes to it, first and second endings, repeat signs and repeat
-counts.
+parentheses, natural, pinch, artificial, harp and tap harmonics, accent,
+marcato, staccato and tenuto, down- and upstroke, tapping, trill, tremolo
+picking, pick scrape, arpeggiate and rake with a direction, bass slap, pop and
+dead slap, fermata, grace notes before and on the beat, dynamics and gradual
+changes, the time signature and changes to it, first and second endings, repeat
+signs and repeat counts.
 
 **Not supported**, with the reason:
 
@@ -419,6 +581,24 @@ Looking good is a stated goal, so it is specified as testable requirements.
    number whichever string it is on, and adding an accent elsewhere in the
    system must not move it. A pre-bend is already bent when struck, so its
    arrow is straight where an ordinary bend's curves.
+
+   **A bend that is held carries a dashed rule on from the arrowhead**, at the
+   height it reached, for as long as the pitch stays up. A bent note that is
+   tied is a bend held: the rule runs to the end of the last tied event — to
+   where the sound stops, not to where its number is — and crosses barlines with
+   it. Without the rule a held bend reads as bent and released at once, and how
+   long it is held has to be guessed from the ties.
+
+   **A release is therefore two arrows, not one stroke.** Up, hold, down is
+   three things, and the hold has to sit between the two arrowheads where it can
+   be seen; a stroke already curving downwards has nowhere to hang a horizontal
+   rule. The Hal Leonard legend draws the single stroke and this followed it
+   until the hold arrived — the one place the legend is departed from, and
+   Songsterr, which does draw the hold, splits the arrows for the same reason.
+   Measured there, the two arrowheads stand about 2.2 staff spaces apart with
+   the descent taking the last 0.7 of it. The gesture is kept inside the event's
+   own slot, so a bend in a bar of sixteenths tightens up rather than running
+   into the next event.
 12. **The time signature is set on the staff, not above it**, with the string
    lines running behind the numerals as they run behind the `TAB` mark. Read off
    `research/TNT_0001.png`: each numeral is 1.22 staff spaces tall and the two
@@ -428,16 +608,65 @@ Looking good is a stated goal, so it is specified as testable requirements.
    not affect how the notes in front of the reader are read.
 
 13. **A grace note is an ornament, not a beat.** Its numbers are set at two
-   thirds size, its stem is short and always flagged whatever value it was
-   written with, and it is never beamed to the note it leans on — beaming the
+   thirds size, and it is never beamed to the note it leans on — beaming the
    two would say they share a beat, which is the one thing a grace note does
    not do. It is spaced by a fixed narrow width rather than by its note value,
    and `sounding-duration` returns zero for it so that a bar containing one
    stays *checked* rather than becoming unmeasurable.
 
-14. **A rest is drawn inside the staff, and carries no stem.** It stands where
-   a note would have stood, because that is what it is; the rhythm lane above
-   describes notes that sound, and a rest is not one of them. Measured off
+   In the rhythm lane it is a **miniature of a real value**, not a special
+   shape: a short stem with a beam stub, and a beam rather than a stub when two
+   fall in a row. It **hangs from the top of the lane** instead of standing on
+   the foot the real stems stand on, so its beam floats above the beam line —
+   which is what keeps it clear of a half note, the other short stem in this
+   notation. A half note's stem occupies the lower half of the lane and carries
+   nothing; a grace note's the upper half and carries a stub. Read off
+   Songsterr's legend and confirmed in bar 4 of *Heart-Shaped Box*, where a lone
+   one sits between ordinary stems at about two fifths of their length.
+
+   A stroke through the first stem, running down to the right, marks the kind
+   squeezed in ahead of the beat; one starting *on* the beat is written plain.
+
+14. **The rhythm lane sits under the staff and its values are bars, not
+   noteheads.** A beam runs along the bottom of the lane and the stems rise from
+   it towards the music; beam levels stack upwards from the primary, which is
+   the lowest. A quarter and longer is a bare stem, and a lone eighth or shorter
+   gets a beam stub — left or right — rather than a flag. A tuplet brackets
+   below the beam with its numeral in a break at the centre. All of it follows
+   Songsterr, which renders tablature alone and therefore had to solve the same
+   problem: with no notation staff there is no notehead to hang a value on.
+
+   **A beam is a seventh of a stem thick, and the air between stacked beams is
+   the same again.** Measured off the reference's vector art rather than judged
+   by eye: 2 units of beam against a 14-unit stem, 2 units between levels. Half
+   a staff space, which is what this was while the lane sat above the staff,
+   reads as a slab below it — and a run of thirty-seconds as one solid block.
+
+   **A tremolo slash is half a beam thick**, 0.78 spaces wide, and the three of
+   them hang from the *top* of the stem, a quarter of a space apart. Hung from
+   the top rather than centred, because the reference sets one, two and three of
+   them all starting at the same height — and because that is what keeps them
+   off the beam whatever the note value. The thickness is the number that
+   matters: at a full beam's weight three slashes fuse into a block.
+
+   **An augmentation mark is a square, exactly a beam thick**, set to the right
+   of the stem in the slot immediately *above* the beam stack: one slot per beam
+   the note carries, so a quarter's rests on the foot itself and a sixteenth's
+   clears both of its beams. Checked against all five of the reference's worked
+   examples. The rule matters because the square and the beam are the same
+   weight, so anything drawn on the beam line disappears into it.
+
+   Two values fall out of that. A **half note is a quarter's stem cut in two**,
+   standing on the same foot — that proportion is structural rather than
+   stylistic, so it lives in `render/rhythm.typ` and not in `theme.typ`. And a
+   **whole note is written as nothing at all**, so a bar of them collapses the
+   lane entirely rather than reserving a band of white space. Confirmed in the
+   reference music, not just in the reference table: eight bars of one tied
+   whole note each carry no ink in the rhythm row.
+
+15. **A rest is drawn inside the staff, and carries no stem.** It stands where
+   a note would have stood, because that is what it is; the rhythm lane carries
+   note values only, and a rest is not one of them. Measured off
    `research/TNT_0001.png`, a tab-only sheet in exactly this format: its eighth
    rests are centred a little above the staff's middle, at 0.417 of the staff
    height, with nothing at all above them. The glyphs themselves are traced
@@ -451,9 +680,73 @@ Looking good is a stated goal, so it is specified as testable requirements.
    the two apart, and the reason the line runs behind them where it is broken
    around every other rest.
 
-15. **Two-digit frets are centred on their column** and get a correspondingly
+   The gap a rest knocks in a string line is taken from **the ink at that line's
+   own height**, not from the glyph's box. A quarter rest is a narrow zigzag, so
+   a line grazing its corner needs nothing like the room one through its middle
+   does, and a fret number — measured type, with no gap between box and ink —
+   would otherwise get a tighter gap than the rest standing beside it. The
+   clearance around that ink is the same `gap-padding` a number gets, on every
+   side.
+
+16. **Lyrics ride on the guitar's own events.** A syllable is centred on the
+   event it is sung on, exactly as the fret number above it is, and an event
+   with nothing to sing is left blank. That is the layout the reference sheets
+   use and the only one a single stream of events can express: a vocal line with
+   a rhythm of its own would need a second voice, which belongs with the
+   notation staff. A word held over several notes is written **once**, where it
+   starts, with no extension line after it, and a hyphen is its own character
+   centred in the gap between two syllables rather than tucked against the
+   first.
+
+   Syllables constrain each other **pairwise**, which no other mark on the page
+   does: a syllable is routinely wider than the room its note bought, so the gap
+   between two events has to hold half of each and air between them. That is a
+   relation between two events rather than a width of one, and it crosses
+   barlines, so it is applied in `layout/system.typ`, over the whole part in
+   order, rather than in `measure-natural`, which sees one measure.
+
+   The verses come **last, below everything else on the system** — below the
+   rhythm, the dynamics and the count row alike. A dynamic marks the music and
+   has to stay near the staff it marks: set above the lyrics it is pushed one
+   row further out for every verse, until `mf` no longer reads as belonging to
+   anything. Lyrics are running text and sit at the foot of the system for the
+   same reason a caption does.
+
+17. **Two-digit frets are centred on their column** and get a correspondingly
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
+
+18. **The far end of a tie is set in parentheses.** `~` is written on the note
+   that starts the tie, so the note it runs into knows nothing about it; a
+   forward pass over the piece marks it. Without that, a note held across eight
+   bars reads as eight separate strikes. A ghost note prints identically and
+   means the opposite — struck faintly rather than not struck at all — and the
+   arc is what separates the two, which is the same ambiguity the published
+   sheets carry. A note that is both still gets exactly one pair.
+19. **A link comes in two forms, and the source picks between them.** A
+   hammer-on, pull-off or slide written with a target fret — `5/3h7` — prints
+   that fret beside its own number, the two sharing one note value, which is how
+   the Hal Leonard legend sets them. Written without one — `5/3s` — it runs to
+   the next event that plays the string, which keeps its own value and its own
+   place. Only the second can join two independently timed notes, and only it can
+   cross a barline, since a second number inside one event has nowhere to go
+   after the bar ends.
+
+   It is drawn the way a tie is drawn, and for the same reason: the note at the
+   far end is a separate event, and finding it means searching forward through
+   the system. Where it falls on the *next* system the mark is cut in two — a
+   tail leaving the last note and an equal tail arriving at the first note of the
+   line below. The landing system cannot see where the mark came from, so
+   `mark-link-targets` leaves `linked-in` on the note that receives it, the
+   mirror of `mark-tie-targets` and needed at the other end of the same geometry.
+   Ties are drawn with both halves too, which they were not before.
+20. **An arpeggio's arrowhead is a solid triangle as wide as it is tall** —
+   0.54 staff spaces each way, with a flat base, which is exactly twice the
+   width of the squiggle it caps. The squiggle stops where the head begins
+   rather than running under it. A bend's head is a different mark and keeps its
+   own shape: narrower, longer and slightly concave at the base, as the Hal
+   Leonard legend draws it. Given the bend's proportions, an arpeggio's head
+   reads as a stray tick rather than as an arrow.
 
 ## Fonts
 
@@ -476,7 +769,7 @@ exposed through `theme(font: …)`, so the whole set changes in one place.
 | Bend labels | Montserrat Medium, ~7 pt | `full`, `1/2`, `1/4`. |
 | Copyright | Montserrat Regular, ~7 pt | |
 | Dynamics | vector glyphs, not text | `f`, `mf`, `p` have very specific shapes no text face reproduces. |
-| Lyrics (phase 2) | serif, e.g. Libertinus Serif | Convention, even under a sans-set sheet. |
+| Lyrics | Libertinus Serif, ~8 pt | Convention, even under a sans-set sheet, and it keeps a sung word from reading as a playing instruction. One family and no fallback chain, unlike the music font: Typst embeds this one, so it resolves everywhere. |
 
 Fret numbers are set with **tabular figures** so `10` and `12` occupy the same
 width; otherwise columns drift apart in bars mixing one- and two-digit frets.
@@ -520,6 +813,7 @@ src/
   parse/
     dsl.typ          tokenizer, parser and writer for the native syntax
     ascii.typ        ASCII tab → model
+    lyrics.typ       the syllable syntax, spent event by event
     errors.typ       located parse errors
   layout/
     spacing.typ      natural width per event and per measure
@@ -531,7 +825,8 @@ src/
     tabstaff.typ     string lines with gaps, TAB mark, fret numbers, rests,
                      and everything anchored to a string: slurs, slides, bends
     meter.typ        the time signature's stacked numerals
-    rhythm.typ       stems, beams, grace stems, count row
+    rhythm.typ       stems, beams, stubs, grace stems, count row
+    lyrics.typ       one lane per verse, at the foot of the system
     marks.typ        the lane machinery both mark lanes are built from
     techniques.typ   marks in the lane above: spans, vibrato, articulations
     dynamics.typ     marks in the lane below: dynamics, cresc. and dim.

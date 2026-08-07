@@ -117,19 +117,47 @@
 /// Spans and tuplets are both recorded per event rather than as index ranges,
 /// so that a group split across a system break still draws correctly on both
 /// halves. Finding the runs is how a renderer recovers the grouping.
-#let tuplet-runs(events) = {
+///
+/// Two triplets written one after the other carry identical records — a triplet
+/// is `(count: 3, of: 2)` whichever group it belongs to — so nothing in the
+/// events themselves parts them. `time` does, at a beat boundary, which is the
+/// rule beam grouping already follows and which a tuplet obeys for the same
+/// reason: it exists to say how one beat is divided. Without a signature the
+/// two merge, which is what a caller wanting only the ratio asks for.
+///
+/// ```typc
+/// // Two triplets of eighths fill one beat each in 4/4, and get one run apiece.
+/// assert(tuplet-runs(bar, time: (4, 4)).len() == 2)
+/// ```
+#let tuplet-runs(events, time: none) = {
+  let unit = beat-unit(time)
   let runs = ()
   let current = ()
   let active = none
+  let position = r.zero
+
   for (i, ev) in events.enumerate() {
-    if ev.tuplet == active and ev.tuplet != none {
+    // Exact because durations are rational: the position is on a beat when it
+    // divides into whole beats with nothing left over.
+    let on-beat = unit != none and r.div(position, unit).den == 1
+    if ev.tuplet == active and ev.tuplet != none and not on-beat {
       current.push(i)
     } else {
       if current.len() > 0 { runs.push((tuplet: active, indices: current)) }
       current = if ev.tuplet == none { () } else { (i,) }
       active = ev.tuplet
     }
+
+    let d = sounding-duration(ev)
+    if d == none {
+      // No duration, no beat grid: the runs that follow can only be told apart
+      // by their records, so stop parting them rather than part them wrongly.
+      unit = none
+    } else {
+      position = r.add(position, d)
+    }
   }
+
   if current.len() > 0 { runs.push((tuplet: active, indices: current)) }
   runs
 }

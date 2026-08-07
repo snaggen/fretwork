@@ -26,6 +26,15 @@
   LR: "let ring",
 )
 
+/// What each harmonic style is called above the staff.
+#let _HARMONIC-LABELS = (
+  natural: "Harm.",
+  pinch: "P.H.",
+  artificial: "A.H.",
+  harp: "H.H.",
+  tap: "T.H.",
+)
+
 /// Techniques of a kind carried by an event, whether written on one of its
 /// notes or on the event itself.
 ///
@@ -169,8 +178,7 @@
     let word = if pe.event.text != none {
       pe.event.text
     } else if harmonics.len() > 0 {
-      let style = harmonics.first().style
-      if style == "natural" { "Harm." } else if style == "pinch" { "P.H." } else { "H.H." }
+      _HARMONIC-LABELS.at(harmonics.first().style)
     } else { none }
     if word == none { continue }
     let body = _label(theme, word)

@@ -1,6 +1,6 @@
 // Public API of the `fretwork` package.
 //
-//   #import "@local/fretwork:0.1.0": *
+//   #import "@local/fretwork:0.2.0": *
 //
 //   #show: song.with(title: "Twelve Past Nine", tempo: 132)
 //   #section("Main Riff")
@@ -15,22 +15,26 @@
 #import "parse/dsl.typ"
 #import "parse/ascii.typ"
 #import "parse/ascii.typ": even, fill
+#import "parse/lyrics.typ" as lyric-source
 #import "layout/lanes.typ": lane, stack-lanes
 #import "layout/system.typ": layout-part
 #import "render/tabstaff.typ"
 #import "render/rhythm.typ"
+#import "render/lyrics.typ" as lyric-lane
 #import "render/chordnames.typ"
 #import "render/techniques.typ"
 #import "render/dynamics.typ"
 #import "render/voltas.typ"
 #import "page.typ": song, section, credits
 
-/// Width every event needs for its fret numbers.
+/// Width every event needs for its fret numbers, and for its syllable.
 ///
 /// Measured once and reused for spacing, for the gaps in the string lines and
 /// for drawing, so the three can never disagree.
 #let _glyph-widths(thm, part) = {
-  part.measures.map(m => m.events.map(ev => tabstaff.event-metrics(thm, ev)))
+  part.measures.map(m => m.events.map(ev => (
+    tabstaff.event-metrics(thm, ev) + (lyric: lyric-lane.event-width(thm, ev))
+  )))
 }
 
 /// Report problems where the reader can actually see them.
@@ -74,10 +78,16 @@
 /// pass `show-time: false` on the second and later blocks of one piece, so the
 /// reader is told the meter once rather than at every heading.
 ///
+/// `lyrics` is one string per verse, spent syllable by syllable over the notes
+/// that are sung — rests, grace notes and the far ends of ties are skipped. A
+/// trailing `-` hyphenates into the next syllable; `_` spends a note without
+/// printing anything, which is how a word held over several notes is written.
+///
 /// ```typc
 /// tab(```
 /// q (2/5 2/4 0/6)  q x  e 0/3 3/6 0/6 0/6
 /// ```)
+/// tab(lyrics: "Some- thing I can ne- ver say", ```q 0/6 2/6 3/6 5/6```)
 /// ```
 #let tab(
   source,
@@ -88,22 +98,36 @@
   anacrusis: false,
   count-in: false,
   show-time: true,
+  lyrics: none,
   theme: default-theme,
   warn: true,
 ) = {
   let thm = theme
-  let part = if type(source) == dictionary and source.at("kind", default: none) == "part" {
+  let parsed = if type(source) == dictionary and source.at("kind", default: none) == "part" {
     source
   } else {
     dsl.parse(source, tuning: tuning, time: time, tempo: tempo, capo: capo, anacrusis: anacrusis)
   }
+  // Derived before anything measures or draws, so the widths reserved for the
+  // fret numbers and the numbers actually printed agree about which of them are
+  // parenthesised — and before the syllables are spent, since a note held by a
+  // tie is not sung again.
+  let part = model.mark-link-targets(model.mark-tie-targets(parsed))
+
+  let problems = ()
+  if lyrics != none {
+    let sung = lyric-source.apply(part, lyrics)
+    part = sung.part
+    problems += sung.warnings
+  }
 
   // Reported rather than raised: a partially filled model is legal, and an
   // imported tab is often musically imperfect but still worth setting.
-  if warn { _diagnostics(thm, "tab", model.validate(part)) }
+  if warn { _diagnostics(thm, "tab", problems + model.validate(part)) }
 
   layout(size => {
     let strings = string-count(part.tuning)
+    let verses = lyric-lane.verse-count(part)
     let widths = _glyph-widths(thm, part)
     let systems = layout-part(
       thm,
@@ -120,14 +144,19 @@
       // trailing string lines out to the margin.
       let w = sys.width
 
-      // Bottom to top: the count row, then the dynamics under the staff,
-      // technique marks directly above it, then the rhythm, then chord names,
-      // and the endings furthest out, as they bracket whole measures rather
-      // than single events.
+      // Top to bottom: the endings furthest out, as they bracket whole measures
+      // rather than single events, then chord names, then technique marks
+      // directly above the staff. Under it the rhythm, whose stems rise towards
+      // the music they describe, then the dynamics and the count row.
+      //
+      // The verses come last, below all of it. A dynamic marks the music and
+      // has to stay near the staff it marks: set above the lyrics it would be
+      // pushed a row further out for every verse, until `mf` no longer read as
+      // belonging to anything. Lyrics are running text and belong at the foot
+      // of the system for the same reason a caption does.
       let lanes = (
         voltas.lane-for(thm, sys, w),
         chordnames.lane-for(thm, sys, w),
-        rhythm.lane-for(thm, sys, w),
         techniques.lane-for(thm, sys, w),
         {
           // Bends and slurs are anchored to their own string and reach above the
@@ -144,8 +173,10 @@
             overflow: over,
           ))
         },
+        rhythm.lane-for(thm, sys, w),
         dynamics.lane-for(thm, sys, w),
         rhythm.count-lane-for(thm, sys, w, enabled: count-in and i == 0),
+        ..range(verses).map(v => lyric-lane.lane-for(thm, sys, w, v)),
       )
       // A system must never be split by a page break.
       block(breakable: false, stack-lanes(lanes, w, thm.lane-gap))
@@ -155,11 +186,12 @@
 }
 
 /// Render a part programmatically, bypassing the DSL.
-#let render(part, theme: default-theme, count-in: false, show-time: true) = tab(
+#let render(part, theme: default-theme, count-in: false, show-time: true, lyrics: none) = tab(
   part,
   theme: theme,
   count-in: count-in,
   show-time: show-time,
+  lyrics: lyrics,
 )
 
 /// Typeset a pasted ASCII tab.
@@ -170,15 +202,22 @@
 ///
 /// - **Column-aligned annotation rows** inside the block, which is the primary
 ///   mechanism because a fact attaches to exactly the column it describes:
-///   `R:` note values, `C:` chord names, `S:` a section heading, `T:` a playing
-///   instruction, `D:` dynamics, `PM:` and `LR:` bracketed spans.
+///   `R:` note values, `C:` chord names, `L:` sung syllables — one row per
+///   verse — `S:` a section heading, `T:` a playing instruction, `D:` dynamics,
+///   `PM:` and `LR:` bracketed spans.
 /// - **Named arguments** for facts about the whole piece: `tuning`, `time`,
 ///   `tempo`, `capo`, `anacrusis`.
 /// - **`rhythm:`** for the common cases: `even(1/8)`, `fill`, or an explicit
-///   sequence such as `"q q e e"`.
+///   sequence such as `"q q e e"`, and **`lyrics:`** for verses spent syllable
+///   by syllable, as on `tab`. `L:` rows win: where they supply syllables the
+///   argument is ignored and says so.
 ///
 /// `enrich` is the escape hatch for anything the three do not cover: it
 /// receives the parsed part and returns a modified one.
+///
+/// `show-time: false` suppresses the time signature, as on `tab`. A piece pasted
+/// in several blocks is several calls, and the meter is a thing the reader is
+/// told once — so every block after the first should pass it.
 ///
 /// ```typc
 /// ascii-tab(```
@@ -194,7 +233,9 @@
   capo: 0,
   anacrusis: false,
   rhythm: none,
+  lyrics: none,
   count-in: false,
+  show-time: true,
   theme: default-theme,
   enrich: none,
   warn: true,
@@ -209,6 +250,18 @@
     rhythm: rhythm,
   )
   let part = if enrich != none { enrich(result.part) } else { result.part }
+  let problems = result.warnings
+
+  // Spent over the whole piece before it is cut into sections: the cursor runs
+  // through the music, and restarting it at every heading would put verse one
+  // under every section.
+  if lyrics != none and lyric-source.has-lyrics(part) {
+    problems.push("lyrics: the L: rows already carry syllables, so the argument was ignored")
+  } else if lyrics != none {
+    let sung = lyric-source.apply(model.mark-tie-targets(part), lyrics)
+    part = sung.part
+    problems += sung.warnings
+  }
 
   // Sections carried by `S:` rows are headings in their own right, and a
   // heading in the middle of the piece must land *between* the measures it
@@ -237,7 +290,7 @@
       // section — and neither does the time signature, which is one piece of
       // information however many sections it has been cut into.
       count-in: count-in and from == 0,
-      show-time: from == 0,
+      show-time: show-time and from == 0,
       warn: false,
     )
   }
@@ -248,7 +301,7 @@
   // Malformed input is reported but never fatal: a real tab is usually
   // imperfect, and refusing to set it would defeat the purpose of importing.
   if warn {
-    _diagnostics(theme, "ascii-tab", result.warnings + model.validate(part))
+    _diagnostics(theme, "ascii-tab", problems + model.validate(part))
   }
 }
 

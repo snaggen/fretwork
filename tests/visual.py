@@ -42,9 +42,12 @@ REFS = ROOT / "tests" / "refs"
 DIFFS = REFS / "diff"
 
 # Fonts the fixtures name, which therefore have to be present for a render to
-# mean the same thing twice. `_common.typ` pins these deliberately rather than
-# using the theme default, which is a variable font not every machine has.
-REQUIRED_FONTS = ["DejaVu Sans"]
+# mean the same thing twice. `_common.typ` pins DejaVu Sans deliberately rather
+# than using the theme default, which is a variable font not every machine has.
+# Libertinus Serif is the lyric font and is listed for the same reason, even
+# though Typst embeds it: a build that did not would diff every lyric fixture
+# for a reason that has nothing to do with rendering.
+REQUIRED_FONTS = ["DejaVu Sans", "Libertinus Serif"]
 
 # How much a pixel may differ before it counts as changed. Rendering is
 # deterministic on one machine, so this exists for the antialiasing seam that

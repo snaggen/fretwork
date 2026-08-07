@@ -84,11 +84,18 @@
 /// A technique record. `kind` names the technique; the remaining fields carry
 /// its argument, if any.
 ///
-/// - `hammer`, `pull`, `slide`: `fret` — the target fret.
+/// - `hammer`, `pull`, `slide`: `fret` — the target fret, or `none` for the next
+///   event that plays the string. A named fret is drawn as a second number
+///   beside the first and shares its note value; `none` joins two independently
+///   timed notes, which is the only form that can cross a barline.
 /// - `slide`: `legato` — whether the target is *not* picked again.
+/// - `slide`: `out` in `"up"`, `"down"` — the note is slid *off*, into nothing.
+///   It reaches no other note, so it names a direction where a link derives one
+///   from the fret it lands on.
 /// - `bend`: `amount` (rational, in whole steps), `release`, `pre`.
 /// - `vibrato`: `wide`.
-/// - `harmonic`: `style` in `"natural"`, `"pinch"`, `"harp"`.
+/// - `harmonic`: `style` in `"natural"`, `"pinch"`, `"artificial"`, `"harp"`,
+///   `"tap"`.
 /// - `stroke`: `dir` in `"down"`, `"up"`.
 #let technique(kind, ..fields) = (kind: kind, ..fields.named())
 
@@ -106,6 +113,13 @@
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
+
+/// One sung syllable.
+///
+/// `hyphen` says the word carries on into the next one. The hyphen is drawn as
+/// its own character, centred in the gap between the two syllables rather than
+/// tucked against this one, which is where a published sheet puts it.
+#let syllable(text, hyphen: false) = (kind: "syllable", text: text, hyphen: hyphen)
 
 /// One rhythmic position: a note, a chord, or a rest.
 ///
@@ -127,6 +141,12 @@
 /// `dynamic` is `none` or a name such as `"mf"`. It marks where the dynamic
 /// *changes*; what is in force between two marks is whatever the last one
 /// said.
+///
+/// `lyrics` holds one syllable per verse, indexed by verse and `none` where
+/// that verse sings nothing here. It is stored on the event rather than in a
+/// parallel array so that a syllable rides through system breaking with the
+/// note it belongs to — the same reason spans and tuplets are recorded per
+/// event.
 #let event(
   notes: (),
   duration: none,
@@ -139,6 +159,7 @@
   column-span: none,
   grace: none,
   dynamic: none,
+  lyrics: (),
 ) = {
   assert(
     duration == none or r.is-rat(duration),
@@ -170,6 +191,8 @@
     // A dynamic taking effect here and holding until the next one, printed
     // below the staff: `"mf"`, `"ff"`, and so on.
     dynamic: dynamic,
+    // One syllable per verse, or `none` where a verse sings nothing here.
+    lyrics: lyrics,
   )
 }
 
@@ -272,6 +295,137 @@
     sections: sections,
   )
 }
+
+/// Mark every note that a tie runs *into*.
+///
+/// `~` is written on the note that *starts* the tie, so the note at the far end
+/// knows nothing about it. It has to: the far end is not struck at all, and
+/// published sheets set its fret number in parentheses to say so. One forward
+/// pass over the piece finds them, carrying a pending tie per string.
+///
+/// Adds `tied-in: true` to the notes that receive one and leaves every other
+/// note exactly as it was, so this is safe to run on any part and idempotent.
+///
+/// ```typc
+/// let held = model.note(3, 12)
+/// let p = model.part(measures: (model.measure(events: (
+///   model.event(notes: (model.note(3, 12, techniques: (model.technique("tie"),)),)),
+///   model.event(notes: (held,)),
+/// )),))
+/// let after = mark-tie-targets(p).measures.first().events
+/// assert(after.at(1).notes.first().tied-in)
+/// assert(after.at(0).notes.first().at("tied-in", default: false) == false)
+/// ```
+#let mark-tie-targets(part) = {
+  // Strings whose tie is still looking for the note it runs into.
+  let pending = ()
+  let measures = ()
+  for m in part.measures {
+    let events = ()
+    for ev in m.events {
+      let notes = ev.notes.map(n => if n.string in pending { n + (tied-in: true) } else { n })
+      // A note can both receive a tie and start another, so the strings this
+      // event closes are cleared before the ones it opens are recorded.
+      pending = pending.filter(s => not ev.notes.any(n => n.string == s))
+      for n in ev.notes {
+        if has-technique(n, "tie") and not (n.string in pending) { pending.push(n.string) }
+      }
+      events.push(ev + (notes: notes))
+    }
+    measures.push(m + (events: events))
+  }
+  part + (measures: measures)
+}
+
+/// The kinds of technique that join one note to another.
+#let LINK-KINDS = ("hammer", "pull", "slide")
+
+/// The slide a note is carried *off* by, or `none`.
+///
+/// A slide out reaches no other note, so it is drawn as a short stroke leaving
+/// this one and needs a direction of its own — see `technique`.
+#let slide-out(n) = {
+  for t in n.techniques {
+    if t.kind == "slide" and t.at("out", default: none) != none { return t }
+  }
+  none
+}
+
+/// The link a note carries that runs to the next event, or `none`.
+///
+/// A hammer-on, pull-off or slide written with a target fret prints that fret
+/// beside its own number and needs nothing from the notes around it. Written
+/// without one it runs to the next event that plays the string, which is the
+/// only form that can join two independently timed notes or cross a barline.
+///
+/// A slide *out* is neither: it names a direction rather than a destination, so
+/// there is no later note for it to reach and none to mark.
+#let link-to-next(n) = {
+  for t in n.techniques {
+    if t.kind in LINK-KINDS and t.at("fret", default: none) == none {
+      if t.at("out", default: none) == none { return t }
+    }
+  }
+  none
+}
+
+/// Mark every note that a link runs *into*.
+///
+/// The mirror of `mark-tie-targets`, and needed for the same reason ties need
+/// theirs — but at the other end of the piece's geometry. A system is drawn on
+/// its own and cannot look back past its own first event, so a link arriving
+/// from the line above would leave no trace there. `linked-in` is what lets the
+/// landing system draw the incoming half of it.
+///
+/// Adds `linked-in: (kind: …, legato: …)` to the notes that receive one and
+/// leaves every other note as it was, so this is safe to run on any part and
+/// idempotent.
+///
+/// ```typc
+/// let p = model.part(measures: (model.measure(events: (
+///   model.event(notes: (model.note(3, 5, techniques: (model.technique("slide", legato: true),)),)),
+///   model.event(notes: (model.note(3, 9),)),
+/// )),))
+/// let after = mark-link-targets(p).measures.first().events
+/// assert(after.at(1).notes.first().linked-in.kind == "slide")
+/// ```
+#let mark-link-targets(part) = {
+  // Strings whose link is still looking for the note it runs into, and what
+  // kind of link is on its way.
+  let pending = (:)
+  let measures = ()
+  for m in part.measures {
+    let events = ()
+    for ev in m.events {
+      let notes = ev.notes.map(n => {
+        let waiting = pending.at(str(n.string), default: none)
+        if waiting == none { n } else { n + (linked-in: waiting) }
+      })
+      // A note can both receive a link and start another, so what this event
+      // closes is cleared before what it opens is recorded.
+      for n in ev.notes {
+        if str(n.string) in pending { let _ = pending.remove(str(n.string)) }
+      }
+      for n in ev.notes {
+        let link = link-to-next(n)
+        if link != none {
+          pending.insert(str(n.string), (kind: link.kind, legato: link.at("legato", default: true)))
+        }
+      }
+      events.push(ev + (notes: notes))
+    }
+    measures.push(m + (events: events))
+  }
+  part + (measures: measures)
+}
+
+/// Whether a note's fret number is set in parentheses.
+///
+/// Two different things print the same way: a ghost note, struck but barely
+/// sounded, and the far end of a tie, which is not struck at all. The tie's arc
+/// is what tells them apart on the page — the same ambiguity the published
+/// sheets carry. A note that is both still gets one pair of parentheses.
+#let is-parenthesised(n) = has-technique(n, "ghost") or n.at("tied-in", default: false)
 
 /// The time signature in force at a measure index, as a `(beats, unit)` pair.
 ///

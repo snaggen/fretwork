@@ -21,7 +21,7 @@
   words: "Mattias Eriksson",
   music: "Mattias Eriksson",
   arranged: "Mattias Eriksson",
-  source: "Package demo · v0.1.0",
+  source: "Package demo · v0.2.0",
   copyright: "Typeset with fretwork · EUPL-1.2",
   tempo: 120,
   tempo-words: "Moderately",
@@ -64,9 +64,14 @@ w 0/6 | h 0/6 0/6 | q 0/6 0/6 0/6 0/6
 | t 0/6 0/6 0/6 0/6 s 0/6 0/6 e 0/6 0/6 h 0/6 |.
 ```)
 
-Dots and rests. Anything longer than a quarter carries a hollow head — with no
-notation stave underneath there is nothing else to tell a half note from a
-quarter.
+The lane sits under the staff and draws bars rather than noteheads: a beam along
+the bottom with the stems rising from it. With no notation stave to hang a
+notehead on, the stem's length carries the value — a half note is a quarter's
+stem cut in two from the same foot, and a whole note is not written at all,
+which is why the first bar above shows nothing.
+
+Dots and rests. An augmentation dot is a small square at the foot of the stem;
+a rest is drawn inside the staff, where the note it replaces would have stood.
 
 #src("q. 0/6 e 2/6 h 3/6 | q.. 0/6 t 2/6 2/6 h 3/6 | q 0/6 r 3/6 r | …")
 
@@ -92,6 +97,9 @@ A tie hangs *under* its line and curves down — the mirror of the slur that
 arches over a hammer-on above, so the two marks can never be read for each
 other. Under a stacked number there is no room, the next string being right
 there, so a chord's ties leave the numbers' flanks instead.
+
+The far end of a tie is set in parentheses, because it is not struck: without
+that, a note held across four bars reads as four separate strikes.
 
 #src("h 5/3~ q 5/3 7/3 | q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~")
 
@@ -147,11 +155,11 @@ same height.
 q 7/3b 7/3b(1/2) 7/3br 7/3B | h 7/3Br 7/3b(1/4) |.
 ```)
 
-Vibrato `v`, wide vibrato `V`, natural harmonic `*`, pinch harmonic `PH`, harp
-harmonic `HH`:
+Vibrato `v`, wide vibrato `V`, and the five harmonics — natural `*`, pinch `PH`,
+artificial `AH`, harp `HH`, tap `TH`:
 
 #tab(```
-q 7/3v 7/3V 12/3* 5/3PH | h 7/3HH 7/3v |.
+q 7/3v 7/3V 12/3* 5/3PH | q 5/3AH 7/3HH 7/3TH 7/3v |.
 ```)
 
 Accent `>`, marcato `^`, staccato `!`, tenuto `-`; then downstroke `n`,
@@ -224,6 +232,39 @@ stretches that change gradually.
 !mf q 0/6 2/6 3/6 5/6 | {cresc: q 3/6 5/6 7/6 8/6}
 | !ff q 10/6 8/6 {dim: 7/6 5/6} | !p q 3/6 2/6 h 0/6 |.
 ```)
+
+= Lyrics
+
+Syllables are not written among the notes — they would drown them. They run
+parallel to the music instead, spent one per sung note, and rests, grace notes
+and the far ends of ties are passed over because none of them is sung.
+
+A trailing `-` hyphenates into the next syllable, and the hyphen is drawn as its
+own character centred in the gap between the two. `_` spends a note without
+printing anything on it, which is how a word held over several notes is written:
+the sheets this follows write it once, where the note starts, and draw no line
+after it.
+
+#src("#tab(lyrics: \"Some- thing I can ne- ver say _\", ```…```)")
+
+#tab(lyrics: "Some- thing I can ne- ver say _", ```
+q 0/6 2/6 e 3/6 3/6 q 5/6 | q 3/6 2/6 h 0/6 |.
+```)
+
+Several verses are an array, one lane each. A syllable is routinely wider than
+the room its note bought, so the spacing engine widens the gap between two
+events by half of each syllable — a constraint no other mark on the page needs,
+and one that crosses barlines.
+
+#tab(
+  lyrics: (
+    "Twist- ing and smash- ing the win- dow",
+    "Blind- ed by ev- ery sing- le light",
+  ),
+  ```
+  q 0/6 2/6 3/6 5/6 | q 3/6 5/6 7/6 8/6 |.
+  ```,
+)
 
 = Barlines, repeats and endings
 
@@ -309,8 +350,8 @@ A capo transposes everything without changing a single fret number:
 
 A tab pasted from the web renders as it stands. It carries no rhythm, so there
 are no stems — the layout follows the source's own columns instead. Techniques
-written inline are read: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, and `( )` for
-a ghost note.
+written inline are read: `h` `p` `/` `\` `b` `r` `~` `x` `*` `t`, `( )` for a
+ghost note, and the harmonic marks `NH` `PH` `AH` `HH` `TH` against the fret.
 
 #ascii-tab(```
 e|-----------------|-----------------|
@@ -329,7 +370,7 @@ column it sits over: `R:` note values, `C:` chord names, `S:` a section heading,
 #ascii-tab(```
 S:   Second riff
 C:   E5          G5      A5
-R:   q   q   e e h       q
+R:   q   q   e e e       e
 PM:  --------
 T:                       let ring
 e|---0---2---3-5---------7--|

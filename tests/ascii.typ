@@ -56,9 +56,116 @@
 
 #eq(events-of(block("--12-0--")).map(e => e.notes.first().fret), (12, 0), "12 then 0")
 
+// A run of digits is one fret only as far as that fret exists. Beyond the 24th
+// it is quick notes on one string, which is how sources write eighth-note power
+// chords — and reading them greedily used to fill the page with reports of
+// frets that no source ever meant.
+#eq(
+  events-of(block("--77----")).map(e => e.notes.first().fret),
+  (7, 7),
+  "'77' is two sevenths, not the 77th fret",
+)
+#eq(
+  events-of(block("--333---")).map(e => e.notes.first().fret),
+  (3, 3, 3),
+  "and '333' is three thirds",
+)
+#eq(events-of(block("--80----")).map(e => e.notes.first().fret), (8, 0), "'80' is 8 then open")
+#eq(
+  events-of(block("--010---")).map(e => e.notes.first().fret),
+  (0, 10),
+  "a leading zero opens no number: '010' is the open string then the 10th",
+)
+#eq(
+  events-of(block("-101010-")).map(e => e.notes.first().fret),
+  (10, 10, 10),
+  "'101010' is three tenths",
+)
+#eq(events-of(block("--7b910-")).map(e => e.notes.first().fret), (7, 10), "a bend target stops too")
+
 // --- barlines -------------------------------------------------------------
 
 #eq(part-of(block("--0--|--3--")).measures.len(), 2, "an interior barline splits the music")
+
+// --- bars with nothing in them ---------------------------------------------
+// An empty bar is not an empty statement: it says this part is silent here.
+// Dropping it lost the whole block when every bar was empty, so an outro where
+// the guitar has stopped and only the voice carries on vanished from the sheet.
+
+#let silent = part-of(block("-----------|-----------"))
+#eq(silent.measures.len(), 2, "a bar with nothing written in it is still a bar")
+#eq(
+  silent.measures.map(me => me.events.map(e => e.kind)),
+  (("rest",), ("rest",)),
+  "…and holds a rest, which is what a silent bar is",
+)
+#eq(
+  silent.measures.first().events.first().duration,
+  r.rat(1),
+  "as long as the bar, so the meter still checks out",
+)
+#eq(m.validate(silent), (), "…and validation has nothing to say about it")
+
+// The leading barline of a *second* block opens it rather than closing a bar:
+// blocks concatenate, and every one of them starts with a barline of its own.
+#eq(
+  part-of(block("--0---2----") + "\n" + block("--12--10---")).measures.len(),
+  2,
+  "a following block's opening barline does not invent an empty measure",
+)
+// `||` is one barline drawn twice, not two with a bar of silence between them.
+#eq(part-of(block("--0---2---|")).measures.len(), 1, "a double barline closes one measure")
+
+// --- repeats ---------------------------------------------------------------
+// `|:` and `:|` are music, not filler: a section played four times and one
+// played once are not the same piece.
+
+#let repeats-of(src) = {
+  part-of(src).measures.map(me => (me.start-repeat, me.end-repeat, me.repeat-count))
+}
+
+#eq(
+  repeats-of(block(":--0---5--:")),
+  ((true, true, none),),
+  "the colons around a block's own barlines open and close a repeat",
+)
+#eq(
+  repeats-of(block("--0--|:--5---7--:|--3--")),
+  ((false, false, none), (true, true, none), (false, false, none)),
+  "an interior repeat marks the measure it encloses, not its neighbours",
+)
+#eq(
+  repeats-of(block(":--0---5--:|x3")),
+  ((true, true, 3),),
+  "`x3` after the closing stroke is how many times to play it",
+)
+// `:|:` is where a repeated section runs straight into the next one, and is one
+// barline carrying both marks.
+#eq(
+  repeats-of(block("--0--:|:--5--")),
+  ((false, true, none), (true, false, none)),
+  "`:|:` closes one repeat and opens the next",
+)
+// Collapsing adjacent strokes must not collapse what they say: in `||:` the
+// repeat is written on the second stroke.
+#eq(
+  repeats-of(block("--0--||:--5--:||--3--")),
+  ((false, false, none), (true, true, none), (false, false, none)),
+  "a repeat written against a double barline survives",
+)
+// A repeat may open at the end of one block and be played out in the next.
+#eq(
+  repeats-of(block("--0---5--|:") + "\n" + block("--3---7--:|")),
+  ((false, false, none), (true, true, none)),
+  "a repeat carries across the join between two blocks",
+)
+// `x` is also a dead note, so a count is read only where no other reading is
+// open: after the stroke that closes a repeat.
+#eq(
+  part-of(block("--0--|x3--5--")).measures.last().events.map(e => e.notes.first().fret),
+  ("x", 3, 5),
+  "`|x3` in the middle of a row is a muted string and then the third fret",
+)
 
 // --- inline techniques ----------------------------------------------------
 
@@ -71,10 +178,103 @@
 #eq(tech("--7b9---").first().amount, r.rat(1), "a bend of two frets is a whole step")
 #eq(tech("--7b8---").first().amount, r.rat(1, den: 2), "one fret is a half step")
 #eq(tech("--7b9r--").first().release, true, "r after a bend is a release")
+// `pb` and `pbr` are Ultimate Guitar's own spelling of a pre-bend. Read as a
+// plain `p` the row was *misread*, not merely impoverished: the pull-off was
+// held for the next note on the row and hung off it, inventing a slur the
+// source never had, and the pre-bend came out as an ordinary bend.
+#eq(tech("--7pb9--").first().pre, true, "pb is a pre-bend")
+#eq(tech("--7pb9r-").first().release, true, "…and pbr releases it")
+#eq(
+  events-of(block("--7pb9--5---")).at(1).notes.first().techniques,
+  (),
+  "…and neither invents a pull-off on the note that follows",
+)
 #eq(tech("--7~----").first(), m.technique("vibrato", wide: false), "a tilde is vibrato")
 #eq(tech("--12*---").first().style, "natural", "an asterisk is a natural harmonic")
+// Power Tab and Guitar Pro export a natural harmonic in angle brackets, which
+// is a dialect of ASCII tab rather than of any one site.
+#eq(tech("--<12>--").first().style, "natural", "…and so are angle brackets")
+#eq(
+  events-of(block("--<12>--")).first().notes.first().fret,
+  12,
+  "the fret inside them is the note, not part of the bracket",
+)
 #eq(tech("--(7)---").first().kind, "ghost", "parentheses mark a ghost note")
+
+// …unless the fret in them repeats the note before it on that string, which is
+// how a held note is written: the string is still sounding and is not struck
+// again. The two print alike — a ghost note and the far end of a tie are both
+// parenthesised, the arc being what separates them — so only the model can tell
+// them apart, and reading it wrong turns a note held over into a second strike.
+#let held = m.mark-tie-targets(part-of(block("--5-----(5)--")))
+#let held-events = held.measures.first().events
+#eq(
+  held-events.at(0).notes.first().techniques,
+  (m.technique("tie"),),
+  "a repeated fret in parentheses ties the note it repeats",
+)
+#ok(held-events.at(1).notes.first().tied-in, "…and the far end is the note not struck")
+#eq(
+  tech("--5-----(7)--").len(),
+  0,
+  "a different fret in parentheses leaves the note before it alone",
+)
+#eq(
+  events-of(block("--5-----(7)--")).at(1).notes.first().techniques.first().kind,
+  "ghost",
+  "…and is the ghost note the brackets otherwise mean",
+)
+// The note before it, not merely an earlier one: a fret struck between the two
+// has ended whatever the first was sounding.
+#eq(
+  events-of(block("--5--7--(5)--")).at(2).notes.first().techniques.first().kind,
+  "ghost",
+  "an intervening note makes the brackets a ghost note again",
+)
+// A tie across a barline is ordinary notation, and barlines do not interrupt
+// the run of notes on a row.
+#ok(
+  m.has-technique(events-of(block("--5--|--(5)--")).at(0).notes.first(), "tie"),
+  "a tie is read across a barline",
+)
 #eq(events-of(block("--x-----")).first().notes.first().fret, m.MUTED, "x is a dead string")
+
+// Nothing sounds on a dead string, so nothing can be hammered, pulled or slid
+// from it. A stray letter between one and the next note used to hang a link
+// there — `0-x---pbr12` in a real transcription left a pull-off pointing from
+// `x` to the 12th, and the renderer, asked whether the 12th is above a fret
+// called "x", stopped the whole document.
+#let from-dead = parse(block("--0-x---p12--"))
+#eq(
+  from-dead.part.measures.first().events.at(1).notes.first().techniques,
+  (),
+  "a linking mark is not hung off a dead string",
+)
+#ok(
+  from-dead.warnings.any(w => w.contains("dead string")),
+  "…and dropping it is reported rather than silent",
+)
+
+// Ultimate Guitar's own two-letter harmonic marks, written against the fret.
+// They used to reach the page only through a `T:` row, which put the right word
+// over the right column and left the model none the wiser.
+#eq(tech("--7PH---").first().style, "pinch", "PH is a pinch harmonic")
+#eq(tech("--7AH---").first().style, "artificial", "AH is an artificial harmonic")
+#eq(tech("--12NH--").first().style, "natural", "NH is a natural harmonic")
+#eq(tech("--9HH---").first().style, "harp", "HH is a harp harmonic")
+#eq(tech("--7TH---").first().style, "tap", "TH is a tap harmonic")
+// Capitals collide with nothing, since every technique letter read inside a row
+// is lower case — but the mark must not swallow the note after it.
+#eq(
+  events-of(block("--7PH5--")).map(e => e.notes.first().fret),
+  (7, 5),
+  "a harmonic takes no target fret, so the digits after it are the next note",
+)
+#eq(
+  write(part-of("R:  q   q\n" + block("--7PH--9TH--"))),
+  "q 7/1PH 9/1TH |",
+  "…and each writes back out as the mark the native syntax uses",
+)
 
 // --- noise around the music -----------------------------------------------
 // Real tabs are full of headings and comments; they must be skipped, not
@@ -83,6 +283,24 @@
 #let noisy = parse("Verse riff — play twice\n" + block("--0-----"))
 #eq(noisy.part.measures.len(), 1, "a prose line does not break the block")
 #eq(noisy.part.measures.first().events.len(), 1, "and the music still reads")
+
+// A densely noted row is still music. Counting only the filler put this one at
+// 0.49 and dropped it as prose — two of them in Nirvana's *All Apologies*, which
+// then left the block a string short. Fret numbers count towards the alphabet
+// tab is written with, because they are part of it.
+#let dense = parse(
+  "D#|------------------------|\n"
+    + "A#|------------------------|\n"
+    + "F#|------------------------|\n"
+    + "C#|------------------------|\n"
+    + "G#|---9-10---10s12-12-10-9-|\n"
+    + "D#|------------------------|",
+  tuning: tunings.half-step-down,
+)
+#eq(dense.warnings, (), "a two-digit row with single dashes is read, not ignored")
+// Six events, not seven: `10s12` is one note sliding to the 12th, and the
+// target is a technique on it rather than a strike of its own.
+#eq(dense.part.measures.first().events.len(), 6, "…and every note in it arrives")
 
 // --- annotation rows ------------------------------------------------------
 
@@ -95,6 +313,20 @@
 )
 #let ann = annotated.part.measures.first().events
 #eq(ann.len(), 4, "four events")
+// Power Tab and Guitar Pro write their duration rows in capitals. Reading them
+// is what turns an exported tab from column-spaced into one with real rhythm.
+#let shouted = parse("R:   Q   Q   E E\n" + block("--0---2---3-5---"))
+#eq(
+  shouted.part.measures.first().events.map(e => e.duration),
+  (m.durations.q, m.durations.q, m.durations.e, m.durations.e),
+  "an R row in capitals reads the same as one in lower case",
+)
+#eq(
+  parse("R:   Q.  E\n" + block("--0-------2-----")).part.measures.first().events.at(0).duration,
+  m.dotted(m.durations.q, 1),
+  "…dots and all",
+)
+
 #eq(ann.at(0).duration, m.durations.q, "the R row supplies note values")
 #eq(ann.at(1).duration, m.durations.q, "…which stick like the DSL's")
 #eq(ann.at(2).duration, m.durations.e, "…until the next token")
@@ -121,11 +353,98 @@
 )
 #eq(bad-dyn.part.measures.first().events.at(0).dynamic, none, "…and does not reach the model")
 
+// A note value written where nothing is struck is a rest that long. ASCII tab
+// spells silence as filler, so the annotation row is the only place a rest can
+// be said at all — and saying it is what lets a bar that stops halfway through
+// still add up to its meter.
+#let rests = parse("R:  q   q   q   q\n" + block("--0---5-------------"))
+#eq(
+  rests.part.measures.first().events.map(e => (e.kind, e.duration)),
+  (
+    ("note", m.durations.q),
+    ("note", m.durations.q),
+    ("rest", m.durations.q),
+    ("rest", m.durations.q),
+  ),
+  "values over columns with no note are rests of that length",
+)
+#eq(m.validate(rests.part), (), "…so the bar adds up to its meter")
+// The reach is the three columns every other annotation row resolves by: a
+// hand-aligned token that merely misses its note must set that note's value
+// rather than invent a silence beside it.
+#eq(
+  events-of("R:  q q\n" + block("--0-5---------------")).map(e => e.kind),
+  ("note", "note"),
+  "a token within three columns of a note is that note's value, not a rest",
+)
+// Which is why the notes claim their tokens rather than each token asking
+// whether a note is near. Where events stand two columns apart a value written
+// over the gap is within reach of the notes on both sides, and asking by
+// distance alone could not read such a row at all: this is a real transcription
+// — Three Days Grace, *Animal I Have Become* — whose eight eighths over seven
+// notes came out a beat short in every bar.
+#eq(
+  parse(
+    "R:    e e e e e e e e\n"
+      + "D|:-------------------|\n"
+      + "A|:-------------------|\n"
+      + "F|:-------------------|\n"
+      + "C|:-------------------|\n"
+      + "G|:---0-0-------7-----|\n"
+      + "C|:---0-0---7-8---8-7-|",
+  )
+    .part
+    .measures
+    .first()
+    .events
+    .map(e => e.kind),
+  ("note", "note", "rest", "note", "note", "note", "note", "note"),
+  "a densely spaced row leaves over the token no note wanted, in its own place",
+)
+// A bar written empty is one whole rest, but a bar whose rests are named is
+// divided as the row says — the whole-bar rest ahead of them would be a second
+// bar's worth of silence.
+#eq(
+  parse("R:  q   q   q   q\n" + block("--------------------"))
+    .part
+    .measures
+    .first()
+    .events
+    .map(e => (e.kind, e.duration)),
+  (("rest", m.durations.q),) * 4,
+  "an empty bar takes the rests the R row names instead of one whole rest",
+)
+#eq(
+  part-of(block("--------------------")).measures.first().events.map(e => e.duration),
+  (r.rat(1),),
+  "…while one with nothing said about it is still a single bar-long rest",
+)
+
 // A tuplet is opened with a count and a colon, which stays column-aligned.
 #let tuplets = parse("R:   3:  e   e   e\n" + block("--0---2---3-----"))
 #let tevs = tuplets.part.measures.first().events
 #eq(tevs.at(0).tuplet, (count: 3, of: 2), "'3:' opens a triplet")
 #eq(tevs.at(2).tuplet, (count: 3, of: 2), "…covering three events")
+
+// A block may carry several `R:` rows, read together column by column. That is
+// what makes `3:` writable where the events stand close: the opener needs
+// whitespace on both sides and rarely fits between two values.
+#let split-rows = parse(
+  "R:          3:\n" + "R:  q   q   q   q   q\n" + block("--3---3---5---3---2--"),
+)
+#eq(
+  split-rows.part.measures.first().events.map(e => (e.duration, e.tuplet)),
+  (
+    (m.durations.q, none),
+    (m.durations.q, none),
+    (m.durations.q, (count: 3, of: 2)),
+    (m.durations.q, (count: 3, of: 2)),
+    (m.durations.q, (count: 3, of: 2)),
+  ),
+  "a tuplet opened from a second R row lands on its own column",
+)
+// Three quarters in the time of two is exactly what makes five of them a bar.
+#eq(m.validate(split-rows.part), (), "…and the bar then adds up to its meter")
 
 // --- inference ------------------------------------------------------------
 
@@ -160,8 +479,11 @@
 )
 #ok(ragged.warnings.len() > 0, "rows of different lengths are reported")
 
+// A bare `30` is read as two notes rather than a fret that does not exist, so
+// the report needs a source that means the 30th and says so: inside brackets the
+// digits are delimited and no other reading is open.
 #ok(
-  parse(block("--30----")).warnings.any(w => "30" in w),
+  parse(block("-(30)---")).warnings.any(w => "30" in w),
   "a fret above the 24th is reported",
 )
 
@@ -175,6 +497,14 @@
   parse-measures(dsl-source).first().events.map(e => (e.notes, e.duration)),
   events-of(annotated-src).map(e => (e.notes, e.duration)),
   "an annotated ASCII tab round-trips through the DSL unchanged",
+)
+
+// The structure round-trips with the notes: what the colons said comes back out
+// as the repeat signs the native syntax writes.
+#eq(
+  write(parse("R:   q   q\n" + block(":--0---2--:|x3")).part),
+  "|: q 0/1 2/1 :|x3",
+  "a repeat written in ASCII is written back as one",
 )
 
 // --- the writer -----------------------------------------------------------
@@ -206,6 +536,11 @@
   "{PM: q 0/6 0/6 } |",
   "spans round-trip as groups",
 )
+#eq(
+  write(m.part(measures: parse-measures("q 10/3s | 3/3"))),
+  "q 10/3s |\n3/3 |",
+  "a link running to the next event round-trips as the bare mark",
+)
 #eq(write(m.part(measures: parse-measures("|: q 0/6 :|"))), "|: q 0/6 :|", "repeats round-trip")
 #eq(write(m.part(measures: parse-measures("@E5 q 0/6"))), "@E5 q 0/6 |", "chord names round-trip")
 
@@ -226,36 +561,94 @@
   "…as a hammer-on to that fret",
 )
 
+// Where the target has a column of its own it is a second event with its own
+// note value, and the link runs to it rather than printing its fret again beside
+// the first. Attaching a target *and* keeping the note drew the fret twice — a
+// phantom number beside the first note and the real one at its own column.
 #for form in ("--5h-7---", "--5-h-7--", "--5---h---7--") {
   let evs = joined(form)
   eq(evs.len(), 2, "'" + form.trim("-") + "' is two events")
   eq(
     m.get-technique(evs.first().notes.first(), "hammer").fret,
-    7,
-    "…joined by a hammer-on to the second",
+    none,
+    "…joined by a hammer-on running to the second, not to a fret of its own",
   )
   eq(evs.last().notes.first().fret, 7, "…and the second note survives")
 }
 
 #eq(
   m.get-technique(joined("--5/-7---").first().notes.first(), "slide").fret,
-  7,
+  none,
   "a slash reaches the next note too",
 )
 #eq(
   m.get-technique(joined("--7\\-5---").first().notes.first(), "slide").fret,
-  5,
+  none,
   "and a backslash downwards",
 )
 #eq(
   m.get-technique(joined("--5p-7---").first().notes.first(), "pull").fret,
-  7,
+  none,
   "so does a pull-off",
 )
 #eq(
-  m.get-technique(joined("--12h-14--").first().notes.first(), "hammer").fret,
-  14,
+  joined("--12h-14--").map(e => e.notes.first().fret),
+  (12, 14),
   "multi-digit frets on both sides",
+)
+// A note value over the target's column says it is a note in its own right, and
+// then the adjacent form means the same as the spaced one. Nothing else can say
+// it: in ASCII every character has a column, so `3/7` spends one on its target
+// exactly as `3-/-7` does. Without this the target had no rhythm of its own —
+// it is not an event — and the value written over it, claimed by no note, came
+// out as a rest that the source never had.
+#let owned = parse("R:  q q q e\n" + block("--3-3/7-7-8-"))
+#eq(
+  owned.part.measures.first().events.map(e => (e.kind, e.notes.first().fret, e.duration)),
+  (
+    ("note", 3, m.durations.q),
+    ("note", 3, m.durations.q),
+    ("note", 7, m.durations.q),
+    ("note", 7, m.durations.e),
+    ("note", 8, m.durations.e),
+  ),
+  "a value over a link's target makes it an event of its own, and no rest is invented",
+)
+#eq(
+  m.get-technique(owned.part.measures.first().events.at(1).notes.first(), "slide").fret,
+  none,
+  "…with the link running to it",
+)
+// Left alone, the same row is the compact pair the legend sets.
+#eq(
+  m.get-technique(joined("--3-3/7-7-8-").at(1).notes.first(), "slide").fret,
+  7,
+  "with nothing said about it the target is a second number inside the event",
+)
+// A bend names a pitch to reach, never a second strike, so a value over its
+// digits changes nothing.
+#eq(
+  m.get-technique(
+    parse("R:  q q\n" + block("--7b9-------")).part.measures.first().events.first().notes.first(),
+    "bend",
+  ).amount,
+  r.rat(1),
+  "a bend's target is a pitch, and stays one whatever the R row says",
+)
+
+// The target may be in the next bar, which is the one case that can only be
+// said this way: a barline does not interrupt the run of notes on a row.
+#let across = part-of(block("--10\\-|--3---"))
+#eq(across.measures.len(), 2, "the barline still splits the music")
+#eq(
+  m.get-technique(across.measures.first().events.last().notes.first(), "slide").fret,
+  none,
+  "a slide reaches across a barline to the note it lands on",
+)
+#eq(
+  across.measures.last().events.first().notes.first().fret,
+  3,
+  "…and that note keeps its own place, rather than being drawn twice",
 )
 
 #eq(
@@ -265,9 +658,27 @@
 )
 #ok(m.has-technique(joined("--t12----").first().notes.first(), "tap"), "'t' taps the note it precedes")
 
-// A marker with nothing to point at is dropped rather than invented.
-#eq(joined("--5h-----").first().notes.first().techniques, (), "a dangling marker attaches to nothing")
+// A marker with nothing to point at is dropped rather than invented — unless it
+// is a slide, which means something on its own: the note is slid off, in the
+// direction the arrow points. A figure that trails away used to come out as a
+// plain note, the mark dropped without a word.
+#eq(joined("--5h-----").first().notes.first().techniques, (), "a dangling hammer-on attaches to nothing")
 #eq(joined("--5h-----").len(), 1, "…and does not conjure an event")
+#eq(tech("--15\\----").first().out, "down", "a trailing backslash slides out downwards")
+#eq(tech("--15/----").first().out, "up", "…and a forward slash upwards")
+#eq(tech("--15s----").first().out, "down", "a bare 's' names no direction, and falls")
+#eq(joined("--15/----").len(), 1, "a slide out conjures no event either")
+// With a note still to come it is an ordinary link, not a slide out.
+#eq(
+  m.get-technique(joined("--15/--13-").first().notes.first(), "slide").at("out", default: none),
+  none,
+  "a mark that does reach a note is a link, whatever direction it points",
+)
+#eq(
+  write(part-of("R:  q\n" + block("--15\\----"))),
+  "q 15/1sN |",
+  "a slide out round-trips through the DSL",
+)
 
 // The importer takes the same source, so it needs the same repair.
 #eq(

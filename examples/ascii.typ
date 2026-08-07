@@ -61,6 +61,22 @@ PM:  ------------
 T:            let ring
 " + riff)
 
+#section("5 — with the structure it is played in")
+
+The colons around a barline are music as much as the fret numbers are: `|:`
+opens a repeat, `:|` closes one, and `x3` after the closing stroke says how many
+times to play it.
+
+#ascii-tab("
+R:   q   e   e   h     q   e   e   h
+e|:-----------------|-----------------:|x3
+B|:-----------------|-----------------:|x3
+G|:-----------------|--------------7--:|x3
+D|:-------------7---|-----------------:|x3
+A|:-0---2---3-------|--0---2---3------:|x3
+E|:-----------------|-----------------:|x3
+")
+
 #section("The same riff, inferred")
 
 When the rhythm is regular, `rhythm: even(1/4)` says so in one word instead of

@@ -11,7 +11,9 @@
 //
 // Callers must be inside a context, since glyph widths are measured.
 
-#import "../model.typ": get-technique, has-technique, MUTED
+#import "../model.typ": (
+  get-technique, has-technique, is-parenthesised, LINK-KINDS, link-to-next, MUTED, slide-out,
+)
 #import "../rational.typ" as r
 #import "../layout/beams.typ": flags-of
 #import "glyphs.typ" as g
@@ -197,13 +199,14 @@
 /// The frets a note is linked to by a hammer-on, pull-off or slide.
 ///
 /// These print as further numbers on the same string, joined to the first by a
-/// slur or a slide line, and share the parent event's duration. Writing them as
-/// separate events with their own note values is the way to give them
-/// independent rhythm.
+/// slur or a slide line, and share the parent event's duration. A link written
+/// with no target fret is not one of them: it runs to the next event that plays
+/// the string, which already prints its own number and carries its own value,
+/// and is drawn like a tie instead — see `link-to-next`.
 #let link-targets(n) = {
   n
     .techniques
-    .filter(t => t.kind in ("hammer", "pull", "slide"))
+    .filter(t => t.kind in LINK-KINDS and t.at("fret", default: none) != none)
     .map(t => (kind: t.kind, fret: t.fret, legato: t.at("legato", default: true)))
 }
 
@@ -213,6 +216,13 @@
 /// the two numbers of a hammer-on a whole event apart, because there they are
 /// separate events; here they share one, so this is the compromise.
 #let _link-gap(theme) = 1.15 * theme.staff-space
+
+/// How far a link or a tie runs when the note at its other end is on another
+/// system.
+///
+/// Both halves are drawn the same length, so a note held or slid across the
+/// break reads as one mark cut in two rather than as two different ones.
+#let _system-tail(theme) = 1.6 * theme.staff-space
 
 /// Width an event's fret numbers occupy.
 ///
@@ -233,7 +243,7 @@
   // A note's own number may be parenthesised; a fret it is linked to is not,
   // the ghost mark belonging to the strike rather than to the run.
   let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
-  let own(n) = label(n.fret, ghost: has-technique(n, "ghost"))
+  let own(n) = label(n.fret, ghost: is-parenthesised(n))
   let anchor = ev.notes.map(n => measure(own(n)).width).fold(0pt, calc.max)
   let total = ev
     .notes
@@ -455,35 +465,54 @@
   text(font: theme.font, size: theme.bend-size, weight: 500, fill: theme.color, size)
 }
 
-/// An arrowhead pointing along the y axis, with a slightly concave base.
-#let _arrowhead(theme, x, y, down: false) = {
+/// An arrowhead pointing along the y axis.
+///
+/// `half-width` and `length` are in staff spaces; `waist` is how far the base
+/// bows back towards the tip, so `0` gives a plain triangle. The defaults are
+/// the bend arrow's: narrow, long and slightly concave, which is how the Hal
+/// Leonard legend draws the head of a bend.
+///
+/// An arpeggio's is a different mark and passes its own: measured off the
+/// reference, a solid triangle as wide as it is tall — 0.54 spaces each way,
+/// exactly twice the width of the squiggle it caps — with a flat base. Drawn at
+/// the bend's proportions it reads as a stray tick rather than an arrowhead.
+#let _arrowhead(theme, x, y, down: false, half-width: 0.20, length: 0.55, waist: 0.15) = {
   let sp = theme.staff-space
   let d = if down { -1.0 } else { 1.0 }
   place(top + left, dx: 0pt, dy: 0pt, curve(
     fill: theme.color,
     stroke: none,
     curve.move((x, y)),
-    curve.line((x - 0.20 * sp, y + d * 0.55 * sp)),
+    curve.line((x - half-width * sp, y + d * length * sp)),
     curve.cubic(
-      (x - 0.07 * sp, y + d * 0.40 * sp),
-      (x + 0.07 * sp, y + d * 0.40 * sp),
-      (x + 0.20 * sp, y + d * 0.55 * sp),
+      (x - half-width * 0.35 * sp, y + d * (length - waist) * sp),
+      (x + half-width * 0.35 * sp, y + d * (length - waist) * sp),
+      (x + half-width * sp, y + d * length * sp),
     ),
     curve.close(mode: "straight"),
   ))
 }
 
+/// The arpeggio and rake arrowhead, in staff spaces.
+#let _ARPEGGIO-HEAD = (half-width: 0.27, length: 0.54)
+
 /// A bend arrow, leaving the side of the fret number it belongs to.
 ///
-/// A release is drawn as a *continuation of the same stroke* — up to the
-/// arrowhead, then on and down to a second one — rather than as two arrows side
-/// by side. That is how the legend sets it, and it reads as one gesture, which
-/// is what a bend and release is.
+/// A bend that is *held* carries a dashed rule on from the arrowhead at the
+/// height it reached, for as long as the pitch stays up. Without it a held bend
+/// reads as bent and released at once, and how long it is held has to be
+/// guessed from the ties — the rule is what states it.
 ///
-/// `alloc` is the horizontal room the event was given; the reach of the release
-/// is capped by it so a bend in a bar of sixteenths tightens up rather than
-/// running into the next event.
-#let _bend-arrow(theme, x, half-width, y, bend, alloc) = {
+/// That is also why a release is drawn as **two** arrows rather than as one
+/// stroke curving over: up, hold, down is three things, and the hold has to sit
+/// between the two arrowheads where it can be seen. The Hal Leonard legend
+/// draws the single stroke, and this followed it until the hold arrived; a
+/// stroke already curving downwards has nowhere to hang a horizontal rule.
+///
+/// `hold` is where the rule ends for a bend held by a tie, or `none`. `slot-x`
+/// and `alloc` are the event's own slot; a release is kept inside it, so a bend
+/// in a bar of sixteenths tightens up rather than running into the next event.
+#let _bend-arrow(theme, x, half-width, y, bend, slot-x, alloc, hold: none) = {
   let sp = theme.staff-space
   let tail-x = x + half-width + 0.08 * sp
   let tail-y = y - _BEND-TAIL * sp
@@ -491,6 +520,28 @@
   let head-base = head-y + 0.55 * sp
   let tip-x = tail-x + calc.min(0.9 * sp, alloc * 0.35)
   let stroke = (paint: theme.color, thickness: 0.085 * sp, cap: "round")
+  // The same dashed rule the palm mute and let ring spans use, so the page has
+  // one vocabulary for "this carries on". The reference measures its dash at a
+  // third of a staff space and its gap at a quarter, which is that rule within
+  // the error of reading it off a raster.
+  let dashed = (
+    paint: theme.color,
+    thickness: 0.07 * sp,
+    dash: (array: (0.30 * sp, 0.30 * sp), phase: 0pt),
+  )
+  // How far past the arrowhead the rule starts, so it does not touch it.
+  let clear = 0.24 * sp
+  // The descent is short and steep, so nearly all of a release is hold.
+  let drop = 0.7 * sp
+  // Where a release lands. The floor is what keeps the hold between the two
+  // arrowheads long enough to read as one — measured on the reference, the two
+  // stand 2.2 staff spaces apart — and the event's own right edge is the cap,
+  // so the floor can never push the gesture into the next event.
+  let reach = calc.max(1.5 * sp, calc.min(2.8 * sp, alloc * 0.55))
+  let back-x = calc.max(
+    tip-x + drop,
+    calc.min(tip-x + reach, slot-x + alloc - 0.4 * sp),
+  )
 
   // Up to the arrowhead. A pre-bend is already bent when the string is struck,
   // so it gets a straight arrow; the curve is what shows the pitch rising after
@@ -517,22 +568,33 @@
     tip-x - size.width / 2,
     x + alloc - theme.min-event-gap / 2 - size.width,
   )
+  // Clear of the dashed hold, which runs at the arrowhead's own height.
   place(
     top + left,
     dx: calc.max(label-x, x - 0.3 * sp),
-    dy: head-y - size.height - 0.22 * sp,
+    dy: head-y - size.height - 0.32 * sp,
     label,
   )
 
+  // The hold: to where the release turns back down, or to the end of the tie
+  // that carries the bend.
+  let hold-end = if bend.release { back-x - drop } else { hold }
+  if hold-end != none and hold-end > tip-x + clear {
+    place(top + left, dx: tip-x + clear, dy: head-y, line(
+      length: hold-end - tip-x - clear,
+      stroke: dashed,
+    ))
+  }
+
   if bend.release {
-    // The stroke carries on from beside the arrowhead, over and down.
-    let back-x = tip-x + calc.max(1.2 * sp, calc.min(2.6 * sp, alloc * 0.55))
+    // A second arrow, starting where the hold leaves off and falling back to
+    // the note's own line.
     place(top + left, dx: 0pt, dy: 0pt, curve(
       stroke: stroke,
-      curve.move((tip-x + 0.16 * sp, head-y + 0.05 * sp)),
+      curve.move((hold-end, head-y)),
       curve.cubic(
-        (tip-x + (back-x - tip-x) * 0.55, head-y),
-        (back-x, head-y + (tail-y - head-y) * 0.35),
+        (back-x, head-y),
+        (back-x, head-y + (tail-y - head-y) * 0.45),
         (back-x, tail-y - 0.55 * sp),
       ),
     ))
@@ -575,6 +637,25 @@
         // with the span, so an upper bound reserves enough.
         over = calc.max(over, slur-apex(theme, pe.alloc, side: side) + 0.15 * sp - y)
       }
+      // A link to the next event is bounded by nothing of the kind: the note it
+      // runs to may be several events away and in another measure, exactly as a
+      // tie's may be, so the span is measured the same way `overflow-below`
+      // measures a tie's.
+      if link-to-next(n) != none {
+        let span = pe.alloc
+        for j in range(i + 1, placed.len()) {
+          if placed.at(j).event.notes.any(o => o.string == n.string) {
+            span = calc.max(span, placed.at(j).x - pe.x)
+            break
+          }
+        }
+        over = calc.max(over, slur-apex(theme, span, side: side) + 0.15 * sp - y)
+      }
+      // The incoming half of one, and a slide out of a note: both are only ever
+      // the tail's length.
+      if n.at("linked-in", default: none) != none or slide-out(n) != none {
+        over = calc.max(over, slur-apex(theme, _system-tail(theme), side: side) + 0.15 * sp - y)
+      }
       if n.techniques.any(t => t.kind == "rake") {
         over = calc.max(over, 0.45 * sp + theme.technique-size * 1.3 - y)
       }
@@ -600,15 +681,21 @@
   let placed = system.measures.map(m => m.events).flatten()
   for (i, pe) in placed.enumerate() {
     for n in pe.event.notes {
-      if not n.techniques.any(t => t.kind == "tie") { continue }
+      let starts = n.techniques.any(t => t.kind == "tie")
+      // The incoming half of a tie whose first note is on the line above dips
+      // below its line too, and is drawn on a note that carries no tie itself.
+      let arrives = n.at("tied-in", default: false)
+      if not (starts or arrives) { continue }
       // A tie runs to the next event that plays this string, which may be
       // several events away — over rests, past other strings' notes — so its
       // span can far exceed the allocation, and the dip grows with the span.
-      let span = pe.alloc
-      for j in range(i + 1, placed.len()) {
-        if placed.at(j).event.notes.any(o => o.string == n.string) {
-          span = calc.max(span, placed.at(j).x - pe.x)
-          break
+      let span = if starts { pe.alloc } else { _system-tail(theme) }
+      if starts {
+        for j in range(i + 1, placed.len()) {
+          if placed.at(j).event.notes.any(o => o.string == n.string) {
+            span = calc.max(span, placed.at(j).x - pe.x)
+            break
+          }
         }
       }
       let side = pe.event.notes.len() > 1
@@ -712,7 +799,7 @@
     let grace = pe.event.at("grace", default: none) != none
     let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
     for n in pe.event.notes {
-      let body = label(n.fret, ghost: has-technique(n, "ghost"))
+      let body = label(n.fret, ghost: is-parenthesised(n))
       let size = measure(body)
       let y = string-y(theme, n.string)
       labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
@@ -745,6 +832,28 @@
         from-fret = target.fret
       }
 
+      // Where a tie on this note finally stops, following the chain through
+      // every event that holds the string without striking it again. A bend is
+      // held for exactly that long, so this is how far its dashed rule reaches.
+      // `none` when nothing later plays the string, which is the tie trailing
+      // off the end of a system.
+      let tie-end = none
+      if n.techniques.any(t => t.kind == "tie") {
+        let j = i
+        let holding = true
+        while holding {
+          holding = false
+          for k in range(j + 1, placed.len()) {
+            let landed = placed.at(k).event.notes.find(o => o.string == n.string)
+            if landed == none { continue }
+            j = k
+            holding = landed.techniques.any(t => t.kind == "tie")
+            break
+          }
+        }
+        if j != i { tie-end = j }
+      }
+
       // A tie runs to the next event that plays this string. When that event
       // falls on the next system the tie trails off instead, which is the
       // conventional way of showing a note held across the break.
@@ -754,19 +863,116 @@
         for j in range(i + 1, placed.len()) {
           let later = placed.at(j).event.notes.filter(o => o.string == n.string)
           if later.len() > 0 {
-            let half = measure(fret-label(theme, later.first().fret)).width / 2
+            // The number the arc lands on is the one that has just been
+            // parenthesised, and its width is the wider one — measuring the
+            // bare digit would end the arc inside the opening bracket.
+            let half = measure(fret-label(
+              theme,
+              later.first().fret,
+              ghost: is-parenthesised(later.first()),
+            )).width / 2
             target-x = placed.at(j).x
             target-edge = placed.at(j).x - half
             break
           }
         }
-        let trail = cursor + 1.6 * theme.staff-space
+        let trail = cursor + _system-tail(theme)
         connectors.push((
           kind: "tie",
           legato: true,
           from: if stacked { cursor } else { pe.x },
           to: if target-x != none { if stacked { target-edge } else { target-x } } else { trail },
           edge: (cursor, if target-edge != none { target-edge } else { trail }),
+          side: stacked,
+          y: y,
+          rising: false,
+        ))
+      }
+
+      // A link written with no target fret runs to the next event that plays
+      // this string, exactly as a tie does — the two notes are separate events
+      // with their own values, so there is no second number beside this one and
+      // nothing to hang the arc on but the note itself. Where that event falls
+      // on the next system the link trails off, and the system it lands on draws
+      // the other half from `linked-in`.
+      let link = link-to-next(n)
+      if link != none {
+        let target-x = none
+        let target-edge = none
+        let target-fret = none
+        for j in range(i + 1, placed.len()) {
+          let later = placed.at(j).event.notes.filter(o => o.string == n.string)
+          if later.len() > 0 {
+            let half = measure(fret-label(
+              theme,
+              later.first().fret,
+              ghost: is-parenthesised(later.first()),
+            )).width / 2
+            target-x = placed.at(j).x
+            target-edge = placed.at(j).x - half
+            target-fret = later.first().fret
+            break
+          }
+        }
+        let trail = cursor + _system-tail(theme)
+        connectors.push((
+          kind: link.kind,
+          legato: link.at("legato", default: true),
+          from: if stacked { cursor } else { pe.x },
+          to: if target-x != none { if stacked { target-edge } else { target-x } } else { trail },
+          edge: (cursor, if target-edge != none { target-edge } else { trail }),
+          side: stacked,
+          y: y,
+          // A slide trailing off the end of a system has no fret to compare
+          // against, and a dead string cannot be compared to one at all. Both
+          // fall back to a downward line, which is what sliding out of a note
+          // conventionally is.
+          rising: (
+            type(target-fret) == int and type(n.fret) == int and target-fret > n.fret
+          ),
+        ))
+      }
+
+      // A slide *out* of the note reaches nothing, so there is no note to find
+      // and no half of it on another system: it is a stroke of its own length
+      // leaving the number, in the direction the source named.
+      let out = slide-out(n)
+      if out != none {
+        let tail = cursor + _system-tail(theme)
+        connectors.push((
+          kind: "slide",
+          legato: out.at("legato", default: true),
+          from: if stacked { cursor } else { pe.x },
+          to: tail,
+          edge: (cursor, tail),
+          side: stacked,
+          y: y,
+          rising: out.out == "up",
+        ))
+      }
+
+      // The other half of a link or a tie whose first note is on the line
+      // above. A system is drawn on its own and cannot look back past its first
+      // event, so the mark left on this note is the only trace of where it came
+      // from — and when an earlier event here does play the string, the whole
+      // arc has already been drawn and this would double it.
+      let carried = (
+        i > 0 and placed.slice(0, i).any(q => q.event.notes.any(o => o.string == n.string))
+      )
+      let arriving = if n.at("linked-in", default: none) != none {
+        n.linked-in
+      } else if n.at("tied-in", default: false) {
+        (kind: "tie", legato: true)
+      } else { none }
+      if arriving != none and not carried {
+        let edge = pe.x - size.width / 2
+        let lead = calc.max(0pt, edge - _system-tail(theme))
+        connectors.push((
+          kind: arriving.kind,
+          legato: arriving.at("legato", default: true),
+          from: lead,
+          to: if stacked { edge } else { pe.x },
+          edge: (lead, edge),
           side: stacked,
           y: y,
           rising: false,
@@ -781,7 +987,18 @@
           half-width: size.width / 2,
           y: y,
           bend: bend,
+          slot: pe.left,
           alloc: pe.alloc,
+          // A bent note that is tied is a bend *held*: the pitch stays up for
+          // as long as the note sounds, and the rule says so as far as the last
+          // event of the tie. It ends with that event's allocation rather than
+          // at its number, since what is held is the sound, not the digit.
+          hold: if tie-end == none {
+            none
+          } else {
+            let last = placed.at(tie-end)
+            last.left + last.alloc - 0.8 * theme.staff-space
+          },
         ))
       }
     }
@@ -833,20 +1050,31 @@
           end: l.x + l.w / 2 + theme.gap-padding,
         ))
     } else { () }
-    // A rest crosses whatever lines it happens to span, so the gap is taken
-    // from its extent rather than from a string number. The block rests are the
-    // exception: they are *measured* from their line, so it has to run behind
-    // them or there is nothing left to tell a whole rest from a half one.
-    let rest-gaps = rests
-      .filter(rest => (
-        rest.glyph.height > 0.5 * sp
-          and y > rest.top - theme.gap-padding
-          and y < rest.top + rest.glyph.height + theme.gap-padding
+    // A rest crosses whatever lines it happens to span, and the gap is taken
+    // from the ink at each line's own height rather than from the glyph's box:
+    // a quarter rest is a narrow zigzag, and a line grazing its corner needs
+    // nothing like the room one through its middle does. The clearance around
+    // that ink is the same `gap-padding` a fret number gets, on every side —
+    // which is also why the band is padded vertically, so a line passing just
+    // outside the ink still clears it.
+    //
+    // The block rests are the exception: they are *measured* from their line,
+    // so it has to run behind them or there is nothing left to tell a whole
+    // rest from a half one.
+    let rest-gaps = ()
+    for rest in rests {
+      if rest.glyph.height <= 0.5 * sp { continue }
+      let span = g.ink-span(
+        rest.glyph,
+        y - rest.top - theme.gap-padding,
+        y - rest.top + theme.gap-padding,
+      )
+      if span == none { continue }
+      rest-gaps.push((
+        start: rest.x + span.start - theme.gap-padding,
+        end: rest.x + span.end + theme.gap-padding,
       ))
-      .map(rest => (
-        start: rest.x - theme.gap-padding,
-        end: rest.x + rest.glyph.width + theme.gap-padding,
-      ))
+    }
     lines.push(_line-with-gaps(theme, y, width, _merge(mark-gaps + number-gaps + rest-gaps)))
   }
 
@@ -917,15 +1145,24 @@
       }
 
       for st in strokes {
-        // The head eats into the line, so the wave stops short of the end it
-        // caps rather than running under it.
-        let head = 0.45 * sp
+        // The squiggle stops exactly where the head begins rather than running
+        // under it, which is how the reference sets the two: the arrow caps the
+        // wave, it does not sit on top of it.
+        let head = _ARPEGGIO-HEAD.length * sp
         let up = st.dir == "down"
         let y0 = st.top + (if up { head } else { 0pt })
         let y1 = st.bottom - (if up { 0pt } else { head })
         let wave = g.wavy(sp, y1 - y0, vertical: true, fill: theme.color)
         place(top + left, dx: st.x - wave.width, dy: y0, wave.body)
-        _arrowhead(theme, st.x - wave.width / 2, if up { st.top } else { st.bottom }, down: not up)
+        _arrowhead(
+          theme,
+          st.x - wave.width / 2,
+          if up { st.top } else { st.bottom },
+          down: not up,
+          half-width: _ARPEGGIO-HEAD.half-width,
+          length: _ARPEGGIO-HEAD.length,
+          waist: 0.0,
+        )
         if st.kind == "rake" {
           place(
             top + left,
@@ -947,7 +1184,7 @@
       // they reach above the top string line is reserved by `overflow-above`.
       for c in connectors {
         if c.kind == "bend" {
-          _bend-arrow(theme, c.from, c.half-width, c.y, c.bend, c.alloc)
+          _bend-arrow(theme, c.from, c.half-width, c.y, c.bend, c.slot, c.alloc, hold: c.hold)
         } else if c.kind == "slide" {
           // The slide line runs between the numbers' facing edges; the slur over
           // them attaches wherever the event's shape allows.

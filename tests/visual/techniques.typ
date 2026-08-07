@@ -17,6 +17,11 @@ q 7/3> 7/3^ 7/3! 7/3- | 7/3n 7/3u 7/3g 12/3*
 q 7/3v 7/3V 7/3tr9 7/3tr | 7/3TP 7/3PS 5/3PH 7/3HH
 ```)
 
+// The five harmonics, each with its own word above the staff.
+#tab(theme: vt, ```
+q 12/3* 5/3PH 5/3AH | q 7/3HH 7/3TH r
+```)
+
 #tab(theme: vt, ```
 {PM: e 0/6 0/6 0/6 0/6} {LR: q 3/6 5/6}
 | q "w/ bar" 7/3 7/3T (2/5 2/4 0/6)A (2/5 2/4 0/6)R

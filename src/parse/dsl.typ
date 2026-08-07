@@ -26,11 +26,21 @@
 #let _STRUCTURAL = ("(", ")", "{", "}", "|", ":", "@")
 
 // Technique suffixes, longest first. Matching in this order is what keeps `br`
-// from being read as `b` followed by a stray `r`, and `PH` from being read as
-// the pull-off `p`.
+// from being read as `b` followed by a stray `r`, `PH` from being read as the
+// pull-off `p`, and `AH` and `TH` from being read as an arpeggio and a tap.
 #let _SUFFIXES = (
+  // The slides *out* of a note come first: they must not be read as a slide
+  // followed by something else. Their direction is written in capitals for the
+  // same reason — `n` and `u` are the strokes, so a lower-case pair could also
+  // be spelled by a slide and a stroke on one note, and the writer would emit
+  // exactly that. No suffix begins with `N` or `U`, so these two cannot be
+  // reached any other way.
+  ("sN", "slide-out-down"),
+  ("sU", "slide-out-up"),
   ("PH", "harmonic-pinch"),
+  ("AH", "harmonic-artificial"),
   ("HH", "harmonic-harp"),
+  ("TH", "harmonic-tap"),
   ("PS", "scrape"),
   ("PO", "pop"),
   ("TP", "tremolo"),
@@ -63,11 +73,25 @@
   ("W", "bar-vibrato"),
 )
 
-// Suffixes that must be followed by a fret number.
-#let _NEEDS-FRET = ("hammer", "pull", "slide-legato", "slide-shift")
+// How each harmonic style is written. The natural harmonic keeps the `*` every
+// source uses; the rest take the two-letter marks, which the ASCII importer
+// reads inline as well.
+#let _HARMONIC-MARKS = (
+  natural: "*",
+  pinch: "PH",
+  artificial: "AH",
+  harp: "HH",
+  tap: "TH",
+)
 
 // Suffixes that may take a fret number but do not require one.
-#let _OPTIONAL-FRET = ("trill",)
+//
+// A hammer-on, pull-off or slide written with a target — `5/3h7` — draws that
+// fret as a second number beside the first, the two sharing one note value.
+// Written without one — `5/3s` — it runs to the next event that plays the
+// string, which is how a link between two independently timed notes is said, and
+// how one that crosses a barline has to be said.
+#let _OPTIONAL-FRET = ("trill", "hammer", "pull", "slide-legato", "slide-shift")
 
 // The dynamics that may be written, loudest last. A closed set on purpose: a
 // typo in a dynamic is silent otherwise, and there is nothing else `!ff` could
@@ -166,12 +190,10 @@
     m.technique("vibrato", wide: false)
   } else if kind == "vibrato-wide" {
     m.technique("vibrato", wide: true)
-  } else if kind == "harmonic-natural" {
-    m.technique("harmonic", style: "natural")
-  } else if kind == "harmonic-pinch" {
-    m.technique("harmonic", style: "pinch")
-  } else if kind == "harmonic-harp" {
-    m.technique("harmonic", style: "harp")
+  } else if kind.starts-with("slide-out-") {
+    m.technique("slide", fret: none, legato: true, out: kind.slice("slide-out-".len()))
+  } else if kind.starts-with("harmonic-") {
+    m.technique("harmonic", style: kind.slice("harmonic-".len()))
   } else if kind == "trill" {
     m.technique("trill", fret: arg)
   } else if kind == "stroke-down" {
@@ -209,18 +231,6 @@
     let arg = none
     if matched.kind in _OPTIONAL-FRET {
       let scanned = _scan-int(chars, i)
-      arg = scanned.v
-      i = scanned.i
-    } else if matched.kind in _NEEDS-FRET {
-      let scanned = _scan-int(chars, i)
-      if scanned.v == none {
-        errors.fail(
-          "tab",
-          loc,
-          "'" + matched.token + "' must be followed by a target fret",
-          source: source,
-        )
-      }
       arg = scanned.v
       i = scanned.i
     } else if matched.kind in ("bend", "bend-release", "prebend", "prebend-release") {
@@ -768,11 +778,17 @@
 // ---------------------------------------------------------------------------
 
 /// The suffix that writes a technique back out.
+// The target fret a link is written with, or nothing where it runs to the next
+// event on the string instead.
+#let _link-target(t) = if t.at("fret", default: none) == none { "" } else { str(t.fret) }
+
 #let _technique-suffix(t) = {
-  if t.kind == "hammer" { "h" + str(t.fret) } else if t.kind == "pull" {
-    "p" + str(t.fret)
+  if t.kind == "hammer" { "h" + _link-target(t) } else if t.kind == "pull" {
+    "p" + _link-target(t)
+  } else if t.kind == "slide" and t.at("out", default: none) != none {
+    "s" + (if t.out == "up" { "U" } else { "N" })
   } else if t.kind == "slide" {
-    (if t.legato { "s" } else { "S" }) + str(t.fret)
+    (if t.legato { "s" } else { "S" }) + _link-target(t)
   } else if t.kind == "bend" {
     let mark = if t.pre and t.release {
       "Br"
@@ -782,7 +798,7 @@
   } else if t.kind == "vibrato" {
     if t.wide { "V" } else { "v" }
   } else if t.kind == "harmonic" {
-    if t.style == "natural" { "*" } else if t.style == "pinch" { "PH" } else { "HH" }
+    _HARMONIC-MARKS.at(t.style)
   } else if t.kind == "stroke" {
     if t.dir == "down" { "n" } else { "u" }
   } else if t.kind == "trill" {

@@ -5,7 +5,8 @@
 // unchanged.
 //
 // The honest limitation is that ASCII tab carries almost nothing beyond fret
-// positions: no note values, time signature, tuning, sections or repeats.
+// positions and the barlines between them: no note values, time signature,
+// tuning or sections.
 // Without note values there are no stems, no beams and no optical spacing, so a
 // bare paste is laid out from the source's own column positions instead —
 // considerably better than monospaced text, but with no rhythm lane.
@@ -27,13 +28,39 @@
 #import "../tuning.typ": string-count, tunings
 #import "errors.typ"
 #import "dsl.typ": DYNAMICS, source-text
+#import "lyrics.typ": read-syllable
 
 #let _DIGITS = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+
+/// The highest fret a number can name. Beyond it a run of digits cannot be one.
+#let _MAX-FRET = 24
+
+/// Read the fret written at `i`, returning `(fret, next-index)`.
+///
+/// Digits run together are one fret only as far as that fret exists: `-10-` is
+/// the 10th, but nothing is fretted at the 77th, so `-77-` is a 7 and another 7
+/// struck a column apart — which is how every source writes two quick notes on
+/// one string. Reading such runs greedily is what turned a bar of eighth-note
+/// power chords into a page of "fret 333 is above the 24th".
+///
+/// A leading zero never opens a number either, so `-010-` is the open string and
+/// then the 10th rather than the 1st and the open string.
+#let _read-fret(chars, i) = {
+  let pair = (
+    i + 1 < chars.len()
+      and chars.at(i) != "0"
+      and chars.at(i + 1) in _DIGITS
+      and int(chars.at(i) + chars.at(i + 1)) <= _MAX-FRET
+  )
+  let stop = if pair { i + 2 } else { i + 1 }
+  (int(chars.slice(i, stop).join()), stop)
+}
 
 /// Recognised annotation row prefixes and what they carry.
 #let ANNOTATION-KEYS = (
   "R", // note values, using the DSL's own duration tokens
   "C", // chord names
+  "L", // sung syllables, one row per verse
   "S", // section heading
   "T", // free playing instruction
   "D", // dynamics
@@ -71,12 +98,20 @@
 /// The test is that the line is mostly made of the characters tab is written
 /// with. Real tabs are surrounded by titles, comments and chord charts, and
 /// those must not be mistaken for music.
+///
+/// Fret numbers count towards that, not only the filler. Counting the filler
+/// alone penalises exactly the rows carrying the most music: two-digit frets
+/// with single dashes between them push the filler under half and the row was
+/// dropped as prose. Measured on a real transcription — Nirvana, *All
+/// Apologies*, 252 string rows — two were lost that way, both of the form
+/// `G#|---9-10---10s12-12-10-9-|`, at 0.49 filler. With the digits counted they
+/// score 0.88.
 #let _is-tab-row(line) = {
   let body = line.trim()
   if body.len() < 4 { return false }
   let chars = body.clusters()
-  let tabbish = chars.filter(c => c in ("-", "|", "—", "=")).len()
-  // A string row is dominated by its filler; even a busy one is over half.
+  let tabbish = chars.filter(c => c in ("-", "|", "—", "=") or c in _DIGITS).len()
+  // A string row is dominated by that alphabet; even a busy one is over half.
   tabbish * 2 > chars.len()
 }
 
@@ -114,18 +149,26 @@
 
 #let _TECHNIQUE-CHARS = ("h", "p", "b", "r", "s", "/", "\\", "~", "*", "t", "v", "f")
 
-// Markers that join the note before them to the note after them. Written tabs
-// put the target wherever the column happens to fall — `5h7`, `5h-7`, `5-h-7`
-// and `5h  7` all mean the same hammer-on — so these are held until the next
-// note on the row turns up rather than requiring a digit immediately after.
+// Markers that join the note before them to the note after them. Held until the
+// next note on the row turns up rather than requiring a digit immediately after,
+// since written tabs put the target wherever the column happens to fall.
+//
+// Where it falls decides what is drawn. `5h7`, digits pressed against the mark,
+// is one event with the target printed beside it, sharing its note value — the
+// two numbers of a hammer-on as the legend sets them. `5-h-7` spent a column on
+// the target, so it is a second event with its own value, joined by a slur that
+// runs from one to the other. A tab that puts the target in the next bar can
+// only mean the second, and used to get both: a phantom 7 beside the first note
+// and the real one after the barline.
 #let _LINKING = ("h", "p", "s", "/", "\\")
 
 // Tapping marks the note it precedes, not the one before it.
 #let _PRECEDING = ("t",)
 
-/// Attach a held marker now that the note it was waiting for has been found.
+/// Build the technique a marker stands for.
 ///
-/// `previous` is the note the marker hangs off, `fret` the one it points at.
+/// `fret` is the target it points at, or `none` where the target is an event of
+/// its own and the link runs to it rather than printing its number again.
 #let _resolve(mark, fret) = {
   if mark == "h" {
     m.technique("hammer", fret: fret)
@@ -136,13 +179,62 @@
   }
 }
 
+/// The slide a marker stands for when no note ever comes for it to reach.
+///
+/// A row ending `-15\-------` is the note slid *off*, which is a mark in its own
+/// right and not a mark that failed: the arrow says which way the pitch leaves
+/// and there is nothing more to say. `/` climbs and `\` falls; a bare `s` names
+/// no direction, and falls, which is what sliding out of a note ordinarily does.
+/// A hammer-on or pull-off to nowhere means nothing, and is dropped as before.
+#let _resolve-out(mark) = {
+  if mark not in ("s", "/", "\\") { return none }
+  m.technique("slide", fret: none, legato: true, out: if mark == "/" { "up" } else { "down" })
+}
+
+/// Ultimate Guitar's own harmonic marks, written against the fret: `7PH`.
+///
+/// Read in capitals only, which collides with nothing: every technique letter
+/// inside a row is lower case. Sources also write these on a line of their own
+/// above the staff, which reaches the page as a `T:` row instead.
+#let _HARMONICS = (
+  NH: "natural",
+  PH: "pinch",
+  AH: "artificial",
+  HH: "harp",
+  TH: "tap",
+)
+
+/// The harmonic mark written at `i`, or `none`.
+#let _harmonic-at(chars, i) = {
+  if i + 1 >= chars.len() { return none }
+  _HARMONICS.at(chars.at(i) + chars.at(i + 1), default: none)
+}
+
+/// Read the `x3` that may follow a repeat's closing stroke, as `(count, next)`.
+///
+/// Only read after a `:|`, and only when digits follow the `x`: `x` is also a
+/// dead note, so `|x3` in the middle of a row is a muted string and then the
+/// third fret. After a repeat sign that reading is not open — nothing is struck
+/// on the far side of the stroke that closes a bar.
+#let _repeat-count(chars, i, ends) = {
+  if not ends or i >= chars.len() or lower(chars.at(i)) != "x" { return (none, i) }
+  let j = i + 1
+  while j < chars.len() and chars.at(j) in _DIGITS { j += 1 }
+  if j == i + 1 { return (none, i) }
+  (int(chars.slice(i + 1, j).join()), j)
+}
+
 /// Read one string row into `(column, item)` records.
 ///
 /// Multi-digit frets are the reason this scans characters rather than splitting
 /// on separators: adjacent digits are one fret and digits parted by filler are
 /// separate strikes, which is the universal convention and the only reading of
 /// `-11-` against `-1-1-` that makes sense.
-#let _parse-row(line, start) = {
+///
+/// `valued` is the set of columns the block's `R:` row gives a note value to,
+/// as string keys. It decides one thing: whether a linking mark's target is a
+/// second number inside this event or an event of its own — see `_link-target`.
+#let _parse-row(line, start, valued: ()) = {
   let chars = line.clusters()
   let items = ()
   let warnings = ()
@@ -155,9 +247,25 @@
   while i < chars.len() {
     let c = chars.at(i)
 
-    if c == "|" {
-      items.push((col: i, kind: "bar"))
-      i += 1
+    // A barline, together with the repeat colons that may sit on either side of
+    // it: `|:` opens a repeat, `:|` closes one, `:|:` does both where a repeated
+    // section runs straight into the next. The colons are read as music rather
+    // than skipped as filler because a section played four times and one played
+    // once are not the same piece.
+    if c == "|" or (c == ":" and i + 1 < chars.len() and chars.at(i + 1) == "|") {
+      let ends = c == ":"
+      // The mark belongs to the stroke, not to the colon leading into it, so
+      // `:|` and `|` are keyed by the same kind of column.
+      let bar = if ends { i + 1 } else { i }
+      i = bar + 1
+      let starts = i < chars.len() and chars.at(i) == ":"
+      if starts { i += 1 }
+      let (count, next) = _repeat-count(chars, i, ends)
+      i = next
+      // `stop` is where the whole mark ends, colons and count included, so that
+      // a second stroke written against it is recognised as part of the same
+      // mark however wide the first one was.
+      items.push((col: bar, kind: "bar", stop: i, starts: starts, ends: ends, count: count))
       continue
     }
 
@@ -169,17 +277,53 @@
       continue
     }
 
-    // A ghost note is written in parentheses.
-    let ghost = c == "("
-    if ghost { i += 1 }
+    // A bracket around the fret marks the note it encloses: parentheses a ghost
+    // note or the far end of a tie, angle brackets a natural harmonic. `<12>` is
+    // the Power Tab and Guitar Pro export spelling of what the native syntax
+    // writes `12/3*`, and it is a dialect of ASCII tab rather than of any one
+    // site, so it is read here rather than left to whatever fetched the file.
+    let bracket = if c == "(" {
+      "paren"
+    } else if c == "<" { "harmonic" } else { none }
+    if bracket != none { i += 1 }
 
     if i < chars.len() and chars.at(i) in _DIGITS {
-      let col = if ghost { i - 1 } else { i }
-      let start-digits = i
-      while i < chars.len() and chars.at(i) in _DIGITS { i += 1 }
-      let fret = int(chars.slice(start-digits, i).join())
-      let techniques = if ghost { (m.technique("ghost"),) } else { () }
-      if ghost and i < chars.len() and chars.at(i) == ")" { i += 1 }
+      let col = if bracket != none { i - 1 } else { i }
+      // A bracket delimits the number, so the digits inside it are one fret
+      // however many there are — the ambiguity `_read-fret` resolves is only
+      // there when nothing marks where the number ends.
+      let (fret, next) = if bracket == none {
+        _read-fret(chars, i)
+      } else {
+        let d = i
+        while d < chars.len() and chars.at(d) in _DIGITS { d += 1 }
+        (int(chars.slice(i, d).join()), d)
+      }
+      i = next
+      // A parenthesised fret that repeats the note before it on the same string
+      // is the far end of a tie rather than a ghost note: the string is still
+      // sounding and is not struck again, which is how Ultimate Guitar writes a
+      // held note. Any other fret in brackets is the ghost note the brackets
+      // otherwise mean. The two print alike either way — the arc is what tells
+      // them apart, the same ambiguity the published sheets carry — so the
+      // reading only matters to the model, and reading it wrong turns a note
+      // held over into a second strike.
+      //
+      // The tie itself belongs to the note the string is *held from*, since that
+      // is where the native syntax writes it and where the forward pass that
+      // marks the far end starts.
+      let tied = bracket == "paren" and last != none and items.at(last).fret == fret
+      if tied {
+        let held = items.at(last)
+        items.at(last) = (..held, techniques: held.techniques + (m.technique("tie"),))
+      }
+      let techniques = if bracket == "paren" and not tied {
+        (m.technique("ghost"),)
+      } else if bracket == "harmonic" {
+        (m.technique("harmonic", style: "natural"),)
+      } else { () }
+      let closing = if bracket == "paren" { ")" } else { ">" }
+      if bracket != none and i < chars.len() and chars.at(i) == closing { i += 1 }
 
       // A chain of techniques may follow, each optionally naming a target fret.
       let held = ()
@@ -187,7 +331,16 @@
       // a bend later in the chain measures from there: in `5h7b9` the bend runs
       // from the hammered 7 up to 9, one step, not from the struck 5.
       let reached = fret
-      while i < chars.len() and chars.at(i) in _TECHNIQUE-CHARS {
+      while i < chars.len() {
+        // A harmonic names itself in two capitals and takes no target, so it is
+        // read before the letter chain rather than inside it.
+        let harmonic = _harmonic-at(chars, i)
+        if harmonic != none {
+          techniques.push(m.technique("harmonic", style: harmonic))
+          i += 2
+          continue
+        }
+        if chars.at(i) not in _TECHNIQUE-CHARS { break }
         let mark = chars.at(i)
         i += 1
 
@@ -204,17 +357,43 @@
           i += 1
         }
 
+        // `pb` is a pre-bend and `pbr` a pre-bend and release, which is how
+        // Ultimate Guitar's own symbol table spells them. Unambiguous for the
+        // same reason `hb` is: a pull-off always writes its target as digits,
+        // so a `p` pressed directly against a `b` can only be this.
+        //
+        // Read as an ordinary `p` the string was *misread* rather than merely
+        // impoverished — the pull-off was held for the next note on the row and
+        // hung off it, inventing a slur the source never had, and the pre-bend
+        // came out as an ordinary bend. Silent, which is the one thing this
+        // importer is meant not to be.
+        let pre = false
+        if mark == "p" and i < chars.len() and chars.at(i) == "b" {
+          pre = true
+          mark = "b"
+          i += 1
+        }
+
         let target = none
+        // A note value written over the digits says they are a note in their own
+        // right, so they are left for the outer loop to read and the mark runs to
+        // the event they become. Nothing else can say it: in ASCII every
+        // character has a column, so `3/7` spends one on its target exactly as
+        // `3-/-7` does, and only the `R:` row distinguishes a slide into a note
+        // of its own from the compact pair the legend sets.
+        // Only a link's target can be a note of its own. A bend names a *pitch*
+        // to reach, never a second strike, so digits after `b` are its size
+        // whatever the `R:` row says about that column.
+        let owned = mark in _LINKING and i < chars.len() and str(i) in valued
         // Digits after a spelled size are the next note, not a target: `7fb5` is
         // a full bend on the 7th fret and then the 5th, and reading the 5 as a
         // target both swallowed the note and refused the bend for not rising.
-        if spelled == none {
-          let d = i
-          while d < chars.len() and chars.at(d) in _DIGITS { d += 1 }
-          if d > i {
-            target = int(chars.slice(i, d).join())
-            i = d
-          }
+        if spelled == none and not owned and i < chars.len() and chars.at(i) in _DIGITS {
+          // A target is a fret like any other, so it stops where a fret stops:
+          // in `7b910` the bend rises to the 9th and the 10th is the next note.
+          let (fret, next) = _read-fret(chars, i)
+          target = fret
+          i = next
         }
         if mark in _LINKING {
           // Resolved here when the target is adjacent, held for the next note
@@ -243,7 +422,7 @@
             } else {
               r.rat(1)
             }
-            techniques.push(m.technique("bend", amount: amount, release: false, pre: false))
+            techniques.push(m.technique("bend", amount: amount, release: false, pre: pre))
           }
         } else if mark == "r" {
           // A release only ever follows a bend, so fold it into the one before.
@@ -275,9 +454,24 @@
         if mark in _PRECEDING {
           let n = items.at(index)
           items.at(index) = (..n, techniques: n.techniques + (m.technique("tap"),))
+        } else if last != none and items.at(last).fret == m.MUTED {
+          // Nothing sounds on a dead string, so nothing can be hammered, pulled
+          // or slid from it. The mark is dropped rather than hung there, which
+          // is what a stray letter between a dead note and the next one used to
+          // do: `0-x---pbr12` in a real transcription left a pull-off pointing
+          // from `x` to the 12th, and the renderer, asked whether the 12th is
+          // above a fret called "x", stopped the whole document.
+          warnings.push(
+            "'" + mark + "' joins a dead string to the " + str(fret) + "th fret; ignored",
+          )
         } else if last != none {
+          // The target keeps its own column, so the link runs to it as an event
+          // rather than printing its fret a second time beside the note it comes
+          // from. `5h7` — the digits pressed against the mark — is the other
+          // form and stays one event; the source says which it means by whether
+          // it spent a column on the target.
           let n = items.at(last)
-          items.at(last) = (..n, techniques: n.techniques + (_resolve(mark, fret),))
+          items.at(last) = (..n, techniques: n.techniques + (_resolve(mark, none),))
         }
       }
 
@@ -297,7 +491,60 @@
     i += 1
   }
 
+  // Marks still held when the row runs out never had a note to reach, and a
+  // slide is the one that means something anyway: the note is slid off, in the
+  // direction the arrow points. This is where `-15\-------` gets its stroke; it
+  // used to be dropped without a word, so a figure that trails away came out as
+  // a plain note.
+  for mark in pending {
+    let out = _resolve-out(mark)
+    if out != none and last != none and items.at(last).fret != m.MUTED {
+      let n = items.at(last)
+      items.at(last) = (..n, techniques: n.techniques + (out,))
+    }
+  }
+
   (items: items, warnings: warnings)
+}
+
+// ---------------------------------------------------------------------------
+// Barlines
+// ---------------------------------------------------------------------------
+
+/// Fold a barline read from one row into what the rows before it said.
+///
+/// Repeat marks are additive: every row draws the same barline, so a colon or a
+/// count written on any one of them belongs to the mark.
+#let _merge-bar(before, item) = {
+  let mark = (stop: item.stop, starts: item.starts, ends: item.ends, count: item.count)
+  if before == none { return mark }
+  (
+    stop: calc.max(before.stop, mark.stop),
+    starts: before.starts or mark.starts,
+    ends: before.ends or mark.ends,
+    count: if before.count != none { before.count } else { mark.count },
+  )
+}
+
+/// Collapse runs of adjacent barline columns into the single mark they are
+/// drawn as, as `(columns, flags)` keyed by the column that survives.
+///
+/// Adjacency is measured against where the previous mark ended rather than
+/// where it began, so a stroke written against a wide one — the second `|` of
+/// `:|x3|` — is still part of it, while `|-|` a column apart is two barlines.
+#let _collapse-bars(flags) = {
+  let kept = ()
+  let out = (:)
+  for col in flags.keys().map(int).sorted() {
+    let key = if kept.len() > 0 { str(kept.last()) } else { none }
+    if key != none and col <= out.at(key).stop {
+      out.insert(key, _merge-bar(out.at(key), flags.at(str(col))))
+    } else {
+      kept.push(col)
+      out.insert(str(col), flags.at(str(col)))
+    }
+  }
+  (kept.map(str), out)
 }
 
 // ---------------------------------------------------------------------------
@@ -350,12 +597,68 @@
 ///
 /// Reusing the DSL's tokens is deliberate: there is no second notation to learn
 /// and no second parser to keep in step.
+///
+/// Case is ignored, which is what lets an `R:` row carry a Power Tab or Guitar
+/// Pro export's own duration line unchanged — those write `W H Q E S` where the
+/// DSL writes `w h q e s`, and mark a dot the same way. A tab exported that way
+/// therefore arrives with real rhythm, stems and beams, instead of being spaced
+/// from its columns.
+///
+/// Two things that dialect says are not read, from its own legend: a
+/// *lowercase* letter there means the note is staccato as well, and `X` is a
+/// 64th, which is shorter than any value this package has. The first comes out
+/// as the plain value — the right duration, without the dot over it — and the
+/// second leaves the sticky value standing. Lower case cannot be given that
+/// second meaning here in any case: it is what the DSL's own tokens are written
+/// in.
 #let _duration-token(token) = {
-  let chars = token.clusters()
+  let chars = lower(token).clusters()
   if chars.len() == 0 or chars.at(0) not in m.durations { return none }
   let dots = chars.slice(1).filter(c => c == ".").len()
   if chars.len() != 1 + dots { return none }
   m.dotted(m.durations.at(chars.at(0)), dots)
+}
+
+/// How far an annotation reaches for the event it belongs to.
+///
+/// Three columns, which is what `C:`, `T:` and `D:` resolve by. `R:` uses it to
+/// tell a value that merely misses its note from one written where nothing is
+/// struck at all.
+#let _REACH = 3
+
+/// The columns of an `R:` row that name a value where nothing is struck.
+///
+/// Each is a rest as long as the value written over it — `R: q e e q` over a bar
+/// holding one note says the rest of the bar is silent, and a transcriber has no
+/// other way of writing that down. ASCII tab spells silence as filler, so the
+/// annotation row is the only place it can be said.
+///
+/// **The notes claim their tokens, rather than each token asking whether a note
+/// is near.** Asking by distance alone cannot read a densely spaced row at all:
+/// where events stand two columns apart, a value written over the gap between
+/// two of them is within reach of both, and a real transcription — eight eighths
+/// over seven notes, `-0-0---7-8---8-7-` — lost its rest and came out a beat
+/// short in every bar. Letting each note take the token nearest it leaves over
+/// exactly the ones no note wanted, whatever the spacing.
+///
+/// `_REACH` still bounds what a note may claim, so a token far from everything
+/// is a rest and one that merely misses its note is not.
+#let _rest-columns(tokens, note-columns) = {
+  let values = tokens.filter(t => _duration-token(t.token) != none).map(t => t.col).sorted()
+  let taken = ()
+  for note in note-columns.sorted() {
+    let best = none
+    for (i, col) in values.enumerate() {
+      if i in taken or calc.abs(col - note) > _REACH { continue }
+      if best == none or calc.abs(col - note) < calc.abs(values.at(best) - note) { best = i }
+    }
+    if best != none { taken.push(best) }
+  }
+  let out = ()
+  for (i, col) in values.enumerate() {
+    if i not in taken and col not in out { out.push(col) }
+  }
+  out
 }
 
 /// The columns a span row covers, as `(start, end)` runs of dashes.
@@ -521,6 +824,24 @@
   let grouped = _blocks(lines, strings)
   let warnings = grouped.warnings
 
+  // What a bar with nothing written in it holds: one rest, as long as the bar.
+  //
+  // An empty bar is not an empty statement — it says this part is silent here,
+  // and a published sheet writes that as a rest. Emitting one is also what
+  // gives the bar an honest width and what stops `validate` from reporting
+  // every silent bar as short, both of which a bar left literally empty gets
+  // wrong. With no time signature there is no bar length to give it, and the
+  // rest is left durationless, which draws nothing.
+  //
+  // The rest is drawn from its duration, so in a meter whose bar is not a
+  // dotted power of two it comes out as the nearest value rather than as the
+  // whole rest an engraver would use for any bar. 4/4 — where nearly all of
+  // this lands — is exact.
+  let empty-bar = () => {
+    if time == none { return (m.event(rest: true),) }
+    (m.event(rest: true, duration: r.rat(time.at(0), den: time.at(1))),)
+  }
+
   let measures = ()
   let events = ()
   // The source column of every event in the open measure, so that when the
@@ -531,12 +852,22 @@
   // *closes* in.
   let volta-runs = ()
   let sections = ()
+  // Whether a `|:` is waiting for the measure it opens. Kept across blocks, as
+  // a repeat may open at the end of one block and be played out in the next.
+  let start-repeat = false
   // Note values are sticky across the whole piece, as in the DSL.
   let duration = none
   let pending-tuplet = none
   let tuplet-left = 0
 
   for block in grouped.blocks {
+    // Whether a barline has opened a measure in this block yet. Every block
+    // begins with one, and that first one opens the music rather than closing
+    // anything; from then on a barline closes a measure even if nothing was
+    // written in it. Per block, not per piece: a measure may run across the
+    // join between two blocks, and the second block's leading barline is its
+    // opening one, not a bar's end.
+    let opened = false
     let heads = block.rows.map(_row-head)
     let order = _string-order(heads, tuning)
 
@@ -548,16 +879,33 @@
       warnings.push("string rows in a block have different lengths; columns may be misaligned")
     }
 
-    // Collect every note and barline, keyed by the column it sits in.
+    // Annotations are grouped before the rows are read, because the `R:` row has
+    // a say in how a row is read: a value over a link's target makes it a note
+    // of its own rather than a second number inside the event before it.
+    let annotations = (:)
+    for ann in block.annotations {
+      let existing = annotations.at(ann.key, default: ())
+      annotations.insert(ann.key, existing + (ann,))
+    }
+    let durations-at = annotations
+      .at("R", default: ())
+      .map(a => _tokens-with-columns(a.text, a.offset))
+      .flatten()
+    let valued = durations-at.filter(t => _duration-token(t.token) != none).map(t => str(t.col))
+
+    // Collect every note and barline, keyed by the column it sits in. A barline
+    // is written on every row, so its repeat marks are merged across the block:
+    // the transcriber who writes `x3` on one row only still means it.
     let by-column = (:)
-    let bar-columns = ()
+    let bar-flags = (:)
     for (row-index, row) in block.rows.enumerate() {
       let string = order.at(row-index)
-      let parsed = _parse-row(row, offset)
+      let parsed = _parse-row(row, offset, valued: valued)
       warnings += parsed.warnings
       for item in parsed.items {
         if item.kind == "bar" {
-          if str(item.col) not in bar-columns { bar-columns.push(str(item.col)) }
+          let key = str(item.col)
+          bar-flags.insert(key, _merge-bar(bar-flags.at(key, default: none), item))
           continue
         }
         if item.fret != m.MUTED and item.fret > 24 {
@@ -568,17 +916,14 @@
         by-column.insert(key, existing + (m.note(string, item.fret, techniques: item.techniques),))
       }
     }
+    // Adjacent barlines are one mark, not two: `||` is drawn with two strokes
+    // and a bar of silence between them is exactly what it does not mean.
+    // Collapsing them here rather than while walking the columns is what keeps
+    // a compound mark's repeats — in `||:` the repeat is written on the second
+    // stroke, and dropping that stroke used to drop the repeat with it.
+    let (bar-columns, bar-flags) = _collapse-bars(bar-flags)
 
-    // Annotations, resolved to columns.
-    let annotations = (:)
-    for ann in block.annotations {
-      let existing = annotations.at(ann.key, default: ())
-      annotations.insert(ann.key, existing + (ann,))
-    }
-    let durations-at = annotations
-      .at("R", default: ())
-      .map(a => _tokens-with-columns(a.text, a.offset))
-      .flatten()
+    // The rest of the annotations, resolved to columns.
     let chords-at = annotations
       .at("C", default: ())
       .map(a => _phrases-with-columns(a.text, a.offset))
@@ -616,8 +961,11 @@
     // Walk the columns in order, turning note columns into events and barline
     // columns into measure breaks.
     let note-columns = by-column.keys().map(int)
+    // A value written where nothing is struck is a rest of that length, and
+    // takes a column of its own alongside the notes and the barlines.
+    let rest-columns = _rest-columns(durations-at, note-columns)
     let all-columns = ()
-    for col in (note-columns + bar-columns.map(int)).sorted() {
+    for col in (note-columns + rest-columns + bar-columns.map(int)).sorted() {
       if all-columns.len() == 0 or all-columns.last() != col { all-columns.push(col) }
     }
 
@@ -666,7 +1014,7 @@
         if str(col) not in by-column { continue }
         if best == none or calc.abs(col - target) < calc.abs(best - target) { best = col }
       }
-      if best != none and calc.abs(best - target) <= 3 { best } else { none }
+      if best != none and calc.abs(best - target) <= _REACH { best } else { none }
     }
     let chord-at = (:)
     for token in chords-at {
@@ -686,6 +1034,43 @@
         warnings.push("instruction '" + token.token + "' has no note within 3 columns; ignored")
       }
     }
+    // Lyrics: one verse per `L:` row in the block, in the order they appear.
+    // Syllables attach by column like chord names do, which is why the ASCII
+    // side needs no spending rule — the transcriber has already said where each
+    // one goes by writing it there.
+    // A syllable with no note near it still belongs on the page: a singer
+    // carries on where the guitar stops, and a bar the transcription leaves
+    // empty is exactly where that happens. Such a syllable gets a column of its
+    // own, and the event built there is a rest with no duration — nothing
+    // sounds on the guitar, and what the voice does with the time is not
+    // something the source says. It draws no glyph, so the bar stays empty
+    // under the words.
+    let lyric-only = ()
+    let lyric-at = (:)
+    for (verse, a) in annotations.at("L", default: ()).enumerate() {
+      for token in _tokens-with-columns(a.text, a.offset) {
+        let col = nearest-event(token.col)
+        if col == none {
+          col = token.col
+          if col not in lyric-only { lyric-only.push(col) }
+        }
+        let here = lyric-at.at(str(col), default: ())
+        // Verses are filled in order, so a column that skips one is padded to
+        // keep every syllable at its own verse's index.
+        while here.len() < verse { here.push(none) }
+        here.push(read-syllable(token.token))
+        lyric-at.insert(str(col), here)
+      }
+    }
+    // Columns that carry only a syllable join the walk below, in order with
+    // the notes and barlines.
+    if lyric-only.len() > 0 {
+      let merged = (all-columns + lyric-only).sorted()
+      all-columns = ()
+      for col in merged {
+        if all-columns.len() == 0 or all-columns.last() != col { all-columns.push(col) }
+      }
+    }
     let dynamic-at = (:)
     for token in dynamics-at {
       let col = nearest-event(token.col)
@@ -700,20 +1085,49 @@
 
     for (idx, col) in all-columns.enumerate() {
       if str(col) in bar-columns and str(col) not in by-column {
-        if events.len() > 0 {
-          // The measure belongs to an ending when any of its events sits under
-          // a dash run. Inlined at both close sites: a helper closure would
-          // capture `volta-runs` by value, before the block rebuilt it.
+        // A barline closes a measure even when nothing was written in it. The
+        // guard used to be `events.len() > 0`, which threw such a measure away —
+        // and with it the whole block when every bar was empty, so an outro
+        // where the guitar has stopped and only the voice carries on vanished
+        // from the sheet without a word. A bar with no notes is a bar of
+        // silence, and the barlines saying so are in the source.
+        //
+        // `opened` is what keeps the *first* barline from closing a measure
+        // before one has begun: every row starts with one, and it opens the
+        // music rather than ending anything.
+        let bar = bar-flags.at(str(col))
+        if events.len() > 0 or opened {
           let volta = none
           for run in volta-runs {
             if volta == none and event-cols.any(c => c >= run.start - 1 and c <= run.end) {
               volta = (run.number,)
             }
           }
-          measures.push(m.measure(events: events, volta: volta))
+          // The bar's own rest comes first where nothing in it sounds — a bar
+          // that is empty outright, and one carrying only syllables, are both
+          // bars of silence and a sheet writes each as a rest.
+          //
+          // Rests the `R:` row named are the exception: they say how the silence
+          // is divided, and the whole-bar rest ahead of them would be a second
+          // bar's worth of it. A syllable's own column carries no value, which
+          // is what tells the two apart.
+          let written = events.any(ev => ev.notes.len() > 0 or ev.duration != none)
+          measures.push(m.measure(
+            events: if written { events } else { empty-bar() + events },
+            volta: volta,
+            start-repeat: start-repeat,
+            end-repeat: bar.ends,
+            repeat-count: bar.count,
+          ))
           events = ()
           event-cols = ()
+          start-repeat = false
         }
+        // A `|:` opens the measure the barline leads into, which is the one
+        // built after it — and across a block join too, since a repeat may open
+        // the last bar of one block and be played out in the next.
+        if bar.starts { start-repeat = true }
+        opened = true
         continue
       }
 
@@ -726,12 +1140,17 @@
 
       events.push(m.event(
         notes: by-column.at(str(col), default: ()),
+        // A column carrying only a syllable holds no note, so it is a rest —
+        // and one with no duration, since the source says when the word is sung
+        // but not for how long. It draws no glyph.
+        rest: str(col) not in by-column,
         duration: value-at.at(str(col), default: none),
         spans: spans,
         tuplet: tuplet-at.at(str(col), default: none),
         chord: chord-at.at(str(col), default: none),
         text: text-at.at(str(col), default: none),
         dynamic: dynamic-at.at(str(col), default: none),
+        lyrics: lyric-at.at(str(col), default: ()),
         column-span: span,
       ))
       event-cols.push(col)
@@ -745,7 +1164,7 @@
         volta = (run.number,)
       }
     }
-    measures.push(m.measure(events: events, volta: volta))
+    measures.push(m.measure(events: events, volta: volta, start-repeat: start-repeat))
   }
 
   let part = m.part(

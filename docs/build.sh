@@ -135,14 +135,22 @@ PY
 # GUIDE.md is generated rather than maintained, because it is nothing but a list
 # of the pages that were just rendered. Written by hand it would quietly lose
 # the last page the first time the guide grew by one.
-pages=$(ls -1 "$root/docs"/guide-light-*.png | wc -l)
+#
+# The names are taken from the files rather than counted out, because `{0p}`
+# pads the page number to the width of the last one: a guide of nine pages is
+# `guide-light-1.png` and one of ten is `guide-light-01.png`. Counting produced
+# the unpadded name either way, so growing past nine pages left every image in
+# the README broken.
+mapfile -t light < <(ls -1 "$root/docs"/guide-light-*.png)
 {
   cat "$root/docs/guide-preamble.md"
-  for p in $(seq 1 "$pages"); do
+  for i in "${!light[@]}"; do
+    name="$(basename "${light[$i]}")"
     printf '\n<picture>\n'
-    printf '  <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-%s.png">\n' "$p"
-    printf '  <img alt="fretwork guide, page %s of %s" src="docs/guide-light-%s.png" width="100%%">\n' \
-      "$p" "$pages" "$p"
+    printf '  <source media="(prefers-color-scheme: dark)" srcset="docs/%s">\n' \
+      "${name/guide-light/guide-dark}"
+    printf '  <img alt="fretwork guide, page %s of %s" src="docs/%s" width="100%%">\n' \
+      "$((i + 1))" "${#light[@]}" "$name"
     printf '</picture>\n'
   done
 } > "$root/GUIDE.md"

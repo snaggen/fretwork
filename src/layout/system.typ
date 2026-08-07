@@ -6,7 +6,7 @@
 // notation staff added later lines up for free by consuming the same positions.
 
 #import "../tuning.typ": string-count
-#import "spacing.typ": barline-allowance, measure-natural, meter-allowance
+#import "spacing.typ": barline-allowance, measure-natural, measure-total, meter-allowance
 
 /// Pack measures greedily into systems.
 ///
@@ -112,6 +112,49 @@
   (measures: placed, width: x)
 }
 
+/// Widen allocations so that two syllables cannot collide.
+///
+/// Fret numbers are narrow and centred on their own event, so one independent
+/// width per event describes them completely, which is all `event-natural`
+/// returns. Syllables are not like that: one is routinely wider than the room
+/// its note bought, and how much room it needs depends on its *neighbour* —
+/// the gap between events *i* and *i+1* has to hold half of each syllable and
+/// air between them. That is a relation between two events rather than a width
+/// of one.
+///
+/// It also crosses barlines, which is why it is applied here, to the whole part
+/// in order, rather than inside `measure-natural`, which sees one measure.
+#let _widen-for-lyrics(theme, measures, naturals, glyph-widths) = {
+  let lyric-of(mi, i) = (
+    glyph-widths.at(mi, default: ()).at(i, default: (:)).at("lyric", default: 0pt)
+  )
+  // One sequence over the whole part, so the last syllable of a measure still
+  // keeps the first syllable of the next one away from it.
+  let seq = ()
+  for (mi, meas) in measures.enumerate() {
+    for i in range(meas.events.len()) { seq.push((mi, i)) }
+  }
+  if seq.all(((mi, i)) => lyric-of(mi, i) == 0pt) { return naturals }
+
+  let needed = measures.map(meas => meas.events.map(_ => 0pt))
+  for (k, pair) in seq.enumerate() {
+    let (mi, i) = pair
+    let here = lyric-of(mi, i)
+    let next = if k + 1 < seq.len() { lyric-of(..seq.at(k + 1)) } else { 0pt }
+    if here == 0pt and next == 0pt { continue }
+    let row = needed.at(mi)
+    row.at(i) = (here + next) / 2 + theme.lyric-gap
+    needed.at(mi) = row
+  }
+
+  naturals
+    .enumerate()
+    .map(((mi, n)) => {
+      let widths = n.events.enumerate().map(((i, w)) => calc.max(w, needed.at(mi).at(i)))
+      (events: widths, total: measure-total(theme, widths))
+    })
+}
+
 /// Break a part into placed systems.
 ///
 /// `glyph-widths` is a per-measure array of per-event widths, measured by the
@@ -131,10 +174,15 @@
     times.push(sig)
   }
   let strings = string-count(part.tuning)
-  let naturals = part
-    .measures
-    .enumerate()
-    .map(((i, m)) => measure-natural(theme, m, glyph-widths.at(i, default: ())))
+  let naturals = _widen-for-lyrics(
+    theme,
+    part.measures,
+    part
+      .measures
+      .enumerate()
+      .map(((i, m)) => measure-natural(theme, m, glyph-widths.at(i, default: ()))),
+    glyph-widths,
+  )
   // Furniture: fixed graphic that never stretches with justification.
   let furniture(i) = (
     barline-allowance(theme, part.measures.at(i))

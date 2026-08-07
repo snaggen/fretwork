@@ -39,6 +39,14 @@
   calc.max(base, glyph-width + theme.min-event-gap)
 }
 
+/// The width a measure claims, given the widths of its events.
+///
+/// Shared so that a pass which widens events afterwards — the lyric one does —
+/// rebuilds the total the same way it was built.
+#let measure-total(theme, widths) = (
+  widths.fold(0pt, (a, b) => a + b) + 2 * theme.measure-padding
+)
+
 /// Natural widths for every event in a measure, plus the measure total.
 ///
 /// `glyph-widths` is one `(total, anchor)` pair per event, in order: `total` is
@@ -50,8 +58,7 @@
     ev,
     glyph-widths.at(i, default: (total: 0pt, anchor: 0pt)).total,
   ))
-  let total = widths.fold(0pt, (a, b) => a + b) + 2 * theme.measure-padding
-  (events: widths, total: total)
+  (events: widths, total: measure-total(theme, widths))
 }
 
 /// Cap height of one time-signature numeral.

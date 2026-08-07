@@ -290,6 +290,70 @@
 // the page. A fifth more carries better without crowding the staff.
 #let REST-GROWTH = 1.2
 
+// How many horizontal slices a rest's ink is measured in, and how finely each
+// cubic is sampled to fill them. Both are as coarse as they can be without the
+// profile disagreeing with the drawn shape at the width of a string line.
+#let _INK-SLICES = 48
+#let _INK-SAMPLES = 16
+
+/// Where a traced outline's ink actually lies, slice by slice.
+///
+/// The bounding box is a poor description of that: a quarter rest is a narrow
+/// zigzag, so a string line grazing its corner would be broken as widely as one
+/// running through its middle, and a fret number — measured type, with no such
+/// gap between box and ink — would get a tighter gap than the rest beside it.
+///
+/// Returns one `(left, right)` pair per slice, in the glyph's own coordinates,
+/// top to bottom. `unit` is the scale the outline is drawn at.
+#let _ink-profile(d, unit, height) = {
+  let slices = range(_INK-SLICES).map(_ => none)
+  let (px, py) = d.first()
+
+  for seg in d.slice(1) {
+    let (c1x, c1y, c2x, c2y, ex, ey) = seg
+    for k in range(_INK-SAMPLES + 1) {
+      let t = k / _INK-SAMPLES
+      let u = 1 - t
+      // The cubic at t. Sampling the boundary is enough: a filled shape spans
+      // from its leftmost boundary point at a height to its rightmost.
+      let x = u * u * u * px + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t * t * t * ex
+      let y = u * u * u * py + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t * t * t * ey
+      let i = calc.clamp(int(y * unit / height * _INK-SLICES), 0, _INK-SLICES - 1)
+      let cur = slices.at(i)
+      slices.at(i) = if cur == none {
+        (x, x)
+      } else {
+        (calc.min(cur.at(0), x), calc.max(cur.at(1), x))
+      }
+    }
+    px = ex
+    py = ey
+  }
+
+  // A slice the sampling stepped over inherits from its nearest filled
+  // neighbours on either side, so no string line can find a hole where the
+  // drawn shape has ink.
+  let filled = ()
+  for i in range(_INK-SLICES) {
+    let here = slices.at(i)
+    if here == none {
+      let before = slices.slice(0, i).rev().find(s => s != none)
+      let after = slices.slice(i + 1).find(s => s != none)
+      let both = (before, after).filter(s => s != none)
+      here = if both.len() == 0 {
+        (0.0, 0.0)
+      } else {
+        (
+          both.map(s => s.at(0)).fold(both.first().at(0), calc.min),
+          both.map(s => s.at(1)).fold(both.first().at(1), calc.max),
+        )
+      }
+    }
+    filled.push((here.at(0) * unit, here.at(1) * unit))
+  }
+  filled
+}
+
 /// Draw one of the traced outlines at the given staff space.
 #let _outline-rest(sp, name, fill) = {
   let shape = _REST-OUTLINES.at(name)
@@ -305,7 +369,36 @@
       ..shape.d.slice(1).map(c => curve.cubic(pt(c.at(0), c.at(1)), pt(c.at(2), c.at(3)), pt(c.at(4), c.at(5)))),
       curve.close(mode: "straight"),
     )),
-  )
+  ) + (ink: _ink-profile(shape.d, k, shape.h * k))
+}
+
+/// The horizontal extent of a glyph's ink between two heights.
+///
+/// `y0` and `y1` are measured from the glyph's own top. Returns `none` when the
+/// band holds no ink, and the full box for a glyph carrying no profile — which
+/// is the right answer for a solid one.
+///
+/// ```typc
+/// let rest = quarter-rest(10pt)
+/// let all = ink-span(rest, 0pt, rest.height)
+/// let top = ink-span(rest, 0pt, rest.height / 8)
+/// // The zigzag's top is narrower than the glyph as a whole.
+/// assert(top.end - top.start < all.end - all.start)
+/// assert(ink-span(rest, rest.height * 2, rest.height * 3) == none)
+/// ```
+#let ink-span(glyph, y0, y1) = {
+  let profile = glyph.at("ink", default: none)
+  if profile == none { return (start: 0pt, end: glyph.width) }
+  let slice = glyph.height / profile.len()
+  let lo = none
+  let hi = none
+  for (i, s) in profile.enumerate() {
+    if i * slice > y1 or (i + 1) * slice < y0 { continue }
+    lo = if lo == none { s.at(0) } else { calc.min(lo, s.at(0)) }
+    hi = if hi == none { s.at(1) } else { calc.max(hi, s.at(1)) }
+  }
+  if lo == none { return none }
+  (start: lo, end: hi)
 }
 
 /// Quarter rest.
@@ -342,8 +435,11 @@
 /// A single stem flag, drawn for a stem that points up.
 ///
 /// The origin is the tip of the stem and the flag falls away to the right. Pass
-/// `down: true` to mirror it for a downward stem, which is what the rhythm lane
-/// above a tab staff uses.
+/// `down: true` to mirror it for a downward stem.
+///
+/// The rhythm lane does not use this: it draws beam stubs, ornaments included.
+/// What is left is the note value in a tempo mark, where the glyph stands on
+/// its own rather than beside other values.
 #let flag(sp, down: false, fill: black) = {
   let w = 1.0 * sp
   let h = 1.75 * sp
@@ -370,6 +466,18 @@
   0.30 * sp,
   _blob(0.15 * sp, 0.15 * sp, 0.15 * sp, fill),
 )
+
+/// The augmentation mark the rhythm lane uses: a square, `size` on a side.
+///
+/// A round dot belongs beside a notehead, and the lane has none — it draws its
+/// values as bars. The reference sets a square beside the stem instead, and
+/// square is also what tells it apart from the staccato dots and the repeat
+/// dots drawn elsewhere on the page.
+///
+/// It takes a size rather than a staff space because the size is not a free
+/// choice: measured off the reference outlines the square is exactly a beam
+/// thick, so it is drawn from `theme.beam-thickness` and follows it.
+#let aug-square(size, fill: black) = _glyph(size, size, _slab(0pt, 0pt, size, size, fill))
 
 /// The pair of dots on a repeat barline, centred within `height`.
 #let repeat-dots(sp, height, fill: black) = {

@@ -50,3 +50,28 @@ q 5/1~ r r 5/1
 #tab(theme: vt, ```
 h (5/1 5/2 5/3)~ (5/1 5/2 5/3) | q 3/6~ 3/6 (0/5 2/6)~ (0/5 2/6)
 ```)
+
+// A link written with no target fret runs to the next event that plays the
+// string, joining two notes that each keep their own value — the only form that
+// can cross a barline, and the one a slide into the next bar has to use. The
+// second pair is a hammer-on between separate events, which draws the arc but no
+// line; the third is the labelled form, unchanged, for comparison.
+#tab(theme: vt, ```
+q 10/3s 5/1 5/1 5/1 | q 3/3 5/3h 7/3 5/3h7
+```)
+
+// A slide *out* of a note, which reaches nothing and so names its own direction
+// — the one thing a link cannot do, having a fret to derive one from.
+#tab(theme: vt, ```
+q 13/1 15/1sU 13/1 15/1sN | q 3/6sN 3/6sU (5/1 5/2 5/3)sU r
+```)
+
+// A link whose far end is on the next system. Both halves are drawn: a tail
+// leaving the last note, and the same tail arriving at the first note of the
+// line below, which is the conventional way of showing a mark cut in two by the
+// break. The system it lands on cannot see the note it came from, so the mark on
+// that note is the only trace there is.
+// Narrowed so the break falls where the marks do; `tab` fills what it is given.
+#block(width: 46mm, tab(theme: vt, ```
+h 10/3s 5/1 | h 3/3 5/1 | h 12/3~ 5/1 | h 12/3 5/1
+```))

@@ -82,6 +82,21 @@
 #eq(tech("12/3*").at(0).style, "natural", "natural harmonic")
 #eq(tech("5/3PH").at(0).style, "pinch", "pinch harmonic — not read as a pull-off")
 #eq(tech("7/3HH").at(0).style, "harp", "harp harmonic — not read as a hammer-on")
+// A link with no target fret runs to the next event that plays the string, which
+// is the only form that joins two notes with values of their own — or crosses a
+// barline, where a second number inside one event cannot go.
+#eq(tech("5/3s").at(0), m.technique("slide", fret: none, legato: true), "a bare slide runs to the next event")
+// A slide *out* reaches nothing, so it names a direction where a link derives
+// one from the fret it lands on. The capitals are what keep `sU` from also
+// being spellable as a slide and an upstroke, which the writer would emit.
+#eq(tech("5/3sU").at(0).out, "up", "sU slides out of the note upwards")
+#eq(tech("5/3sN").at(0).out, "down", "sN slides out of it downwards")
+#eq(m.link-to-next(m.note(3, 5, techniques: tech("5/3sU"))), none, "…and reaches no later note")
+#eq(tech("5/3h").at(0), m.technique("hammer", fret: none), "…and so does a bare hammer-on")
+#eq(tech("5/3h7").at(0).fret, 7, "while a target fret still makes it a pair of numbers")
+
+#eq(tech("7/3AH").at(0).style, "artificial", "artificial harmonic — not read as an arpeggio")
+#eq(tech("7/3TH").at(0).style, "tap", "tap harmonic — not read as a tap")
 #eq(tech("7/3~").at(0).kind, "tie", "tie")
 #eq(tech("7/3>").at(0).kind, "accent", "accent")
 #eq(tech("7/3^").at(0).kind, "marcato", "marcato")

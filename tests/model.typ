@@ -74,6 +74,93 @@
 #eq(m.sounding-duration(m.event()), none, "an event without a duration has no sounding length")
 #eq(m.event(rest: true).kind, "rest", "a rest is its own event kind")
 
+// --- the far end of a tie -------------------------------------------------
+// `~` is written on the note that starts the tie, so the note it runs into
+// knows nothing about it. It has to: it is not struck, and its fret number is
+// set in parentheses to say so.
+
+#let tied = m.mark-tie-targets(m.part(measures: (
+  m.measure(events: (
+    m.event(notes: (m.note(3, 12, techniques: (m.technique("tie"),)),), duration: m.durations.h),
+    m.event(notes: (m.note(3, 12),), duration: m.durations.h),
+  )),
+  m.measure(events: (m.event(notes: (m.note(3, 12),), duration: m.durations.w),)),
+)))
+#let note-at(p, mi, ei) = p.measures.at(mi).events.at(ei).notes.first()
+
+#ok(note-at(tied, 0, 1).tied-in, "the note a tie runs into is marked")
+#ok(not note-at(tied, 0, 0).at("tied-in", default: false), "the note that starts it is not")
+#ok(
+  not note-at(tied, 1, 0).at("tied-in", default: false),
+  "and a later strike of the same string, with no tie reaching it, is left alone",
+)
+#ok(m.is-parenthesised(note-at(tied, 0, 1)), "…so the far end prints in parentheses")
+
+// A ghost note and a tie's far end print identically and mean opposite things —
+// one struck faintly, the other not struck at all. The arc is what separates
+// them, which is the same ambiguity the published sheets carry. What must not
+// happen is a note that is both coming out doubly parenthesised.
+#let ghost = m.note(3, 12, techniques: (m.technique("ghost"),))
+#ok(m.is-parenthesised(ghost), "a ghost note prints in parentheses")
+#ok(
+  m.is-parenthesised(ghost + (tied-in: true)),
+  "a note that is both is still parenthesised exactly once",
+)
+#ok(not m.is-parenthesised(m.note(3, 12)), "an ordinary note is not")
+
+// Chains: a note may both receive a tie and start the next one.
+#let chain = m.mark-tie-targets(m.part(measures: (m.measure(events: (
+  m.event(notes: (m.note(1, 5, techniques: (m.technique("tie"),)),), duration: m.durations.q),
+  m.event(notes: (m.note(1, 5, techniques: (m.technique("tie"),)),), duration: m.durations.q),
+  m.event(notes: (m.note(1, 5),), duration: m.durations.h),
+)),)))
+#eq(
+  range(3).map(i => note-at(chain, 0, i).at("tied-in", default: false)),
+  (false, true, true),
+  "every link of a chain of ties past the first is a far end",
+)
+
+// --- the far end of a link -------------------------------------------------
+// A hammer-on, pull-off or slide written with no target fret runs to the next
+// event that plays the string. The note it lands on has to be marked for the
+// same reason a tie's has: a system is drawn on its own and cannot look back
+// past its first event, so a link arriving from the line above would otherwise
+// leave no trace on the system that receives it.
+
+#let slid = m.mark-link-targets(m.part(measures: (
+  m.measure(events: (
+    m.event(
+      notes: (m.note(3, 10, techniques: (m.technique("slide", legato: true),)),),
+      duration: m.durations.w,
+    ),
+  )),
+  m.measure(events: (
+    m.event(notes: (m.note(3, 3),), duration: m.durations.h),
+    m.event(notes: (m.note(3, 5),), duration: m.durations.h),
+  )),
+)))
+#eq(note-at(slid, 1, 0).linked-in.kind, "slide", "the note a link runs into is marked, across a bar")
+#ok(
+  not note-at(slid, 0, 0).at("linked-in", default: none) != none,
+  "the note that starts it is not",
+)
+#ok(
+  note-at(slid, 1, 1).at("linked-in", default: none) == none,
+  "and the next strike of the string, with no link reaching it, is left alone",
+)
+
+// A target fret makes the link a pair of numbers inside one event instead, so
+// nothing is waiting for a later note and nothing is marked.
+#let labelled = m.mark-link-targets(m.part(measures: (m.measure(events: (
+  m.event(notes: (m.note(3, 5, techniques: (m.technique("hammer", fret: 7),)),)),
+  m.event(notes: (m.note(3, 9),)),
+)),)))
+#eq(m.link-to-next(note-at(labelled, 0, 0)), none, "a link with a target runs to no later event")
+#ok(
+  note-at(labelled, 0, 1).at("linked-in", default: none) == none,
+  "…so the note after it is not marked",
+)
+
 // --- measures and validation ----------------------------------------------
 
 #let full = m.measure(events: (
