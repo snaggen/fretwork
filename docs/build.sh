@@ -64,6 +64,7 @@ render() {
 for mode in light dark; do
   render hero hero.typ "$mode"
   render techniques showcase.typ "$mode" "--input figure=techniques"
+  render rhythm showcase.typ "$mode" "--input figure=rhythm"
   render ascii showcase.typ "$mode" "--input figure=ascii"
 done
 

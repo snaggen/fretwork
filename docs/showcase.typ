@@ -74,6 +74,42 @@
   ```)
 }
 
+#let rhythm = {
+  caption[Eighths beam in half-bars, so the middle of the bar is never in doubt:]
+  tab(theme: thm, ```
+  e 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6 |.
+  ```)
+
+  caption[Shorter values have no such licence and group by the beat:]
+  tab(theme: thm, show-time: false, ```
+  s 0/6 2/6 3/6 5/6 3/6 5/6 7/6 8/6 7/6 5/6 3/6 2/6 0/6 2/6 3/6 5/6 |.
+  ```)
+
+  caption[Thirty-seconds, sixteenths and eighths in one bar — the beams stack as
+    the values shorten, and the shortest in a run is what sets its grouping:]
+  tab(theme: thm, show-time: false, ```
+  t 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6 s 3/6 5/6 7/6 8/6 e 7/6 5/6 q 3/6 |.
+  ```)
+
+  caption[Within a group the primary beam spans the whole of it and each further
+    beam only the notes fast enough to need one, so an eighth among sixteenths
+    leaves a stub pointing back at the note it belongs with:]
+  tab(theme: thm, show-time: false, ```
+  s 5/3 7/3 e 8/3 e 7/3 s 5/3 3/3 s 5/3 e 7/3 s 8/3 e 5/3 s 7/3 8/3 |.
+  ```)
+
+  caption[The metre decides, not the note value alone — a whole bar of eighths in
+    3/4, and 2+2+3 in 7/8:]
+  tab(theme: thm, ```
+  [3/4] e 0/6 2/6 3/6 5/6 3/6 2/6 | [7/8] e 0/6 2/6 3/6 5/6 7/6 8/6 10/6 |.
+  ```)
+
+  caption[…and a compound metre counts in threes, whatever its numerals say:]
+  tab(theme: thm, ```
+  [6/8] e 0/6 2/6 3/6 5/6 3/6 2/6 | [12/8] e 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6 3/6 5/6 3/6 2/6 |.
+  ```)
+}
+
 #let ascii = {
   caption[A tab pasted from the web renders as it stands — techniques read inline,
     spacing taken from the source's own columns:]
@@ -103,4 +139,8 @@
   ```)
 }
 
-#if figure-name == "techniques" { techniques } else { ascii }
+#if figure-name == "techniques" {
+  techniques
+} else if figure-name == "rhythm" {
+  rhythm
+} else { ascii }

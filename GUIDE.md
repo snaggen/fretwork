@@ -13,55 +13,60 @@ sheet, see [`examples/songsheet.typ`](examples/songsheet.typ).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-01.png">
-  <img alt="fretwork guide, page 1 of 11" src="docs/guide-light-01.png" width="100%">
+  <img alt="fretwork guide, page 1 of 12" src="docs/guide-light-01.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-02.png">
-  <img alt="fretwork guide, page 2 of 11" src="docs/guide-light-02.png" width="100%">
+  <img alt="fretwork guide, page 2 of 12" src="docs/guide-light-02.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-03.png">
-  <img alt="fretwork guide, page 3 of 11" src="docs/guide-light-03.png" width="100%">
+  <img alt="fretwork guide, page 3 of 12" src="docs/guide-light-03.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-04.png">
-  <img alt="fretwork guide, page 4 of 11" src="docs/guide-light-04.png" width="100%">
+  <img alt="fretwork guide, page 4 of 12" src="docs/guide-light-04.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-05.png">
-  <img alt="fretwork guide, page 5 of 11" src="docs/guide-light-05.png" width="100%">
+  <img alt="fretwork guide, page 5 of 12" src="docs/guide-light-05.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-06.png">
-  <img alt="fretwork guide, page 6 of 11" src="docs/guide-light-06.png" width="100%">
+  <img alt="fretwork guide, page 6 of 12" src="docs/guide-light-06.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-07.png">
-  <img alt="fretwork guide, page 7 of 11" src="docs/guide-light-07.png" width="100%">
+  <img alt="fretwork guide, page 7 of 12" src="docs/guide-light-07.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-08.png">
-  <img alt="fretwork guide, page 8 of 11" src="docs/guide-light-08.png" width="100%">
+  <img alt="fretwork guide, page 8 of 12" src="docs/guide-light-08.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-09.png">
-  <img alt="fretwork guide, page 9 of 11" src="docs/guide-light-09.png" width="100%">
+  <img alt="fretwork guide, page 9 of 12" src="docs/guide-light-09.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-10.png">
-  <img alt="fretwork guide, page 10 of 11" src="docs/guide-light-10.png" width="100%">
+  <img alt="fretwork guide, page 10 of 12" src="docs/guide-light-10.png" width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-11.png">
-  <img alt="fretwork guide, page 11 of 11" src="docs/guide-light-11.png" width="100%">
+  <img alt="fretwork guide, page 11 of 12" src="docs/guide-light-11.png" width="100%">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/guide-dark-12.png">
+  <img alt="fretwork guide, page 12 of 12" src="docs/guide-light-12.png" width="100%">
 </picture>

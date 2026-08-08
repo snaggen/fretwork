@@ -4,7 +4,7 @@ Guitar tablature of publishing quality, written as text.
 
 Existing Typst packages draw chord diagrams or set standard notation; none sets a
 guitar tab that looks like a published song sheet. `fretwork` does: optical
-spacing, string lines broken around the fret numbers, beams grouped by the beat,
+spacing, string lines broken around the fret numbers, beams grouped by the metre,
 and the technique symbols of an engraved rock transcription — bends, slurs,
 harmonics, palm mutes, repeat signs with flared serifs.
 
@@ -85,6 +85,25 @@ Groups are one mechanism doing five jobs: `{PM: … }` and `{LR: … }` are palm
 and let ring, `{3: … }` is a triplet, `{7/4: … }` states a tuplet ratio outright,
 `{V1: … }` `{V2: … }` are first and second endings, and `{cresc: … }` `{dim: … }`
 are the stretches that change in loudness. They nest.
+
+## Rhythm
+
+Note values are written once and stick until they change — `w h q e s t` for
+whole down to thirty-second, `.` for each augmentation dot. How they beam is not
+written at all: the grouping follows the time signature, the way an engraver
+sets it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/rhythm-dark.png">
+  <img alt="Staves showing beam grouping: eighths beamed into half-bars, sixteenths and thirty-seconds grouped by the beat, a bar mixing all three with the beams stacking as the values shorten, stubs on lone notes, and bars in 3/4, 7/8, 6/8 and 12/8" src="docs/rhythm-light.png">
+</picture>
+
+Eighths beam into half-bars, and shorter values group by the beat. The shortest
+value in a run decides for the whole run, so one sixteenth among eighths pulls
+the run back to the beat. A group ends only where a note falls exactly on a
+boundary, which is what lets a syncopated figure carry its beam across one. The
+rules are Gould's (*Behind Bars* p. 153), and an irregular metre gets the
+counting it is written for: 2+2+3 in 7/8, threes in the compound metres.
 
 ## Lyrics
 

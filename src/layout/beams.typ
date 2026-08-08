@@ -1,11 +1,14 @@
 // Beam grouping: which notes are joined by a beam, and how many beams they get.
 //
 // Grouping follows the time signature rather than the note values alone. Beams
-// exist to show where the beats are, so a group never crosses a beat boundary
-// even when the durations would allow it.
+// exist to show how the bar is counted, so a group ends where the metre says it
+// may — which is not the same as ending on every beat. `metre.typ` holds those
+// rules; this file applies them to a bar of events.
 
 #import "../rational.typ" as r
 #import "../model.typ": decompose, sounding-duration
+// `beat-unit` is re-exported: it is what parts consecutive tuplets, below.
+#import "metre.typ": beam-boundaries, beat-unit
 
 /// How many flags or beams an event's note value carries.
 ///
@@ -29,65 +32,103 @@
   if d == none { return 0 } else { d.dots }
 }
 
-/// The rhythmic unit that beams may not cross, as a rational.
+/// Whether an event can carry a beam at all.
 ///
-/// Simple metres group by their own beat: a quarter in 4/4, an eighth in 3/8.
-/// Compound metres — 6/8, 9/8, 12/8 — group by the dotted beat of three.
-#let beat-unit(time) = {
-  if time == none { return none }
-  let (beats, unit) = time
-  let compound = unit >= 8 and calc.rem(beats, 3) == 0 and beats > 3
-  if compound { r.rat(3, den: unit) } else { r.rat(1, den: unit) }
+/// Rests, quarters and longer, and events of unknown duration cannot. Nor can a
+/// grace note: it carries its own small flag and is never beamed to the note it
+/// ornaments, since beaming the two would say they share a beat, which is the
+/// one thing a grace note does not do.
+#let _beamable(ev) = {
+  let flags = flags-of(ev)
+  let grace = ev.at("grace", default: none) != none
+  flags != none and flags >= 1 and ev.kind != "rest" and not grace
+}
+
+/// Maximal runs of beamable events, each index paired with where it falls in
+/// the bar.
+///
+/// The position is `none` from the first event whose duration is unknown
+/// onwards, since there is no grid left to measure against; a run carrying one
+/// is never split.
+#let _beamable-runs(events) = {
+  let runs = ()
+  let current = ()
+  let position = r.zero
+
+  for (i, ev) in events.enumerate() {
+    if _beamable(ev) {
+      current.push((index: i, pos: position))
+    } else if current.len() > 0 {
+      runs.push(current)
+      current = ()
+    }
+
+    let d = sounding-duration(ev)
+    position = if position == none or d == none { none } else { r.add(position, d) }
+  }
+
+  if current.len() > 0 { runs.push(current) }
+  runs
+}
+
+/// The shortest sounding value in a run, which is what chooses its rule.
+///
+/// Sounding rather than written, so that a triplet of eighths is measured as the
+/// twelfth of a whole note it actually occupies.
+#let _shortest(events, run) = {
+  let shortest = none
+  for e in run {
+    let d = sounding-duration(events.at(e.index))
+    if d != none and (shortest == none or r.lt(d, shortest)) { shortest = d }
+  }
+  shortest
+}
+
+/// Split one run of beamable events at the boundaries its metre allows.
+///
+/// A boundary parts the run only where an event falls exactly on it. A figure
+/// that steps over one — an eighth straddling a beat in a run of sixteenths —
+/// stays whole, which is what says the syncopation is deliberate.
+#let _split-run(events, run, time) = {
+  let bounds = beam-boundaries(time, _shortest(events, run))
+  let groups = ()
+  let current = ()
+
+  for e in run {
+    // Exact, because durations are rational and `rat` normalises: two positions
+    // are equal precisely when their dictionaries are.
+    let ends-here = e.pos != none and bounds.any(b => b == e.pos)
+    if current.len() > 0 and ends-here {
+      groups.push(current)
+      current = ()
+    }
+    current.push(e.index)
+  }
+
+  if current.len() > 0 { groups.push(current) }
+  groups
 }
 
 /// Split a measure's events into beam groups.
 ///
 /// Returns an array of arrays of event indices. A group of one is drawn with a
-/// flag; a group of two or more is beamed. Events that cannot be beamed — rests,
-/// quarters and longer, unknown durations — end the group they interrupt and
-/// form no group of their own.
+/// flag; a group of two or more is beamed. Events that cannot be beamed end the
+/// group they interrupt and form no group of their own.
+///
+/// The work is done in two passes because the rule depends on what the run turns
+/// out to hold: its shortest value chooses the boundaries. So a bar of eighths
+/// in 4/4 beams in half-bars, while a single sixteenth among them pulls the
+/// whole run back to the beat.
+///
+/// ```typc
+/// // Eight eighths in 4/4 make two groups of four, not four pairs.
+/// assert.eq(group-beams(bar, (4, 4)), ((0, 1, 2, 3), (4, 5, 6, 7)))
+/// ```
 #let group-beams(events, time) = {
-  let unit = beat-unit(time)
   let groups = ()
-  let current = ()
-  let position = r.zero
-
-  for (i, ev) in events.enumerate() {
-    let flags = flags-of(ev)
-    // A grace note carries its own small flag and is never beamed to the note
-    // it ornaments: beaming the two would say they share a beat, which is the
-    // one thing a grace note does not do.
-    let grace = ev.at("grace", default: none) != none
-    let beamable = flags != none and flags >= 1 and ev.kind != "rest" and not grace
-
-    // A group ends at a beat boundary, so beams keep showing where the beats
-    // are even in a bar of unbroken sixteenths.
-    // Exact because durations are rational: the position is on a beat when it
-    // divides into whole beats with nothing left over.
-    let on-beat = unit != none and r.div(position, unit).den == 1
-
-    if not beamable {
-      if current.len() > 0 { groups.push(current) }
-      current = ()
-    } else {
-      if current.len() > 0 and on-beat {
-        groups.push(current)
-        current = ()
-      }
-      current.push(i)
-    }
-
-    let d = sounding-duration(ev)
-    if d == none {
-      // Without a duration there is no beat grid left to follow.
-      if current.len() > 0 { groups.push(current) }
-      current = ()
-    } else {
-      position = r.add(position, d)
-    }
+  for run in _beamable-runs(events) {
+    groups += _split-run(events, run, time)
   }
-
-  if current.len() > 0 { groups.push(current) }
   groups
 }
 

@@ -3,6 +3,7 @@
 #import "/src/model.typ" as m
 #import "/src/theme.typ": theme
 #import "/src/layout/beams.typ": beat-unit, dots-of, flags-of, group-beams, sub-beams, tuplet-runs
+#import "/src/layout/metre.typ": beam-boundaries, beat-structure
 #import "/src/layout/spacing.typ": event-natural, measure-natural
 #import "/src/layout/system.typ": justify-factor, layout-part, pack
 #import "/src/parse/dsl.typ": parse, parse-measures
@@ -33,18 +34,92 @@
 #eq(beat-unit((3, 8)), r.rat(1, den: 8), "3/8 is simple, not compound")
 #eq(beat-unit(none), none, "no time signature, no beat")
 
+// --- beat structure and beam boundaries -----------------------------------
+
+#eq(beat-structure((4, 4)).len(), 4, "4/4 has four beats")
+#eq(
+  beat-structure((6, 8)),
+  (r.rat(3, den: 8), r.rat(3, den: 8)),
+  "6/8 has two beats, each a dotted quarter",
+)
+#eq(r.sum(beat-structure((7, 8))), r.rat(7, den: 8), "an irregular metre still fills its bar")
+#eq(beat-structure((7, 8)).map(r.to-float), (0.25, 0.25, 0.375), "7/8 counts 2+2+3")
+#eq(beat-structure(none), (), "no time signature, no beats")
+
+#eq(
+  beam-boundaries((4, 4), m.durations.e),
+  (r.rat(1, den: 2), r.rat(1)),
+  "eighths in 4/4 may only end at the half-bar",
+)
+#eq(
+  beam-boundaries((4, 4), m.durations.s),
+  (r.rat(1, den: 4), r.rat(1, den: 2), r.rat(3, den: 4), r.rat(1)),
+  "sixteenths have no exception, so they end on every beat",
+)
+#ok(
+  beam-boundaries((4, 4), m.durations.e).any(b => b == r.rat(1, den: 2)),
+  "the middle of a 4/4 bar is always a boundary",
+)
+#ok(
+  beam-boundaries((2, 2), m.durations.e).any(b => b == r.rat(1, den: 2)),
+  "…and of a 2/2 bar",
+)
+#eq(beam-boundaries(none, m.durations.e), (), "no time signature, no boundaries")
+
 // --- beam grouping --------------------------------------------------------
-// Beams show where the beats are, so a group never crosses a beat boundary.
+// Beams show how the bar is counted, so a group ends where the metre allows —
+// which is the half-bar for eighths in 4/4, and the beat for shorter values.
 
 #eq(
   group-beams(events("e 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6"), (4, 4)),
-  ((0, 1), (2, 3), (4, 5), (6, 7)),
-  "eighths in 4/4 beam in pairs, one per beat",
+  ((0, 1, 2, 3), (4, 5, 6, 7)),
+  "eighths in 4/4 beam in half-bars",
+)
+#eq(
+  group-beams(events("s 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6"), (4, 4)),
+  ((0, 1, 2, 3), (4, 5, 6, 7)),
+  "sixteenths keep to the beat, so eight of them are still two groups",
+)
+#eq(
+  group-beams(events("e 0/6 0/6 0/6 0/6"), (2, 4)),
+  ((0, 1, 2, 3),),
+  "a short bar of eighths beams whole in 2/4",
+)
+#eq(
+  group-beams(events("e 0/6 0/6 0/6 0/6 0/6 0/6"), (3, 4)),
+  ((0, 1, 2, 3, 4, 5),),
+  "…and in 3/4",
+)
+#eq(
+  group-beams(events("e 0/6 0/6 0/6 0/6 0/6"), (5, 8)),
+  ((0, 1, 2), (3, 4)),
+  "5/8 counts 3+2 and beams the same way",
+)
+// One short value pulls the whole run back to the beat: the shortest note in a
+// run is what chooses its rule.
+#eq(
+  group-beams(events("e 0/6 0/6 0/6 s 0/6 0/6"), (4, 4)),
+  ((0, 1), (2, 3, 4)),
+  "a sixteenth among eighths groups the run by the beat",
+)
+// A figure that steps over a boundary rather than landing on it stays whole,
+// which is what says the syncopation is deliberate.
+#eq(
+  group-beams(events("s 0/6 0/6 0/6 e 0/6 s 0/6 0/6 0/6"), (4, 4)),
+  ((0, 1, 2, 3, 4, 5, 6),),
+  "an eighth straddling a beat carries the beam across it",
 )
 #eq(
   group-beams(events("s 0/6 0/6 0/6 0/6"), (4, 4)),
   ((0, 1, 2, 3),),
   "four sixteenths fill one beat and beam together",
+)
+// Measured by what a triplet eighth sounds for — a twelfth — and not by the
+// eighth it is written as, which would let two of them share the half-bar.
+#eq(
+  group-beams(events("{3: e 0/6 2/6 3/6} {3: e 5/6 7/6 8/6}"), (4, 4)),
+  ((0, 1, 2), (3, 4, 5)),
+  "each triplet of eighths fills a beat and beams on its own",
 )
 #eq(
   group-beams(events("q 0/6 e 0/6 0/6"), (4, 4)),

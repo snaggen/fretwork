@@ -1,8 +1,9 @@
 // Stems, beams, stubs, augmentation marks, rests and tuplets.
 //
 // The lane is *under* the staff and its values are bars: a beam along the
-// bottom with stems rising from it. Pins: beams grouped by the beat rather than
-// across it, the clearance between the stem tops and the bottom staff line, a
+// bottom with stems rising from it. Pins: beams grouped by the metre — eighths
+// in half-bars, shorter values by the beat — the clearance between the stem
+// tops and the bottom staff line, a
 // half note drawn as a quarter's stem cut in two from the same foot, a whole
 // note drawn as nothing at all, and the count row.
 

@@ -43,13 +43,17 @@
 /// because the columns have to be a fixed share of the page: with `auto`
 /// widths, one long syntax string squeezes the rendering column for every row
 /// of its table, and a squeezed one breaks its bars onto separate systems.
-#let row(feature, src, ..args) = (
+///
+/// `show-time` is off by default — most rows are about something else, and a
+/// signature on every one of them is noise — but the grouping rows turn it on,
+/// since the signature is what they are demonstrating.
+#let row(feature, src, show-time: false, ..args) = (
   {
     text(size: 8.5pt, feature)
     linebreak()
     text(size: 8.5pt, raw(src, lang: none))
   },
-  tab(src, theme: thm, show-time: false, warn: false, ..args),
+  tab(src, theme: thm, show-time: show-time, warn: false, ..args),
 )
 
 #let syntax-table(title, ..rows) = {
@@ -124,6 +128,34 @@
   row("Rests take the value in force", "h r q r e r r"),
   row("A tuplet", "{3: e 5/3 7/3 8/3} q 5/3"),
   row("…with an explicit ratio", "{5/4: s 5/3 7/3 8/3 7/3 5/3}"),
+)
+
+#note[
+  Nothing below is written: beams are grouped from the time signature in force.
+  Eighths beam into half-bars, shorter values group by the beat, and the
+  shortest value in a run is what decides for the whole run — so one sixteenth
+  among eighths pulls the run back to the beat. A group ends only where a note
+  falls exactly on a boundary, which is what lets a syncopated figure keep its
+  beam across one.
+]
+
+#syntax-table(
+  "Beam grouping",
+  row("Eighths beam in half-bars", "e 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6", show-time: true),
+  row("Sixteenths group by the beat", "s 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6"),
+  row(
+    "Thirty-seconds too",
+    "t 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6 3/6 5/6 7/6 8/6 7/6 5/6 3/6 2/6",
+  ),
+  row(
+    "Mixed values: the shortest sets the rule",
+    "t 0/6 2/6 3/6 5/6 3/6 2/6 0/6 2/6 s 3/6 5/6 7/6 8/6 e 7/6 5/6",
+  ),
+  row("A lone eighth among sixteenths keeps a stub", "s 5/3 e 7/3 s 8/3 e 5/3 s 7/3 8/3"),
+  row("A syncopation carries its beam across the beat", "s 5/3 7/3 8/3 e 7/3 s 5/3 3/3 5/3"),
+  row("3/4 beams a whole bar of eighths", "[3/4] e 0/6 2/6 3/6 5/6 3/6 2/6", show-time: true),
+  row("7/8 counts 2+2+3", "[7/8] e 0/6 2/6 3/6 5/6 7/6 8/6 10/6", show-time: true),
+  row("6/8 counts in threes", "[6/8] e 0/6 2/6 3/6 5/6 3/6 2/6", show-time: true),
 )
 
 #syntax-table(

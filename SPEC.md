@@ -636,6 +636,23 @@ Looking good is a stated goal, so it is specified as testable requirements.
    Songsterr, which renders tablature alone and therefore had to solve the same
    problem: with no notation staff there is no notehead to hang a value on.
 
+   **A beam group follows the metre, not the beat alone.** Beams are read for
+   how the bar is counted, and a group that ends on every beat says the wrong
+   thing: eight eighths in 4/4 are two groups of four, not four pairs — which is
+   what the published sheets in `research/` set, and what Gould gives as the rule
+   (*Behind Bars* p. 153). Half-bars for eighths in 4/4, a whole bar of them in
+   2/4 and 3/4, and never a beam across the middle of a 4/4 bar, which carries a
+   secondary stress. Shorter values have no such licence and group by the beat,
+   so a single sixteenth among eighths pulls the whole run back to it: the
+   shortest value in a run is what chooses the run's rule.
+
+   A group ends only where an event falls *exactly* on a boundary. A figure that
+   steps over one — an eighth straddling the beat — stays whole, which is what
+   says the syncopation is deliberate rather than an accident of grouping.
+   `layout/metre.typ` holds the rules as a table keyed by metre and note value,
+   which is LilyPond's shape for the same problem and the reason an irregular
+   metre such as 7/8 can be given its 2+2+3 without touching the algorithm.
+
    **A beam is a seventh of a stem thick, and the air between stacked beams is
    the same again.** Measured off the reference's vector art rather than judged
    by eye: 2 units of beam against a 14-unit stem, 2 units between levels. Half
@@ -817,6 +834,7 @@ src/
     errors.typ       located parse errors
   layout/
     spacing.typ      natural width per event and per measure
+    metre.typ        what a time signature says about grouping
     beams.typ        beam grouping from the time signature
     system.typ       line breaking and justification
     lanes.typ        vertical stacking

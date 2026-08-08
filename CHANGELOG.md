@@ -92,6 +92,12 @@
 
 ### Changed
 
+- **Beams group by the metre, not by the beat alone.** Eight eighths in 4/4 are
+  now two beamed groups of four rather than four pairs, which is how a published
+  sheet sets them; 2/4 and 3/4 beam a whole bar of eighths, 7/8 counts 2+2+3, and
+  values shorter than an eighth still group by the beat. The rules are Gould's
+  (*Behind Bars* p. 153), held as a table in the new `layout/metre.typ`. Every
+  document containing a bar of eighths renders differently.
 - **The rhythm lane sits below the staff**, and its values are bars rather than
   noteheads: a beam along the bottom with stems rising from it, beam levels
   stacking upwards. A whole note is not written at all, so a bar of them
