@@ -105,7 +105,7 @@ Suffixes, always after the string number.
 | `7/3T` | tapping |
 | `7/3tr9` `7/3tr` | trill, to the given fret or unspecified |
 | `7/3TP` | tremolo picking |
-| `7/3PS` | pick scrape |
+| `x/3PS1` `x/3PS` | pick scrape — to the fret named, or to the next note on that string |
 | `7/3W` | vibrato with the tremolo bar, printed `w/ bar` |
 | `7/3F` `rF` `xF` | fermata — over a note, a rest or a bare mute |
 | `(…)A` `(…)An` `(…)Au` | arpeggiate, thick string to thin or the reverse |
@@ -324,6 +324,11 @@ E|--------3--------|-----------------|
   They used to reach a tab only through a `T:` row, which put the right word over
   the right column and left the model none the wiser; now the model carries what
   the source said and `ascii-to-dsl` writes it back out.
+- A pick scrape is written the same way and read at the same point, but against
+  an `x`: `xPS`. It has no pitch of its own — which is what both legends say by
+  drawing an X on the string — and a dead note never enters the fret scan, so
+  the mark is read where the `x` itself is read or it could not be written at
+  all.
 
   A source that writes the mark on a line of its own above the staff still needs
   the `T:` row: recognising an unprefixed line of marks and placing it on the

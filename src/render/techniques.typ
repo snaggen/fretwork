@@ -48,10 +48,20 @@
 #let _ARTICULATIONS = ("accent", "marcato", "staccato", "tenuto", "stroke")
 
 /// Marks that print as a word followed by a wavy line running over the event.
-#let _WAVY-LABELS = (trill: "tr", scrape: "P.S.", bar-vibrato: "w/ bar")
+///
+/// A pick scrape is *not* one of them, though it was: its wave belongs on the
+/// string the pick is dragged down, which is where both references draw it and
+/// where `tabstaff.typ` now puts it. Above the staff the word is all there is
+/// to say, exactly as with a harmonic.
+#let _WAVY-LABELS = (trill: "tr", bar-vibrato: "w/ bar")
 
-/// Bass right-hand techniques, which print as a letter over the note.
-#let _BASS-LABELS = (slap: "S", pop: "P", dead-slap: "DS")
+/// Techniques that print as a plain letter over the note they belong to: the
+/// bass right hand, and tapping.
+///
+/// Tapping is a `T` in both references — Hal Leonard's legend and Songsterr's —
+/// and needs nothing beyond the letter, since the note under it says which fret
+/// is struck and the whole point of the mark is that no pick was involved.
+#let _LETTER-LABELS = (slap: "S", pop: "P", dead-slap: "DS", tap: "T")
 
 /// A vibrato squiggle, drawn from its left edge with `y` at its top.
 #let _vibrato-mark(theme, x, y, w, wide) = {
@@ -104,15 +114,15 @@
   }
   if artic.len() > 0 { groups.push(artic) }
 
-  // --- the bass right hand: a letter over the note it strikes ---
-  let bass = ()
+  // --- a letter over the note: the bass right hand, and tapping ---
+  let letters = ()
   for pe in placed {
-    for kind in _BASS-LABELS.keys() {
+    for kind in _LETTER-LABELS.keys() {
       if _event-techniques(pe.event, kind).len() == 0 { continue }
-      let body = _label(theme, _BASS-LABELS.at(kind))
+      let body = _label(theme, _LETTER-LABELS.at(kind))
       let w = measure(body).width
       let x = pe.x - w / 2
-      bass.push((
+      letters.push((
         x0: x,
         x1: x + w,
         height: theme.technique-size * 1.3,
@@ -121,7 +131,7 @@
       break
     }
   }
-  if bass.len() > 0 { groups.push(bass) }
+  if letters.len() > 0 { groups.push(letters) }
 
   // --- vibrato ---
   let vibrato = ()
@@ -171,7 +181,7 @@
   }
   if wavy.len() > 0 { groups.push(wavy) }
 
-  // --- harmonics and free instructions ---
+  // --- harmonics, pick scrapes and free instructions: a word over the note ---
   let texts = ()
   for pe in placed {
     let harmonics = _event-techniques(pe.event, "harmonic")
@@ -179,6 +189,8 @@
       pe.event.text
     } else if harmonics.len() > 0 {
       _HARMONIC-LABELS.at(harmonics.first().style)
+    } else if _event-techniques(pe.event, "scrape").len() > 0 {
+      "P.S."
     } else { none }
     if word == none { continue }
     let body = _label(theme, word)

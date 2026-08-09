@@ -72,7 +72,8 @@ suffix after a closing parenthesis binds to every note of a chord.
 | `7/3>` `7/3^` `7/3!` `7/3-` | accent / marcato / staccato / tenuto |
 | `7/3n` `7/3u` | downstroke / upstroke |
 | `7/3T` `7/3g` | tapping / ghost note |
-| `7/3tr9` `7/3TP` `7/3PS` | trill / tremolo picking / pick scrape |
+| `7/3tr9` `7/3TP` | trill / tremolo picking |
+| `x/3PS1` `x/3PS` | pick scrape — to the fret named, or to the next note on the string |
 | `7/3W` `7/3F` | tremolo-bar vibrato / fermata — `rF` and `xF` too |
 | `(…)An` `(…)Au` `(…)Rn` | arpeggiate or rake, thick string to thin or back |
 | `0/4SL` `3/3PO` `x/3DS` | bass: slap / pop / dead slap |
@@ -167,8 +168,10 @@ ASCII tab can say silence at all.
 Structure written into the rows themselves is read too: `|:` opens a repeat,
 `:|` closes one, `:|:` does both, and `:|x3` says how many times to play it.
 Ultimate Guitar's harmonic marks are read against the fret — `7PH`, `5AH`,
-`12NH`, `9HH`, `7TH` — and a fret in parentheses that repeats the note before it
-on the same string is a tie rather than a ghost note.
+`12NH`, `9HH`, `7TH` — and a pick scrape the same way, but against an `x`, since
+it has no pitch of its own: `xPS1` drags to the first fret, `xPS` to whatever
+plays the string next. A fret in parentheses that repeats the note
+before it on the same string is a tie rather than a ghost note.
 
 When the rhythm is regular one argument replaces the row — `rhythm: even(1/8)`,
 `rhythm: fill`, or `rhythm: "q q e e"`, and `lyrics:` likewise for a source with

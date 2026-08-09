@@ -195,7 +195,13 @@
   row("…the other way", "(2/5 2/4 0/6)Au"),
   row("Rake", "(2/5 2/4 0/6)Rn"),
   row("Tremolo picking", "h 5/3TP 5/3TP"),
-  row("Pick scrape", "5/3PS 5/3PS"),
+  // The scrape has no pitch of its own, so it starts on an `x`. Named a fret it
+  // is a link, like a slide: the number shares the note's value instead of being
+  // struck, and the wave spans the whole of it — so the same mark over a longer
+  // note is a longer drag.
+  row("Pick scrape, to the fret it stops at", "q x/3PS1 5/3 5/3 5/3"),
+  row("…the same over a longer note", "h. x/3PS12 q 5/3"),
+  row("…or to the next note on the string", "q x/3PS 5/3 5/3 5/3"),
   row("Natural harmonic", "12/3* 12/4*"),
   row("Pinch, artificial harmonic", "5/3PH 5/3AH"),
   row("Harp, tap harmonic", "5/3HH 5/3TH"),
@@ -343,14 +349,17 @@ E|--------3--------|-----------------|
   ninth. A bend must rise, so `5b3` is reported and the note kept. The harmonic marks are read in capitals, which collide with
   nothing since every other letter is lower case, and none of them names a
   target fret: `7PH5` is the harmonic and then the fifth. A source that writes
-  them on a line of its own above the staff uses a `T:` row instead.
+  them on a line of its own above the staff uses a `T:` row instead. A pick
+  scrape is written the same way but against an `x`, having no pitch of its own —
+  and it *does* read the digits against it, `xPS1`, since those name the fret the
+  pick stops at rather than a second attack.
 ]
 
 #paste(```
 e|--------------------------------------|
 B|--------------------------------------|
 G|--5h7p5--5s7--7fb--7b9r7--7PH--9-s-12\|
-D|--------------------------------------|
+D|--xPS------5--------------------------|
 A|----------------------------------x---|
 E|----------(12)---<12>-----------------|
 ```)

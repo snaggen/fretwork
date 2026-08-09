@@ -338,7 +338,15 @@
 }
 
 /// The kinds of technique that join one note to another.
-#let LINK-KINDS = ("hammer", "pull", "slide")
+/// Techniques that run from one note to another on the same string.
+///
+/// A pick scrape is one of them. It is dragged *to* somewhere — the fret the
+/// pick stops at — and that destination is not a second attack: it is where the
+/// gesture ends, exactly as a slide's target is. Being a link gives it both
+/// forms for nothing: written with a target fret the number is set beside the
+/// `x` and shares its value, and written without one the scrape runs to the next
+/// note on the string and carries across a system break like any other link.
+#let LINK-KINDS = ("hammer", "pull", "slide", "scrape")
 
 /// The slide a note is carried *off* by, or `none`.
 ///

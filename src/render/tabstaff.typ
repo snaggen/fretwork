@@ -453,6 +453,41 @@
   ))
 }
 
+/// The wavy line a pick scrape leaves along the string it is dragged down.
+///
+/// Drawn *in* the staff, on the string's own line, because that is where both
+/// references put the gesture: Hal Leonard's legend writes `P.S.` above the
+/// staff and an `X` on the string, and Songsterr runs a wave from that `X` to
+/// the note the scrape lands on. The wave alone used to be set above the staff,
+/// beside the words, which said the scrape happened somewhere near the music
+/// rather than on one string of it.
+///
+/// Measured off `research/pickscrape.svg`: the wave spans the gap between the
+/// two numbers, starting about a third of a string above the line and ending as
+/// far below it.
+///
+/// That tilt is structural, not decoration. The string line runs unbroken under
+/// the wave, and a wave laid flat along it comes out as one thick dashed rule
+/// with the string lost inside — drawn that way first, and unreadable. Tilting
+/// it lets the two cross once, in the middle, and the wave reads as a wave for
+/// the whole of its length. It says nothing about which way the pick was
+/// dragged: the legend has that "down (or up)", and the model carries no
+/// direction to draw from.
+#let _SCRAPE-DROP = 0.67 // how far the wave falls over its length, in staff spaces
+
+#let _scrape-line(theme, x0, x1, y) = {
+  let sp = theme.staff-space
+  let span = calc.max(0.8 * sp, x1 - x0)
+  let drop = _SCRAPE-DROP * sp
+  let wave = g.wavy(sp, span, fill: theme.color)
+  place(
+    top + left,
+    dx: x0,
+    dy: y - drop / 2 - wave.height / 2,
+    rotate(calc.atan2(span / 1pt, drop / 1pt), origin: left + horizon, wave.body),
+  )
+}
+
 /// The interval a bend is written with: `full`, `1/2`, `1/4`.
 #let bend-label(theme, amount) = {
   let size = if r.eq(amount, r.rat(1)) {
@@ -815,7 +850,16 @@
       for target in link-targets(n) {
         let tbody = label(target.fret)
         let tsize = measure(tbody)
-        let tx = cursor + _link-gap(theme) + tsize.width / 2
+        // A hammer-on or a slide reaches its target at once, so the number sits
+        // a link's gap away. A pick scrape reaches its at the *end* of the drag,
+        // and the drag lasts the note's whole value — so the number goes to the
+        // far side of the event's own slot and the wave spans everything
+        // between. A slot too narrow for that falls back to the link gap, which
+        // is what keeps a scrape written on a short note from running backwards.
+        let near = cursor + _link-gap(theme) + tsize.width / 2
+        let tx = if target.kind == "scrape" {
+          calc.max(near, pe.left + pe.alloc - theme.min-event-gap - tsize.width / 2)
+        } else { near }
         labels.push((x: tx, string: n.string, w: tsize.width, h: tsize.height, body: tbody))
         connectors.push((
           kind: target.kind,
@@ -825,7 +869,12 @@
           edge: (cursor, tx - tsize.width / 2),
           side: stacked,
           y: y,
-          rising: target.fret > from-fret,
+          // A pick scrape starts on a dead string, which has no fret to compare
+          // against — and needs none, since its wave is drawn level whichever
+          // way the pick travelled.
+          rising: (
+            type(target.fret) == int and type(from-fret) == int and target.fret > from-fret
+          ),
         ))
         cursor = tx + tsize.width / 2
         from-x = tx
@@ -1190,6 +1239,8 @@
           // them attaches wherever the event's shape allows.
           _slide-line(theme, c.edge.at(0), c.edge.at(1), c.y, c.rising)
           if c.legato { _slur(theme, c.from, c.to, c.y, side: c.side) }
+        } else if c.kind == "scrape" {
+          _scrape-line(theme, c.edge.at(0), c.edge.at(1), c.y)
         } else if c.kind == "tie" {
           _tie(theme, c.from, c.to, c.y, side: c.side)
         } else {

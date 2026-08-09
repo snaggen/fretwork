@@ -15,6 +15,10 @@
   `7/3b~` was already legal.
 - Theme values `lyric-size` and `lyric-gap`. `lyric-font` was reserved in 0.1.0
   and is now used.
+- ASCII import reads a **pick scrape**, written the way it writes the harmonic
+  marks but against an `x`, the scrape having no pitch of its own: `xPS1` drags
+  to the first fret, `xPS` to whatever plays the string next. A dead note never
+  entered the technique chain, so the mark is read where the `x` itself is read.
 - ASCII import reads two dialect spellings it did not before: `<12>` for a
   natural harmonic, as Power Tab and Guitar Pro export it, and `W H Q E S` in an
   `R:` row, which is how those exports write their own duration line — so a tab
@@ -123,6 +127,26 @@
 
 ### Fixed
 
+- **A pick scrape was drawn beside the music rather than on it.** The wave sat
+  above the staff next to the words, so the mark said a scrape happened
+  somewhere hereabouts and named no string. Both references put it on the
+  string: Hal Leonard's legend writes `P.S.` above and an `X` on the string, and
+  Songsterr runs the wave from that `X` to the note the scrape lands on. It is
+  now drawn in the staff. A scrape is a *link*, in the sense the model already
+  had for slides: named a fret it drags to that fret, whose number shares the
+  note's value rather than being struck, and the wave spans the note's whole
+  length — so the same mark over a half note is twice the drag it is over a
+  quarter. Named none it runs to the next note on the string, and carries across
+  a system break as any other link does. The wave tilts across
+  the string line rather than lying along it — flat, the two merge into one thick
+  dashed rule and the string disappears inside it.
+- **Tapping was never drawn.** `5/3T` and the ASCII importer's inline `t` both
+  reached the model, and four places in the documentation promised the mark, but
+  the technique lane had no branch for it — a tapped note printed exactly like an
+  untapped one. It is now a `T` over the note, by the same mechanism as the bass
+  right hand's letters. The visual fixture already contained a `7/3T`, which is
+  how this stayed hidden: a reference pinned around the empty space where a mark
+  should be says nothing about the mark.
 - Two tuplets written one after the other drew a single bracket across both.
   Runs now part at a beat boundary, as beam groups do.
 - A densely noted string row — two-digit frets with single dashes between them —

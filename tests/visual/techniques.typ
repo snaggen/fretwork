@@ -68,3 +68,25 @@ q (2/5 2/4 0/6)A (2/5 2/4 0/6)Au 3/6 5/6
 #tab(theme: vt, tuning: tunings.bass, ```
 q 0/4SL 3/3PO 0/4SL x/3DS | e 0/4SL 3/3PO 0/4SL 3/3PO q 5/2PO 0/4SL
 ```)
+
+// A pick scrape is `P.S.` above the staff and a wave along the string itself.
+// `x` is what the legend writes at the start, the scrape having no pitch of its
+// own. The wave used to be set above the staff beside the words, which said the
+// scrape happened somewhere near the music rather than on one string of it.
+//
+// Named a target fret it is a *link*, like a slide: the number shares the note's
+// value rather than being struck, and the wave spans the whole of it — so the
+// same mark drawn over a half note is twice the drag it is over a quarter.
+#tab(theme: vt, ```
+q x/2PS1 x/2PS12 h x/2PS1 | q x/6PS3 5/6 x/3PS r
+```)
+
+// Tapping is a `T` over the note, drawn by the same mechanism as the bass
+// letters above — which is why that group is no longer named for the bass. It
+// went undrawn for a long time with `7/3T` already sitting in the first bar of
+// this fixture: the letter was simply absent, and a reference pinned around the
+// empty space where a mark should be says nothing about the mark. A row of its
+// own is what makes it visible enough to notice going missing again.
+#tab(theme: vt, ```
+q 7/3T 12/3T 7/3 12/3T | e 5/3T 7/3T 12/3T 5/3T q 7/3T 12/3
+```)

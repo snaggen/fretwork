@@ -191,23 +191,48 @@
   m.technique("slide", fret: none, legato: true, out: if mark == "/" { "up" } else { "down" })
 }
 
-/// Ultimate Guitar's own harmonic marks, written against the fret: `7PH`.
+/// Marks written against the fret in two capitals, as Ultimate Guitar writes
+/// its harmonics: `7PH`.
 ///
 /// Read in capitals only, which collides with nothing: every technique letter
 /// inside a row is lower case. Sources also write these on a line of their own
 /// above the staff, which reaches the page as a `T:` row instead.
-#let _HARMONICS = (
-  NH: "natural",
-  PH: "pinch",
-  AH: "artificial",
-  HH: "harp",
-  TH: "tap",
+///
+/// A pick scrape is written the same way and read at the same point. It is the
+/// one of these with no pitch of its own — both legends draw an X on the string
+/// — so it is written against an `x` rather than a number: `xPS`.
+#let _CAPITAL-MARKS = (
+  NH: m.technique("harmonic", style: "natural"),
+  PH: m.technique("harmonic", style: "pinch"),
+  AH: m.technique("harmonic", style: "artificial"),
+  HH: m.technique("harmonic", style: "harp"),
+  TH: m.technique("harmonic", style: "tap"),
+  PS: m.technique("scrape", fret: none),
 )
 
-/// The harmonic mark written at `i`, or `none`.
-#let _harmonic-at(chars, i) = {
+/// Marks that read a target fret written against them, as `xPS1` does.
+///
+/// A harmonic takes none, so `7PH5` is the harmonic and then the fifth. A pick
+/// scrape does: the fret is where the pick stops, and it is no more a second
+/// attack than a slide's target is — which is why the digits belong to the mark
+/// here and to the next note there.
+#let _CAPITAL-TAKES-FRET = ("PS",)
+
+/// The two-capital mark written at `i`, with the target fret it may carry.
+///
+/// Returns `(technique, next)` or `none`.
+#let _capital-mark-at(chars, i) = {
   if i + 1 >= chars.len() { return none }
-  _HARMONICS.at(chars.at(i) + chars.at(i + 1), default: none)
+  let name = chars.at(i) + chars.at(i + 1)
+  let mark = _CAPITAL-MARKS.at(name, default: none)
+  if mark == none { return none }
+  let next = i + 2
+  if name not in _CAPITAL-TAKES-FRET { return (technique: mark, next: next) }
+  if next >= chars.len() or chars.at(next) not in _DIGITS {
+    return (technique: mark, next: next)
+  }
+  let (fret, after) = _read-fret(chars, next)
+  (technique: mark + (fret: fret), next: after)
 }
 
 /// Read the `x3` that may follow a repeat's closing stroke, as `(count, next)`.
@@ -270,10 +295,22 @@
     }
 
     if c in ("x", "X") {
-      items.push((col: i, kind: "note", fret: m.MUTED, techniques: ()))
+      let col = i
+      i += 1
+      // A dead note has no fret for a suffix to hang off, and it never enters
+      // the technique chain below, which belongs to the fret scan. It can still
+      // carry a mark of its own: a pick scrape is written against an `x`
+      // *because* it has no pitch, so `xPS` is the one spelling both legends
+      // show for it, and reading it anywhere else would mean reading it nowhere.
+      let techniques = ()
+      let mark = _capital-mark-at(chars, i)
+      if mark != none {
+        techniques.push(mark.technique)
+        i = mark.next
+      }
+      items.push((col: col, kind: "note", fret: m.MUTED, techniques: techniques))
       last = items.len() - 1
       pending = ()
-      i += 1
       continue
     }
 
@@ -332,12 +369,12 @@
       // from the hammered 7 up to 9, one step, not from the struck 5.
       let reached = fret
       while i < chars.len() {
-        // A harmonic names itself in two capitals and takes no target, so it is
-        // read before the letter chain rather than inside it.
-        let harmonic = _harmonic-at(chars, i)
-        if harmonic != none {
-          techniques.push(m.technique("harmonic", style: harmonic))
-          i += 2
+        // A harmonic or a pick scrape names itself in two capitals and takes no
+        // target, so it is read before the letter chain rather than inside it.
+        let capital = _capital-mark-at(chars, i)
+        if capital != none {
+          techniques.push(capital.technique)
+          i = capital.next
           continue
         }
         if chars.at(i) not in _TECHNIQUE-CHARS { break }

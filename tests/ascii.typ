@@ -276,6 +276,36 @@
   "…and each writes back out as the mark the native syntax uses",
 )
 
+// A pick scrape is written the same way and read at the same point, but against
+// an `x`: it has no pitch of its own, which is what both legends say by drawing
+// an X on the string. A dead note never enters the fret scan, so the mark had to
+// be read where the `x` itself is read or it could not be written at all.
+#eq(tech("--xPS---").first().kind, "scrape", "PS against an x is a pick scrape")
+#eq(events-of(block("--xPS---")).first().notes.first().fret, m.MUTED, "…on a dead note")
+#eq(tech("--x-----"), (), "a plain dead note carries nothing")
+
+// Unlike a harmonic, a scrape *does* read the digits against it: they are the
+// fret the pick stops at, and that is where the gesture ends rather than a
+// second attack. A slide's target is written the same way for the same reason.
+#eq(tech("--xPS5--").first().fret, 5, "digits against the mark are the fret it runs to")
+#eq(
+  events-of(block("--xPS5--")).len(),
+  1,
+  "…so the target is part of the scrape, not an event with a value of its own",
+)
+#eq(tech("--xPS12-").first().fret, 12, "a two-digit target reads whole")
+#eq(tech("--xPS---").first().at("fret", default: none), none, "and it may name none")
+#eq(
+  write(part-of("R:  h\n" + block("--xPS1--"))),
+  "h x/1PS1 |",
+  "…each writing back out as the native syntax spells it",
+)
+#eq(
+  write(part-of("R:  q   q\n" + block("--xPS--5--"))),
+  "q x/1PS 5/1 |",
+  "a targetless scrape still leaves the note after it alone",
+)
+
 // --- noise around the music -----------------------------------------------
 // Real tabs are full of headings and comments; they must be skipped, not
 // mistaken for music.

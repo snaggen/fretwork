@@ -91,7 +91,7 @@
 // Written without one — `5/3s` — it runs to the next event that plays the
 // string, which is how a link between two independently timed notes is said, and
 // how one that crosses a barline has to be said.
-#let _OPTIONAL-FRET = ("trill", "hammer", "pull", "slide-legato", "slide-shift")
+#let _OPTIONAL-FRET = ("trill", "hammer", "pull", "slide-legato", "slide-shift", "scrape")
 
 // The dynamics that may be written, loudest last. A closed set on purpose: a
 // typo in a dynamic is silent otherwise, and there is nothing else `!ff` could
@@ -194,6 +194,10 @@
     m.technique("slide", fret: none, legato: true, out: kind.slice("slide-out-".len()))
   } else if kind.starts-with("harmonic-") {
     m.technique("harmonic", style: kind.slice("harmonic-".len()))
+  } else if kind == "scrape" {
+    // The fret the pick stops at, or `none` for a scrape that runs to whatever
+    // plays the string next — the same two forms a slide has.
+    m.technique("scrape", fret: arg)
   } else if kind == "trill" {
     m.technique("trill", fret: arg)
   } else if kind == "stroke-down" {
@@ -804,7 +808,7 @@
   } else if t.kind == "trill" {
     "tr" + (if t.at("fret", default: none) == none { "" } else { str(t.fret) })
   } else if t.kind == "tremolo" { "TP" } else if t.kind == "scrape" {
-    "PS"
+    "PS" + (if t.at("fret", default: none) == none { "" } else { str(t.fret) })
   } else if t.kind in ("arpeggiate", "rake") {
     // The direction is always written out, even when it is the default: the
     // writer's job is to produce source that reads back identically, not the
