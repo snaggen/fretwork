@@ -67,8 +67,22 @@ mkdir -p "$dest"
 # almost impossible for a user to reach, and only inflate the repository.
 cp "$root/typst.toml" "$root/README.md" "$root/LICENSE" "$dest/"
 cp -r "$root/src" "$dest/"
+
+# Only the images the README actually shows. Copying docs/*.png instead once put
+# the guide's twenty-six page renderings — three and a half megabytes of them —
+# into a submission where nothing linked to any of them: GUIDE.md is not shipped,
+# because Universe renders only the README and the guide is read on GitHub, where
+# the README links it at the tag. Reading the list out of the README rather than
+# writing it down keeps the two from drifting apart when a figure is added.
 mkdir -p "$dest/docs"
-cp "$root"/docs/*.png "$dest/docs/"
+mapfile -t figures < <(grep -o 'docs/[A-Za-z0-9._-]*\.png' "$root/README.md" | sort -u)
+if [ "${#figures[@]}" -eq 0 ]; then
+  echo "  refusing: found no docs/*.png references in README.md"
+  exit 1
+fi
+for figure in "${figures[@]}"; do
+  cp "$root/$figure" "$dest/docs/"
+done
 
 git add "$dest"
 git commit -q -m "$name:$version"
