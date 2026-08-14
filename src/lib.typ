@@ -1,6 +1,6 @@
 // Public API of the `fretwork` package.
 //
-//   #import "@local/fretwork:0.2.0": *
+//   #import "@local/fretwork:0.3.0": *
 //
 //   #show: song.with(title: "Twelve Past Nine", tempo: 132)
 //   #section("Main Riff")
@@ -68,6 +68,55 @@
   )
 }
 
+/// A moment as a rational, however it was written.
+///
+/// `(1, 2)` and `3` are both accepted beside a rational, because a caller
+/// generating these by the hundred should not have to reach for the rational
+/// constructor to say "half a whole note in".
+#let _moment(position) = {
+  if type(position) == array { rational.rat(position.at(0), den: position.at(1)) } else if (
+    type(position) == int
+  ) { rational.rat(position) } else { position }
+}
+
+/// One syllable of a verse written for **another part**, sung at a stated
+/// moment: `measure` counting from zero, `position` whole notes into it.
+///
+/// Words made for the music being set need none of this — they are given as a
+/// string and spent over the notes in order. This is for the other case: a
+/// singer's words under a guitar's staff, where the two parts share bars but not
+/// notes, so each syllable has to say when it falls and is then hung on whatever
+/// is sounding then — a note, or a rest the voice sings through.
+///
+/// ```typc
+/// tab(lyrics: (lyric-at(0, (1, 2), "one"), lyric-at(1, 0, "two")), ```q 0/6 0/6 | 0/6```)
+/// ```
+#let lyric-at(measure, position, text) = lyric-source.at(measure, _moment(position), text)
+
+/// Put verses on the music, each in the form it was given.
+///
+/// A verse is either a run of syllables, spent in order over the events that are
+/// sung — which is what words written for *this* music want — or a set of
+/// moments, which is how words written for another part say where they go. The
+/// two may be mixed: one voice's own verse and a borrowed one are both verses,
+/// and each keeps its own lane whichever way it was placed.
+///
+/// The lane a verse lands in is its position in the argument, so a verse given
+/// as moments is stood in for by an empty one while the others are spent. That
+/// is what keeps verse two from being read as verse one.
+#let _sing(part, verses) = {
+  let sources = if type(verses) == str { (verses,) } else { verses }
+  let spent = lyric-source.apply(
+    part,
+    sources.map(v => if lyric-source.is-timed(v) { "" } else { v }),
+  )
+  let hung = lyric-source.apply-timed(
+    spent.part,
+    sources.map(v => if lyric-source.is-timed(v) { v } else { () }),
+  )
+  (part: hung.part, warnings: spent.warnings + hung.warnings)
+}
+
 /// Typeset a passage of tablature.
 ///
 /// `source` is either DSL source — a raw block or a string — or an already
@@ -80,8 +129,13 @@
 ///
 /// `lyrics` is one string per verse, spent syllable by syllable over the notes
 /// that are sung — rests, grace notes and the far ends of ties are skipped. A
-/// trailing `-` hyphenates into the next syllable; `_` spends a note without
-/// printing anything, which is how a word held over several notes is written.
+/// trailing `-` hyphenates into the next syllable; `_` is a note the word before
+/// it is held over. A verse may instead be given as timed syllables — see
+/// `lyric-at` — which is how words written for another part say where they go.
+///
+/// `verse-labels` replaces the automatic numbering, one label per verse. `""`
+/// leaves a row unlabelled, so two rows can share the number over the first —
+/// which is how one stanza spanning two times round a repeat is set.
 ///
 /// ```typc
 /// tab(```
@@ -99,6 +153,7 @@
   count-in: false,
   show-time: true,
   lyrics: none,
+  verse-labels: none,
   theme: default-theme,
   warn: true,
 ) = {
@@ -116,7 +171,7 @@
 
   let problems = ()
   if lyrics != none {
-    let sung = lyric-source.apply(part, lyrics)
+    let sung = _sing(part, lyrics)
     part = sung.part
     problems += sung.warnings
   }
@@ -136,7 +191,17 @@
       size.width,
       thm.tab-mark-width,
       show-time: show-time,
+      floating-widths: part.measures.map(m => lyric-lane.floating-widths(thm, m)),
     )
+
+    // The system each verse begins on, which is the one that carries its number.
+    let verse-starts = range(verses).map(v => {
+      let first = none
+      for (i, sys) in systems.enumerate() {
+        if first == none and lyric-lane.sings(sys, v) { first = i }
+      }
+      first
+    })
 
     for (i, sys) in systems.enumerate() {
       // Every lane is drawn to the system's own width, not to the full line: an
@@ -176,7 +241,14 @@
         rhythm.lane-for(thm, sys, w),
         dynamics.lane-for(thm, sys, w),
         rhythm.count-lane-for(thm, sys, w, enabled: count-in and i == 0),
-        ..range(verses).map(v => lyric-lane.lane-for(thm, sys, w, v)),
+        ..range(verses).map(v => lyric-lane.lane-for(
+          thm,
+          sys,
+          w,
+          v,
+          numbered: (verses > 1 or verse-labels != none) and verse-starts.at(v) == i,
+          tag: if verse-labels == none { none } else { verse-labels.at(v, default: "") },
+        )),
       )
       // A system must never be split by a page break.
       block(breakable: false, stack-lanes(lanes, w, thm.lane-gap))
@@ -258,7 +330,7 @@
   if lyrics != none and lyric-source.has-lyrics(part) {
     problems.push("lyrics: the L: rows already carry syllables, so the argument was ignored")
   } else if lyrics != none {
-    let sung = lyric-source.apply(model.mark-tie-targets(part), lyrics)
+    let sung = _sing(model.mark-tie-targets(part), lyrics)
     part = sung.part
     problems += sung.warnings
   }

@@ -28,6 +28,11 @@
   // "plain" is the bare thick-thin-and-dots repeat sign. "ornate" adds the
   // flared serifs of an engraved one, as published rock tab uses.
   repeat-style: "plain",
+  // Draw a rule after a word held over several notes, running to the last of
+  // them. Vocal scores use one; the published *tab* sheets this package is set
+  // to look like do not, writing the word once and leaving the held notes bare.
+  // So it is off by default, and worth turning on for a sung line.
+  lyric-extender: false,
 ) = {
   let sp = staff-space
   assert(mask in ("gap", "box"), message: "theme: mask must be \"gap\" or \"box\"")
@@ -44,6 +49,7 @@
     faint: faint,
     mask: mask,
     repeat-style: repeat-style,
+    lyric-extender: lyric-extender,
 
     // --- rules ---
     // String lines are hairlines; barlines must read as heavier than them.

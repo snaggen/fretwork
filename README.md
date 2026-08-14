@@ -24,7 +24,7 @@ That whole sheet is one `song` show rule and four `tab` calls.
 ## Quick start
 
 ```typst
-#import "@preview/fretwork:0.2.0": *
+#import "@preview/fretwork:0.3.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",
@@ -124,8 +124,45 @@ anything, which is how a word held over several notes is written — published
 sheets write it once and draw no line after it.
 
 Several verses are `lyrics: ("verse one …", "verse two …")`, one lane each at the
-foot of the system. Syllables left over after the last note are reported on the page,
-because miscounting a verse against the music is the mistake this makes easy.
+foot of the system, numbered where more than one is sung. Syllables left over
+after the last note are reported on the page, because miscounting a verse against
+the music is the mistake this makes easy.
+
+That numbering is what makes a repeated passage singable: the music is written
+once and carries the repeat sign, while the words are written out in full, a
+numbered row per time round. Wrapping the words in the repeat too is what an
+engraver does *not* do — there would be no way to say which set is sung when.
+
+### Words written for another part
+
+A verse spent over the notes is one written for *this* music. A singer's words
+set under a guitar's staff are not: the two share bars but not notes, and
+counting through the guitar's would start the first word before anyone sings.
+Such a verse gives the moment of each syllable instead:
+
+```typst
+#tab(lyrics: ((lyric-at(0, (1, 2), "half-"), lyric-at(1, 0, "way")),), ```
+q 0/6 0/6 0/6 0/6 | w r
+```)
+```
+
+`measure` counts from zero and `position` is whole notes into it, written as a
+fraction, a whole number or a rational. Each syllable is hung on whatever is
+sounding then — including a **rest**, which is the point of it: a bar the guitar
+rests through is a bar the voice sings on, and a phrase across a whole rest
+cannot be spent note by note when the whole bar is one event. A syllable falling
+where the part has no event near enough is set at its own place in the bar.
+
+Both forms may be mixed, one verse each, and every verse keeps the lane its
+position in the argument gives it.
+
+`verse-labels: ("1.", "", "2.")` replaces the automatic numbering with your own.
+An empty label leaves a row unlabelled, so two rows can share the number over the
+first — which is how one stanza spanning two times round a repeat is set.
+
+A word held over several notes is written `word _ _`, and the held notes are left
+bare, as the tab sheets leave them. `theme(lyric-extender: true)` rules them out
+to the last held note instead, which is what a vocal score does.
 
 ## Importing ASCII tab
 
@@ -253,7 +290,7 @@ vectors, not glyphs.
 
 ## The whole syntax
 
-[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/GUIDE.md) is a
+[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.3.0/GUIDE.md) is a
 table of every construct the package understands, with what each one draws set
 beside it — rendered from the same string, so a row cannot be out of date.
 
@@ -262,14 +299,14 @@ beside it — rendered from the same string, so a row cannot be out of date.
 Version 0.2 is tablature and lyrics: no notation staff and no chord diagrams.
 The model and layout engine were built so a notation staff can be added as one
 more lane without rewriting them —
-[`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/SPEC.md) says how,
+[`SPEC.md`](https://github.com/snaggen/fretwork/blob/v0.3.0/SPEC.md) says how,
 and gives the reasoning behind the design.
-[`CHANGELOG.md`](https://github.com/snaggen/fretwork/blob/v0.2.0/CHANGELOG.md)
+[`CHANGELOG.md`](https://github.com/snaggen/fretwork/blob/v0.3.0/CHANGELOG.md)
 lists what each release changed.
 
 ## Examples
 
-The [repository](https://github.com/snaggen/fretwork/tree/v0.2.0/examples)
+The [repository](https://github.com/snaggen/fretwork/tree/v0.3.0/examples)
 carries five example documents. They are not part of the published bundle, so
 clone it to compile them:
 
@@ -291,5 +328,5 @@ say otherwise.
 ## Licence
 
 EUPL-1.2 — see
-[`LICENSE`](https://github.com/snaggen/fretwork/blob/v0.2.0/LICENSE).
+[`LICENSE`](https://github.com/snaggen/fretwork/blob/v0.3.0/LICENSE).
 Copyright © 2026 Mattias Eriksson.

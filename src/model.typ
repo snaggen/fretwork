@@ -121,6 +121,13 @@
 /// tucked against this one, which is where a published sheet puts it.
 #let syllable(text, hyphen: false) = (kind: "syllable", text: text, hyphen: hyphen)
 
+/// A note that a word already begun is held over.
+///
+/// Distinct from "this verse sings nothing here", which is `none`. The two look
+/// alike on the page — neither prints a word — but only one of them is a word
+/// still sounding, and only over that one can an extender rule be drawn.
+#let hold = (kind: "hold")
+
 /// One rhythmic position: a note, a chord, or a rest.
 ///
 /// `duration` is a rational in whole notes, or `none` when unknown — an ASCII

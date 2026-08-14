@@ -21,7 +21,7 @@
   words: "Mattias Eriksson",
   music: "Mattias Eriksson",
   arranged: "Mattias Eriksson",
-  source: "Package demo · v0.2.0",
+  source: "Package demo · v0.3.0",
   copyright: "Typeset with fretwork · EUPL-1.2",
   tempo: 120,
   tempo-words: "Moderately",

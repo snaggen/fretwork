@@ -5,7 +5,7 @@
 //
 // It reads the working tree, so an edit to src/ shows up on the next compile.
 // To check the *installed* package instead, change the import to
-// `@local/fretwork:0.2.0` and drop `--root .`.
+// `@local/fretwork:0.3.0` and drop `--root .`.
 
 #import "/src/lib.typ": *
 

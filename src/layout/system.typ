@@ -5,6 +5,7 @@
 // fret number belonging to the same event must line up vertically, and a
 // notation staff added later lines up for free by consuming the same positions.
 
+#import "../rational.typ" as r
 #import "../tuning.typ": string-count
 #import "spacing.typ": barline-allowance, measure-natural, measure-total, meter-allowance
 
@@ -155,6 +156,48 @@
     })
 }
 
+/// Widen a measure until the syllables sung across it stop colliding.
+///
+/// [`_widen-for-lyrics`] handles the ones hung on events: each buys its room with
+/// the event it sits on. A syllable placed by its own moment buys none — the bar
+/// is spaced for what it *plays*, and a bar the part rests through is one whole
+/// rest wide however much is sung over it. A bridge of five such bars with six
+/// words falling across two of them came out with the words on top of each other.
+///
+/// The width follows from the moments themselves: two syllables an eighth of a
+/// bar apart need the bar to be eight times the room the two of them take. The
+/// widest such demand wins, and only within one verse — two verses are two lanes
+/// and cannot collide however close they fall.
+///
+/// The shortfall is spread across the measure's events in proportion, so a bar
+/// widened for its words still spaces its music evenly.
+#let _widen-for-floating(theme, times, naturals, floating-widths) = {
+  naturals
+    .enumerate()
+    .map(((mi, n)) => {
+      let here = floating-widths.at(mi, default: ())
+      let sig = times.at(mi)
+      let bar = sig.at(0) / sig.at(1)
+      if here.len() < 2 or bar <= 0 { return n }
+
+      let wanted = 0pt
+      for verse in here.map(s => s.verse).dedup() {
+        let lane = here.filter(s => s.verse == verse).sorted(key: s => r.to-float(s.position))
+        for k in range(1, lane.len()) {
+          let (a, b) = (lane.at(k - 1), lane.at(k))
+          let apart = (r.to-float(b.position) - r.to-float(a.position)) / bar
+          if apart <= 0 { continue }
+          wanted = calc.max(wanted, ((a.width + b.width) / 2 + theme.lyric-gap) / apart)
+        }
+      }
+
+      let have = n.events.fold(0pt, (a, b) => a + b)
+      if wanted <= have or have <= 0pt { return n }
+      let widths = n.events.map(w => w * (wanted / have))
+      (events: widths, total: measure-total(theme, widths))
+    })
+}
+
 /// Break a part into placed systems.
 ///
 /// `glyph-widths` is a per-measure array of per-event widths, measured by the
@@ -163,7 +206,15 @@
 /// set as its own `tab` block gets one; a later block of the same piece, or a
 /// later section of one imported tab, passes `false` so the reader is not told
 /// twice.
-#let layout-part(theme, part, glyph-widths, available, indent, show-time: true) = {
+#let layout-part(
+  theme,
+  part,
+  glyph-widths,
+  available,
+  indent,
+  show-time: true,
+  floating-widths: (),
+) = {
   // The signature in force at each measure, carried forward in one pass —
   // calling `time-signature-at` per measure rescans the part each time, which
   // is quadratic over the piece.
@@ -174,14 +225,19 @@
     times.push(sig)
   }
   let strings = string-count(part.tuning)
-  let naturals = _widen-for-lyrics(
+  let naturals = _widen-for-floating(
     theme,
-    part.measures,
-    part
-      .measures
-      .enumerate()
-      .map(((i, m)) => measure-natural(theme, m, glyph-widths.at(i, default: ()))),
-    glyph-widths,
+    times,
+    _widen-for-lyrics(
+      theme,
+      part.measures,
+      part
+        .measures
+        .enumerate()
+        .map(((i, m)) => measure-natural(theme, m, glyph-widths.at(i, default: ()))),
+      glyph-widths,
+    ),
+    floating-widths,
   )
   // Furniture: fixed graphic that never stretches with justification.
   let furniture(i) = (

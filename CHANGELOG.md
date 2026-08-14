@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.3.0 — 2026-08-14
+
+### Added
+
+- **Words written for another part.** A verse may now be given as timed
+  syllables — `lyric-at(measure, position, text)` — instead of a run spent over
+  the notes. That is what lets a singer's line be printed under a guitar's staff,
+  where the two share bars but not notes: counting through the guitar's notes
+  would start the first word bars before anyone sings, while a moment means the
+  same thing in both parts. Both forms may be mixed, one verse each, and every
+  verse keeps the lane its position in the argument gives it.
+
+  A bar is settled one way or the other, never both: where every syllable finds
+  an event of its own it is hung on that event, and where any cannot — a bar the
+  part rests through is a *single* whole rest, and a phrase sung across it is not
+  — all of them are placed by their moments instead. Mixing the two put syllables
+  in one bar on two different timelines, and they collided.
+
+  A moment is read against the **notes**, not against the bar's width: events are
+  spaced optically, so a fraction of the width lands nowhere near the note
+  sounding then. And a bar is **widened for what is sung across it** — until now
+  it was spaced only for what it plays, so a phrase over a resting bar was set in
+  the room one whole rest had bought.
+- **Verse numbers.** Where more than one verse is sung, each lane carries its
+  number just before its first syllable, on the system where it begins. That is
+  what tells one stanza's row from another's under a repeated passage, whose
+  music is written once while its words are written out a row per time round.
+  `verse-labels:` replaces the numbering with the caller's own, one per verse;
+  `""` leaves a row unlabelled so two rows can share the number over the first,
+  which is how one stanza spanning two times round is set. The number is set
+  against the first syllable's *edge*: a syllable is centred on its moment, so
+  half of it lies left of the x it is placed at, and a number set against that x
+  lands on top of the word instead of before it.
+- **Extender rules for melisma**, behind `lyric-extender` on the theme. A word
+  held over several notes is ruled out to the last of them, as a vocal score
+  does. Off by default: the published tab sheets write the word once and leave
+  the held notes bare, which is what this package is set to look like. `_` in a
+  verse is now a *held* note rather than nothing at all, which is what makes the
+  two tellable apart — an unsung note is still `none`.
+
+### Fixed
+
+- **A word the system break cuts in two keeps its hyphen**, set at the end of the
+  line. Only the second half showed the break before, and the first half read as
+  a word that ended there.
+
 ## 0.2.0 — 2026-08-10
 
 ### Added
