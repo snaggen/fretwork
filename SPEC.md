@@ -221,8 +221,10 @@ tab: measure 3, token 7: unknown duration 'w2'
 ```
 
 `validate` separately reports bars whose length disagrees with the time
-signature. It is advisory, not fatal: a pick-up bar is exempt, and unknown
-durations are reported as unchecked rather than wrong. `tab` and `ascii-tab`
+signature. It is advisory, not fatal: a pick-up bar is exempt, so is a *short*
+bar closing a passage of more than one bar — it pairs with the pick-up, and a
+passage set on its own stops where it stops — and unknown durations are reported
+as unchecked rather than wrong. `tab` and `ascii-tab`
 print what it finds on the page, because Typst has no user-level warning channel
 — `panic` is its only diagnostic and it is fatal. `warn: false` silences the
 report once a sheet is as intended.
@@ -536,8 +538,13 @@ Looking good is a stated goal, so it is specified as testable requirements.
    claims more room than a `0`. Proportional spacing would strand long notes in
    white space and cram fast passages together.
 3. **Justification is distributed proportionally** to the measures' natural
-   widths, never equally between them. A final system below 65 % fill is left
-   unstretched, the way the last line of a paragraph is.
+   widths, never equally between them. A passage that fills one system and stops
+   is left unstretched below 65 % fill, the way the last line of a paragraph is.
+   The system that *closes* a longer passage is spaced at the density of the one
+   above it — as loose as the music has been and no looser, never past the margin
+   and never tighter than natural. Left at natural width it would say its bars
+   are the shorter ones; stretched to the margin regardless it would spread a
+   two-note tail over a whole line.
 4. **Everything derives from one unit**, `staff-space`: line weights, stem
    lengths, beam thickness, type sizes. Changing it rescales a whole sheet
    without the proportions drifting.

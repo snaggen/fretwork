@@ -217,16 +217,34 @@
 
 #eq(justify-factor(50mm, 100mm), 2.0, "an interior system stretches to the margin")
 #eq(justify-factor(200mm, 100mm), 0.5, "an overfull system is compressed")
-#eq(justify-factor(10mm, 100mm, last: true), 1.0, "a barely started last system is not stretched")
+#eq(justify-factor(10mm, 100mm, alone: true), 1.0, "a barely started lone system is not stretched")
 #ok(
-  justify-factor(90mm, 100mm, last: true) > 1.0,
-  "a nearly full last system is justified like any other",
+  justify-factor(90mm, 100mm, alone: true) > 1.0,
+  "a nearly full lone system is justified like any other",
 )
 #eq(
-  justify-factor(60mm, 100mm, last: true),
+  justify-factor(60mm, 100mm, alone: true),
   1.0,
-  "a last system below the fill threshold keeps its natural width",
+  "a lone system below the fill threshold keeps its natural width",
 )
+// The system that *closes* a longer passage is spaced at the density of the one
+// above it: as loose as the music has been, and no looser.
+#eq(
+  justify-factor(50mm, 100mm, previous: 1.2),
+  1.2,
+  "a closing system is stretched no further than the system above it",
+)
+#eq(
+  justify-factor(90mm, 100mm, previous: 4.0),
+  100mm / 90mm,
+  "…and never past the margin",
+)
+#eq(
+  justify-factor(50mm, 100mm, previous: 0.8),
+  1.0,
+  "…nor squeezed below its natural width because the system above was overfull",
+)
+#eq(justify-factor(200mm, 100mm, previous: 1.5), 0.5, "an overfull closing system is still squeezed")
 
 // --- reserved room above the staff ----------------------------------------
 // Bends and slurs are anchored to their own string, so how far they reach above

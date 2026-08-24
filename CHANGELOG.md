@@ -45,6 +45,25 @@
 - **A word the system break cuts in two keeps its hyphen**, set at the end of the
   line. Only the second half showed the break before, and the first half read as
   a word that ended there.
+- **A free instruction stays inside the system, and two of them stack.** A
+  remark is a phrase rather than a word — imported scores carry whole sentences —
+  so it is now boxed at a width it fits in, shifted left where that is what it
+  takes and wrapped only where the system itself is too narrow, with the height
+  it really occupies reserved. Set loose it wrapped inside a level one line tall
+  and printed over the marks below it; and two remarks in one system, being one
+  kind, shared a level by construction and printed over each other.
+- **The system that closes a passage is spaced at the density of the one above
+  it**, rather than being left at natural width whenever it fell below 65 % fill.
+  Two bars that do not fit on one line are a bar to the system — usually the same
+  bar twice — and the second came out half the width of the first, which says the
+  music is shorter than it is. The fill rule now applies only to a passage that
+  fills *one* system and stops, where there is no line above to disagree with; a
+  two-note tail under a page of music still stops where the music stops.
+- **A short bar closing a passage is no longer reported.** It pairs with the
+  pick-up that opened it — between them they are one bar — and a passage set on
+  its own simply stops where it stops. A closing bar holding *more* than the
+  signature allows is still wrong, and a part of a single bar is exempt from
+  nothing.
 
 ## 0.2.0 — 2026-08-10
 

@@ -42,15 +42,28 @@
 /// so measures keep their relative sizes and a bar of sixteenths does not end
 /// up as wide as a bar of whole notes.
 ///
-/// A final system that is barely started is left unstretched, the way the last
-/// line of a paragraph is — spreading four events across a full page reads as a
-/// mistake rather than as music.
-#let justify-factor(stretchable, available, last: false, min-fill: 0.65) = {
+/// A passage that fills **one** system and stops is left unstretched when it is
+/// barely started, the way the last line of a paragraph is — four events spread
+/// across a full page read as a mistake rather than as music, and a riff quoted
+/// on its own is the common case.
+///
+/// The system that *closes* a longer passage is spaced at the **density of the
+/// one above it** instead: `previous` is that system's factor, and this one is
+/// stretched by no more, and never past the margin. Left at its natural width it
+/// says its bars are shorter than the bars above — and two bars that do not fit
+/// on one line are a bar to the system, usually the same bar twice, which is
+/// exactly where a reader sees that the page is lying. Stretched to the margin
+/// regardless it says the opposite, spreading a two-note tail over a whole line.
+/// Matching the density says neither: the closing system is written like the
+/// rest of the music, and stops where the music stops.
+#let justify-factor(stretchable, available, alone: false, previous: none, min-fill: 0.65) = {
   if stretchable <= 0pt { return 1.0 }
   let factor = available / stretchable
-  if last and factor > 1.0 and available > 0pt and stretchable / available < min-fill {
-    return 1.0
-  }
+  // Overfull: it has to be squeezed whatever else is true of it.
+  if factor <= 1.0 { return factor }
+  if alone and available > 0pt and stretchable / available < min-fill { return 1.0 }
+  // Never *tighter* than natural, however tight the system above had to be.
+  if previous != none { return calc.min(factor, calc.max(1.0, previous)) }
   factor
 }
 
@@ -251,27 +264,32 @@
 
   let groups = pack(packed-widths, available, indent)
 
+  // Sequential rather than a `map`: the system that closes the part is spaced
+  // against the one above it, so its factor is not knowable on its own.
+  let factors = ()
+  for (gi, indices) in groups.enumerate() {
+    let fixed = indices.fold(0pt, (acc, mi) => acc + furniture(mi))
+    let stretchable = indices.fold(0pt, (acc, mi) => acc + naturals.at(mi).total)
+    factors.push(justify-factor(
+      stretchable,
+      available - indent - fixed,
+      alone: groups.len() == 1,
+      previous: if gi > 0 and gi == groups.len() - 1 { factors.at(gi - 1) } else { none },
+    ))
+  }
+
   groups
     .enumerate()
-    .map(((gi, indices)) => {
-      let fixed = indices.fold(0pt, (acc, mi) => acc + furniture(mi))
-      let stretchable = indices.fold(0pt, (acc, mi) => acc + naturals.at(mi).total)
-      let factor = justify-factor(
-        stretchable,
-        available - indent - fixed,
-        last: gi == groups.len() - 1,
-      )
-      place-system(
-        theme,
-        strings,
-        part.measures,
-        times,
-        naturals,
-        glyph-widths,
-        indices,
-        factor,
-        indent,
-        show-time: show-time,
-      )
-    })
+    .map(((gi, indices)) => place-system(
+      theme,
+      strings,
+      part.measures,
+      times,
+      naturals,
+      glyph-widths,
+      indices,
+      factors.at(gi),
+      indent,
+      show-time: show-time,
+    ))
 }

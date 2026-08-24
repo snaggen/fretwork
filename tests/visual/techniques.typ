@@ -33,6 +33,15 @@ q 12/3* 5/3PH 5/3AH | q 7/3HH 7/3TH r
 {PM: q 0/6 0/6 0/6 0/6} | q "Harm." 12/3* 12/4* 12/5* 12/6*
 ```)
 
+// An instruction is a phrase rather than a word, and an imported score carries
+// whole sentences. One too wide for the room beside its note is set within the
+// system instead of running off the edge of it — wrapped where even that is not
+// enough, with the room the wrap takes reserved — and a second one in the same
+// system stacks clear of the first rather than printing over it.
+#tab(theme: vt, ```
+e "played on the neck pickup, and rather more quietly than the recording suggests" 0/6 0/6 0/6 "simile" 0/6 q 3/6 5/6
+```)
+
 // A repeat count shares the volta lane, written out rather than set as "x3",
 // and held clear of the boundary where a following ending's bracket starts.
 #tab(theme: vt, ```

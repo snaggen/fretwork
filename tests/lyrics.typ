@@ -13,9 +13,10 @@
 
 #eq(read-syllable("What"), m.syllable("What"), "a plain word is a syllable")
 #eq(read-syllable("Twist-"), m.syllable("Twist", hyphen: true), "a trailing dash hyphenates")
-#eq(read-syllable("_"), none, "an underscore places nothing")
 // A word held over several notes is written once and the rest of its notes are
-// spent, so `_` has to be a syllable-shaped nothing rather than an empty word.
+// spent, so `_` is a held note rather than an empty word: it prints the same
+// nothing an unsung note does, but only it can carry an extender rule.
+#eq(read-syllable("_"), m.hold, "an underscore holds the word before it")
 #eq(read-syllable("-"), m.syllable("-"), "a lone dash is a word, not an empty hyphenation")
 
 #eq(read-verse("one two").len(), 2, "a verse splits on whitespace")
@@ -57,8 +58,8 @@
     .first()
     .events
     .map(ev => ev.lyrics.at(0, default: none)),
-  (m.syllable("held"), none, m.syllable("again")),
-  "an underscore spends a note and prints nothing on it",
+  (m.syllable("held"), m.hold, m.syllable("again")),
+  "an underscore spends a note as a hold and prints nothing on it",
 )
 
 // Miscounting a verse against the music is the mistake this syntax makes

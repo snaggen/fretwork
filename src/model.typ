@@ -493,16 +493,22 @@
       }
     }
 
-    // A pick-up bar is short by definition. A bar closing a repeat is often
-    // short too, but only when a pick-up accounts for the difference — that
-    // pairing is not modelled, so such bars are still reported and the report
-    // is advisory.
+    // A pick-up bar is short by definition.
     if i == 0 and part.anacrusis { continue }
 
     let expected = if sig == none { none } else { r.rat(sig.at(0), den: sig.at(1)) }
     if expected == none { continue }
     let actual = measure-duration(m)
     if actual == none { continue }
+    // So is the bar that closes a passage: it pairs with the pick-up that opened
+    // it — between them they are one bar — and a passage set on its own, which
+    // every section of an imported score is, simply stops where it stops. Two
+    // limits keep this from silencing real mistakes: a bar holding *more* than
+    // the signature allows is wrong however the piece ends, and a part of one
+    // bar is exempt from nothing, there being no passage for it to be the end
+    // of.
+    let closing = part.measures.len() > 1 and i == part.measures.len() - 1
+    if closing and r.lt(actual, expected) { continue }
     if not r.eq(actual, expected) {
       problems.push(
         where + ": holds " + r.str-of(actual) + " but the time signature calls for "

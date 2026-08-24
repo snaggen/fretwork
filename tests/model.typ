@@ -177,7 +177,8 @@
 
 #eq(m.validate(m.part(measures: (full,))), (), "a correct part reports no problems")
 
-#let short = m.part(measures: (m.measure(events: (m.event(notes: (m.note(6, 0),), duration: m.durations.h),)),))
+#let half = m.measure(events: (m.event(notes: (m.note(6, 0),), duration: m.durations.h),))
+#let short = m.part(measures: (half, full))
 #eq(m.validate(short).len(), 1, "a short bar is reported")
 #ok("1/2" in m.validate(short).first(), "the report names the actual length")
 
@@ -185,6 +186,19 @@
   m.validate(m.part(measures: short.measures, anacrusis: true)),
   (),
   "a pick-up bar is exempt from the length check",
+)
+
+// The other end of that pairing: the bar closing the music is short by exactly
+// what the pick-up took, and a passage set on its own stops where it stops.
+#eq(m.validate(m.part(measures: (full, half))), (), "so is the bar that closes the music")
+#let overfull = m.measure(events: (
+  m.event(notes: (m.note(6, 0),), duration: m.durations.w),
+  m.event(rest: true, duration: m.durations.q),
+))
+#eq(
+  m.validate(m.part(measures: (full, overfull))).len(),
+  1,
+  "…but a closing bar holding more than the signature allows is still wrong",
 )
 
 #let unknown = m.part(measures: (m.measure(events: (m.event(notes: (m.note(6, 0),)),)),))

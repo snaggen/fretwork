@@ -69,14 +69,42 @@
   place(top + left, dx: x, dy: y, wave.body)
 }
 
+/// A free instruction written over an event.
+///
+/// Alone among the marks this is a phrase rather than a glyph or a word —
+/// imported scores carry whole remarks ("Angus alternated between pull offs and
+/// picking…") — so it is wider than the note it hangs on and often wider than
+/// the room left beside it. It is therefore boxed at a width it is known to fit
+/// in: shifted left where that is what it takes, and wrapped only where the
+/// system itself is too narrow, with the box's measured height reserved. Set
+/// loose it did both wrong at once — it wrapped inside a level one line tall and
+/// printed over whatever the level below held.
+///
+/// Must be called from a context: the phrase is measured.
+#let _instruction(theme, pe, width) = {
+  let body = _label(theme, pe.event.text)
+  let w = calc.min(measure(body).width, width)
+  let boxed = box(width: w, body)
+  let x = calc.max(0pt, calc.min(pe.x - 0.2 * theme.staff-space, width - w))
+  (
+    x0: x,
+    x1: x + w,
+    height: calc.max(theme.technique-size * 1.3, measure(boxed).height),
+    draw: y => place(top + left, dx: x, dy: y, boxed),
+  )
+}
+
 /// Every mark the lane has to place.
 ///
 /// A mark records the horizontal room it needs and how to draw itself at a
 /// given top edge. They come back grouped by kind, ordered by how close to the
 /// staff the kind wants to sit — which is the order the packer tries them in.
 ///
+/// `width` is the system's own width, which only a free instruction needs: it is
+/// the one mark that can be wider than the music it belongs to.
+///
 /// Must be called from a context: labels are measured.
-#let _marks(theme, placed) = {
+#let _marks(theme, placed, width) = {
   let sp = theme.staff-space
   let groups = ()
 
@@ -181,13 +209,14 @@
   }
   if wavy.len() > 0 { groups.push(wavy) }
 
-  // --- harmonics, pick scrapes and free instructions: a word over the note ---
-  let texts = ()
+  // --- harmonics and pick scrapes: a word over the note ---
+  let words = ()
   for pe in placed {
+    // An event carrying its own instruction has said what it wants said, and two
+    // words over one note read as two things happening.
+    if pe.event.text != none { continue }
     let harmonics = _event-techniques(pe.event, "harmonic")
-    let word = if pe.event.text != none {
-      pe.event.text
-    } else if harmonics.len() > 0 {
+    let word = if harmonics.len() > 0 {
       _HARMONIC-LABELS.at(harmonics.first().style)
     } else if _event-techniques(pe.event, "scrape").len() > 0 {
       "P.S."
@@ -195,14 +224,24 @@
     if word == none { continue }
     let body = _label(theme, word)
     let x = pe.x - 0.2 * sp
-    texts.push((
+    words.push((
       x0: x,
       x1: x + measure(body).width,
       height: theme.technique-size * 1.3,
       draw: y => place(top + left, dx: x, dy: y, body),
     ))
   }
-  if texts.len() > 0 { groups.push(texts) }
+  if words.len() > 0 { groups.push(words) }
+
+  // --- free instructions: a phrase over the note ---
+  // One group each, rather than one group for all of them: every other mark is
+  // as wide as the note it sits on and two of a kind can share a level by
+  // construction, but two remarks in one system are routinely in each other's
+  // way and have to be allowed to stack.
+  for pe in placed {
+    if pe.event.text == none { continue }
+    groups.push((_instruction(theme, pe, width),))
+  }
 
   // --- bracketed spans ---
   let spans = ()
@@ -238,16 +277,19 @@
   groups
 }
 
+/// The marks builder for a lane of the given width, in the form the packer takes.
+#let _builder(width) = (thm, placed) => _marks(thm, placed, width)
+
 /// The levels of the technique lane.
-#let _levels(theme, system) = levels-of(theme, system, _marks)
+#let _levels(theme, system, width) = levels-of(theme, system, _builder(width))
 
 /// Total height of the lane.
-#let height(theme, system) = marks.stack-height(theme, _levels(theme, system))
+#let height(theme, system, width) = marks.stack-height(theme, _levels(theme, system, width))
 
 /// Draw the technique lane for one placed system.
 #let draw(theme, system, width, levels: none) = {
-  draw-levels(theme, if levels != none { levels } else { _levels(theme, system) }, width)
+  draw-levels(theme, if levels != none { levels } else { _levels(theme, system, width) }, width)
 }
 
 /// The technique lane, collapsing when nothing needs it.
-#let lane-for(theme, system, width) = marks.lane-of(theme, system, width, _marks)
+#let lane-for(theme, system, width) = marks.lane-of(theme, system, width, _builder(width))
