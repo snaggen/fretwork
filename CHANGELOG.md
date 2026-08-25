@@ -40,6 +40,33 @@
   verse is now a *held* note rather than nothing at all, which is what makes the
   two tellable apart — an unsung note is still `none`.
 
+### Changed
+
+- **The far end of a tie prints no fret number.** It used to be set in
+  parentheses, which is exactly how a ghost note is set — so the two, meaning
+  opposite things, were one picture and only the arc under it told them apart.
+  Hal Leonard can afford that, having a notation staff carrying the tie; a tab
+  staff alone cannot, and a bracketed digit there reads as a second, quieter
+  attack. Songsterr, which is the reference for how ties are drawn here for the
+  same reason, prints nothing and lets the arc carry it. The note is otherwise
+  unchanged: it keeps its slot and its value in the rhythm lane, and it still
+  claims the width of the number it would have printed, that room being what the
+  arc is drawn in — measured at nothing, a held thirty-second is spaced by its
+  duration alone and the tie has nowhere to arch. `model.is-parenthesised` is now
+  a ghost note's business alone, and `model.prints-fret` is the new predicate.
+
+  ASCII tab is read as before — `-5-(5)-` is still a tie and `-5-7-(5)-` still a
+  ghost note — so a sheet read in and set back out comes back with the brackets
+  gone and the arc in their place, saying the same thing.
+- **A run of links takes one slur** over the whole of it rather than an arc per
+  pair. A hammer-on into a pull-off into a slide is one gesture; drawn pair by
+  pair the arcs met at the notes between and came out as a row of bumps, reading
+  as several articulations where the music has one — and on a fast run each was
+  so short as to be nearly flat. A shift slide ends a run, its target being
+  picked again, and a pick scrape joins none, drawing its wave and no arc. The
+  lines are untouched: a slide still draws its own diagonal between its own two
+  numbers.
+
 ### Fixed
 
 - **A word the system break cuts in two keeps its hyphen**, set at the end of the

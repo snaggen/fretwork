@@ -12,7 +12,8 @@
 // Callers must be inside a context, since glyph widths are measured.
 
 #import "../model.typ": (
-  get-technique, has-technique, is-parenthesised, LINK-KINDS, link-to-next, MUTED, slide-out,
+  get-technique, has-technique, is-parenthesised, LINK-KINDS, link-to-next, MUTED, prints-fret,
+  slide-out,
 )
 #import "../rational.typ" as r
 #import "../layout/beams.typ": flags-of
@@ -224,6 +225,70 @@
 /// break reads as one mark cut in two rather than as two different ones.
 #let _system-tail(theme) = 1.6 * theme.staff-space
 
+/// One end of a slur, named so that two connectors meeting there can be found.
+///
+/// A joint is a place a legato mark attaches: an event, a string, and how far
+/// along that note's own run of printed targets it is — step 0 being the note's
+/// own number. Naming them is what lets the runs be folded without the drawing
+/// code having to re-derive from geometry which arc ends where another begins.
+#let _joint(event, string, step) = str(event) + "/" + str(string) + "/" + str(step)
+
+/// Half the width of the number a tie or a link lands on.
+///
+/// The arc has to stop at the digit's near edge rather than at its centre, and a
+/// parenthesised number is the wider one — measuring the bare digit would end
+/// the arc inside the opening bracket. Zero where the note prints no number at
+/// all: the far end of a tie is then a place on the line, not a digit, and an
+/// arc stopping short of it would hang in the air.
+///
+/// Must be called from a context, since type is measured.
+#let _landing-half(theme, note) = {
+  if not prints-fret(note) { return 0pt }
+  measure(fret-label(theme, note.fret, ghost: is-parenthesised(note))).width / 2
+}
+
+/// The next event after `index` that plays `string`, or `none`.
+#let _next-on-string(placed, index, string) = {
+  for j in range(index + 1, placed.len()) {
+    if placed.at(j).event.notes.any(o => o.string == string) { return j }
+  }
+  none
+}
+
+/// Whether a note is carried on to the next event by a link that draws a slur.
+///
+/// A shift slide draws its line and no arc — the target is picked again, so
+/// there is no one gesture to arch over — and so ends a run rather than
+/// continuing it.
+#let _legato-link(n) = {
+  let link = link-to-next(n)
+  if link != none and link.at("legato", default: true) { link } else { none }
+}
+
+/// The last event a run of legato links leaving `index` on `string` reaches, or
+/// `none` when it leaves the system before reaching one.
+///
+/// A hammer-on into a pull-off into a slide is *one* gesture and is drawn as one
+/// slur, so the height the lane must reserve follows the whole run rather than
+/// its first pair: the apex grows with the span. Every step forward is a link
+/// with no target fret, which is the only form that joins two independently
+/// timed events, so the walk is the same one `_fold-slurs` makes over the
+/// connectors — read off the music here because the lane is measured before
+/// anything is drawn.
+#let _legato-run-end(placed, index, string) = {
+  let at = index
+  let reached = none
+  while true {
+    let note = placed.at(at).event.notes.find(o => o.string == string)
+    if note == none or _legato-link(note) == none { break }
+    let next = _next-on-string(placed, at, string)
+    if next == none { break }
+    reached = next
+    at = next
+  }
+  reached
+}
+
 /// Width an event's fret numbers occupy.
 ///
 /// `total` covers everything the event prints, including linked targets, and
@@ -242,6 +307,11 @@
   let grace = ev.at("grace", default: none) != none
   // A note's own number may be parenthesised; a fret it is linked to is not,
   // the ghost mark belonging to the strike rather than to the run.
+  //
+  // The far end of a tie prints no number and still claims its width. The room
+  // is what the tie is *drawn in*: measured at nothing, a held thirty-second is
+  // spaced by its duration alone, which is almost no width at all, and the arc
+  // has nowhere to arch. Published sheets leave the same column empty.
   let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
   let own(n) = label(n.fret, ghost: is-parenthesised(n))
   let anchor = ev.notes.map(n => measure(own(n)).width).fold(0pt, calc.max)
@@ -434,6 +504,60 @@
 #let _slur(theme, x0, x1, y, side: false) = {
   let tail = (if side { _SLUR-SIDE-TAIL } else { _SLUR-TAIL }) * theme.staff-space
   _arc(theme, x0, x1, y, tail, slur-apex(theme, x1 - x0, side: side))
+}
+
+/// Fold every run of legato links on one string into a single slur.
+///
+/// A hammer-on into a pull-off into a slide is *one* gesture, and published
+/// sheets arch one slur over the whole of it. Drawn pair by pair the arcs meet
+/// at the notes between and come out as a row of bumps, which reads as several
+/// separate articulations — and on a fast run they are so short that each is
+/// nearly flat.
+///
+/// Only the arc is merged. The lines are per pair and stay so: a slide draws its
+/// own diagonal between its own two numbers, and there is nothing about the run
+/// that could be said by one long one.
+///
+/// A connector that can carry a slur names the joint it leaves and the joint it
+/// arrives at, so the run is followed from one's `to` to the next one's `from`
+/// rather than guessed from the geometry. Anything with no slur to give — a
+/// shift slide, whose target is picked again; a tie; a mark trailing off the end
+/// of the system, which arrives nowhere — has no joints to be followed and so
+/// stands alone, and ends the run it was part of.
+#let _fold-slurs(connectors) = {
+  // Every slur-bearing connector, by the joint it leaves.
+  let leaving = (:)
+  for (i, c) in connectors.enumerate() {
+    if c.at("chain", default: none) != none and c.legato {
+      leaving.insert(c.chain.from, i)
+    }
+  }
+  // The joints a run arrives at, so that only the first link of one opens a slur.
+  let arriving = (:)
+  for (_, i) in leaving {
+    let to = connectors.at(i).chain.to
+    if to != none and to in leaving { arriving.insert(to, true) }
+  }
+
+  // A folded connector keeps its line and gives up its arc to the run's.
+  let out = connectors.map(c => if c.at("chain", default: none) != none and c.legato {
+    c + (legato: false)
+  } else { c })
+
+  for (joint, i) in leaving {
+    if joint in arriving { continue }
+    let first = connectors.at(i)
+    let last = first
+    // A chord at either end pins the slur to the numbers' flanks and keeps it
+    // flat, since a stacked number leaves no room over it.
+    let side = first.side
+    while last.chain.to != none and last.chain.to in leaving {
+      last = connectors.at(leaving.at(last.chain.to))
+      side = side or last.side
+    }
+    out.push((kind: "slur", from: first.from, to: last.to, y: first.y, side: side))
+  }
+  out
 }
 
 /// The tie joining a note to the next strike of the same string.
@@ -675,15 +799,13 @@
       // A link to the next event is bounded by nothing of the kind: the note it
       // runs to may be several events away and in another measure, exactly as a
       // tie's may be, so the span is measured the same way `overflow-below`
-      // measures a tie's.
+      // measures a tie's — and a run of legato links is drawn as one slur, so
+      // the span runs to the end of the run rather than to the next note.
       if link-to-next(n) != none {
-        let span = pe.alloc
-        for j in range(i + 1, placed.len()) {
-          if placed.at(j).event.notes.any(o => o.string == n.string) {
-            span = calc.max(span, placed.at(j).x - pe.x)
-            break
-          }
-        }
+        let end = if _legato-link(n) == none {
+          _next-on-string(placed, i, n.string)
+        } else { _legato-run-end(placed, i, n.string) }
+        let span = if end == none { pe.alloc } else { calc.max(pe.alloc, placed.at(end).x - pe.x) }
         over = calc.max(over, slur-apex(theme, span, side: side) + 0.15 * sp - y)
       }
       // The incoming half of one, and a slide out of a note: both are only ever
@@ -834,10 +956,16 @@
     let grace = pe.event.at("grace", default: none) != none
     let label(fret, ghost: false) = fret-label(theme, fret, grace: grace, ghost: ghost)
     for n in pe.event.notes {
-      let body = label(n.fret, ghost: is-parenthesised(n))
+      // A note the string is merely holding prints no number: the tie's arc is
+      // what says it sounds on, and a digit there reads as a fresh attack. It
+      // still has a position — where the arc lands, and where the rhythm lane
+      // writes its value — so only the drawing goes, not the note.
+      let body = if prints-fret(n) { label(n.fret, ghost: is-parenthesised(n)) } else { [] }
       let size = measure(body)
       let y = string-y(theme, n.string)
-      labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
+      if prints-fret(n) {
+        labels.push((x: pe.x, string: n.string, w: size.width, h: size.height, body: body))
+      }
 
       // A slur springs from the top *centre* of a lone number, as the legend
       // sets it. That is impossible when numbers are stacked in a chord — the
@@ -847,7 +975,7 @@
       let cursor = pe.x + size.width / 2
       let from-fret = n.fret
       let from-x = if stacked { cursor } else { pe.x }
-      for target in link-targets(n) {
+      for (step, target) in link-targets(n).enumerate() {
         let tbody = label(target.fret)
         let tsize = measure(tbody)
         // A hammer-on or a slide reaches its target at once, so the number sits
@@ -875,6 +1003,13 @@
           rising: (
             type(target.fret) == int and type(from-fret) == int and target.fret > from-fret
           ),
+          // A pick scrape draws its wave and no arc, so it joins no run: the
+          // drag *is* the gesture, and it ends whatever run it lands in.
+          chain: if target.kind == "scrape" {
+            none
+          } else {
+            (from: _joint(i, n.string, step), to: _joint(i, n.string, step + 1))
+          },
         ))
         cursor = tx + tsize.width / 2
         from-x = tx
@@ -912,16 +1047,8 @@
         for j in range(i + 1, placed.len()) {
           let later = placed.at(j).event.notes.filter(o => o.string == n.string)
           if later.len() > 0 {
-            // The number the arc lands on is the one that has just been
-            // parenthesised, and its width is the wider one — measuring the
-            // bare digit would end the arc inside the opening bracket.
-            let half = measure(fret-label(
-              theme,
-              later.first().fret,
-              ghost: is-parenthesised(later.first()),
-            )).width / 2
             target-x = placed.at(j).x
-            target-edge = placed.at(j).x - half
+            target-edge = placed.at(j).x - _landing-half(theme, later.first())
             break
           }
         }
@@ -946,22 +1073,15 @@
       // the other half from `linked-in`.
       let link = link-to-next(n)
       if link != none {
+        let target = _next-on-string(placed, i, n.string)
         let target-x = none
         let target-edge = none
         let target-fret = none
-        for j in range(i + 1, placed.len()) {
-          let later = placed.at(j).event.notes.filter(o => o.string == n.string)
-          if later.len() > 0 {
-            let half = measure(fret-label(
-              theme,
-              later.first().fret,
-              ghost: is-parenthesised(later.first()),
-            )).width / 2
-            target-x = placed.at(j).x
-            target-edge = placed.at(j).x - half
-            target-fret = later.first().fret
-            break
-          }
+        if target != none {
+          let later = placed.at(target).event.notes.find(o => o.string == n.string)
+          target-x = placed.at(target).x
+          target-edge = target-x - _landing-half(theme, later)
+          target-fret = later.fret
         }
         let trail = cursor + _system-tail(theme)
         connectors.push((
@@ -979,6 +1099,18 @@
           rising: (
             type(target-fret) == int and type(n.fret) == int and target-fret > n.fret
           ),
+          // The joint this leaves is past every target the note printed itself;
+          // the one it arrives at is that note's own number. A link running off
+          // the end of the system arrives nowhere, so its run stops here — as
+          // does a pick scrape, which draws its wave and no arc.
+          chain: if link.kind == "scrape" {
+            none
+          } else {
+            (
+              from: _joint(i, n.string, link-targets(n).len()),
+              to: if target == none { none } else { _joint(target, n.string, 0) },
+            )
+          },
         ))
       }
 
@@ -1231,9 +1363,14 @@
 
       // Connectors are drawn last so they sit over the numbers they join. What
       // they reach above the top string line is reserved by `overflow-above`.
-      for c in connectors {
+      // Folding turns each run of linked notes into one `slur` and leaves the
+      // links themselves to draw their lines, so `legato` here means "still owes
+      // an arc of its own".
+      for c in _fold-slurs(connectors) {
         if c.kind == "bend" {
           _bend-arrow(theme, c.from, c.half-width, c.y, c.bend, c.slot, c.alloc, hold: c.hold)
+        } else if c.kind == "slur" {
+          _slur(theme, c.from, c.to, c.y, side: c.side)
         } else if c.kind == "slide" {
           // The slide line runs between the numbers' facing edges; the slur over
           // them attaches wherever the event's shape allows.
@@ -1243,7 +1380,7 @@
           _scrape-line(theme, c.edge.at(0), c.edge.at(1), c.y)
         } else if c.kind == "tie" {
           _tie(theme, c.from, c.to, c.y, side: c.side)
-        } else {
+        } else if c.legato {
           _slur(theme, c.from, c.to, c.y, side: c.side)
         }
       }

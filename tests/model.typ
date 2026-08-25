@@ -76,8 +76,8 @@
 
 // --- the far end of a tie -------------------------------------------------
 // `~` is written on the note that starts the tie, so the note it runs into
-// knows nothing about it. It has to: it is not struck, and its fret number is
-// set in parentheses to say so.
+// knows nothing about it. It has to: it is not struck at all, and so prints no
+// fret number — the arc is the whole of what says the string is still sounding.
 
 #let tied = m.mark-tie-targets(m.part(measures: (
   m.measure(events: (
@@ -94,19 +94,19 @@
   not note-at(tied, 1, 0).at("tied-in", default: false),
   "and a later strike of the same string, with no tie reaching it, is left alone",
 )
-#ok(m.is-parenthesised(note-at(tied, 0, 1)), "…so the far end prints in parentheses")
+#ok(not m.prints-fret(note-at(tied, 0, 1)), "…so the far end prints no number")
+#ok(m.prints-fret(note-at(tied, 0, 0)), "the note it is held from prints its own")
+#ok(m.prints-fret(note-at(tied, 1, 0)), "and so does the next strike of the string")
 
-// A ghost note and a tie's far end print identically and mean opposite things —
-// one struck faintly, the other not struck at all. The arc is what separates
-// them, which is the same ambiguity the published sheets carry. What must not
-// happen is a note that is both coming out doubly parenthesised.
+// A ghost note is struck, faintly, and its brackets say so. The far end of a tie
+// is not struck at all — printed the same way the two were one picture meaning
+// opposite things, so it now prints nothing and the arc carries it alone. A note
+// that is somehow both is the tie's: it says the string was never struck again.
 #let ghost = m.note(3, 12, techniques: (m.technique("ghost"),))
 #ok(m.is-parenthesised(ghost), "a ghost note prints in parentheses")
-#ok(
-  m.is-parenthesised(ghost + (tied-in: true)),
-  "a note that is both is still parenthesised exactly once",
-)
-#ok(not m.is-parenthesised(m.note(3, 12)), "an ordinary note is not")
+#ok(m.prints-fret(ghost), "…and prints at all, being struck")
+#ok(not m.prints-fret(ghost + (tied-in: true)), "a note that is both prints nothing")
+#ok(not m.is-parenthesised(m.note(3, 12)), "an ordinary note is not parenthesised")
 
 // Chains: a note may both receive a tie and start the next one.
 #let chain = m.mark-tie-targets(m.part(measures: (m.measure(events: (

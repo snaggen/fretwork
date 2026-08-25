@@ -60,6 +60,21 @@ h (5/1 5/2 5/3)~ (5/1 5/2 5/3) | q 3/6~ 3/6 (0/5 2/6)~ (0/5 2/6)
 q 10/3s 5/1 5/1 5/1 | q 3/3 5/3h 7/3 5/3h7
 ```)
 
+// A run of links is one gesture and takes one slur over the whole of it, not an
+// arc per pair — pair by pair the arcs meet at the notes between and come out as
+// a row of bumps. The second bar ends the run with a shift slide, whose target
+// is picked again: the arc stops before it, and the slide keeps its line.
+#tab(theme: vt, ```
+s 7/1h 8/1p 7/1s 5/1 q r r r | s 7/1h 8/1p 7/1S 5/1 q r r r
+```)
+
+// The same run tied into, which is what a transcription of a real passage looks
+// like: the tie hangs under the pair it joins, the slur arches over the run
+// after it, and the held note prints no number of its own.
+#tab(theme: vt, ```
+e 7/1 s 7/1~ 7/1h 8/1p 7/1s e 5/1 q r r
+```)
+
 // A slide *out* of a note, which reaches nothing and so names its own direction
 // — the one thing a link cannot do, having a fret to derive one from.
 #tab(theme: vt, ```

@@ -304,10 +304,11 @@ E|--------3--------|-----------------|
   a tie**, and any other fret in them is a ghost note. There is no other way to
   write a held note in ASCII tab: `~` is vibrato there, whatever the native
   syntax uses it for, and the convention that survives is to set the note that is
-  not struck again in brackets — which is also how this package prints the far
-  end of a tie, so what it writes reads back. The two print alike either way, the
-  arc being what separates them, so the reading only matters to the model; but
-  reading it wrong turns a note held over into a second strike.
+  not struck again in brackets. The two print alike *in the source*, so the
+  reading is what separates them; reading it wrong turns a note held over into a
+  second strike. Set again the two no longer look alike, since a tie's far end is
+  not printed at all — so a sheet read in and set back out has lost the brackets
+  and kept the arc, which says the same thing.
 
   The tie is attached to the note the string is held *from*, which is where the
   native syntax writes it and where `mark-tie-targets` starts. A note struck in
@@ -745,13 +746,26 @@ Looking good is a stated goal, so it is specified as testable requirements.
    wider gap. Fret numbers are set with tabular figures so that a bar mixing `0`
    and `12` keeps its columns straight.
 
-18. **The far end of a tie is set in parentheses.** `~` is written on the note
+18. **The far end of a tie prints no fret number.** `~` is written on the note
    that starts the tie, so the note it runs into knows nothing about it; a
    forward pass over the piece marks it. Without that, a note held across eight
-   bars reads as eight separate strikes. A ghost note prints identically and
-   means the opposite — struck faintly rather than not struck at all — and the
-   arc is what separates the two, which is the same ambiguity the published
-   sheets carry. A note that is both still gets exactly one pair.
+   bars reads as eight separate strikes. Songsterr — the reference here, since it
+   too sets tablature with no notation staff beside it — draws the arc alone and
+   leaves the number off, and the arc is then the whole of what says the string
+   is still sounding. Hal Leonard parenthesises it instead, but it has a staff
+   carrying the tie and can afford the redundancy; alone on a tab staff a
+   bracketed digit reads as a second, quieter attack, which is exactly what a
+   ghost note is — so printed alike the two were one picture meaning opposite
+   things. The event keeps its slot and its value in the rhythm lane either way:
+   only the digit goes.
+
+   **A run of links takes one slur**, not an arc per pair. A hammer-on into a
+   pull-off into a slide is one gesture, and pair by pair the arcs meet at the
+   notes between and come out as a row of bumps — several articulations where the
+   music has one. A shift slide ends a run rather than continuing it, its target
+   being picked again, and so does a pick scrape, which draws its wave and no arc
+   at all. The lines are untouched: a slide still draws its own diagonal between
+   its own two numbers, there being nothing about the run one long one could say.
 19. **A link comes in two forms, and the source picks between them.** A
    hammer-on, pull-off or slide written with a target fret — `5/3h7` — prints
    that fret beside its own number, the two sharing one note value, which is how

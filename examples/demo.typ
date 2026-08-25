@@ -98,8 +98,10 @@ arches over a hammer-on above, so the two marks can never be read for each
 other. Under a stacked number there is no room, the next string being right
 there, so a chord's ties leave the numbers' flanks instead.
 
-The far end of a tie is set in parentheses, because it is not struck: without
-that, a note held across four bars reads as four separate strikes.
+The far end of a tie prints no fret number, because it is not struck: the arc is
+the whole of what says the string is still sounding, and a digit there would read
+as a second, quieter attack — which is what a ghost note's brackets mean. The
+event keeps its slot in the rhythm lane, so the held note still has a value.
 
 #src("h 5/3~ q 5/3 7/3 | q (0/1 2/2 2/3 1/4) (3/1 3/2 0/3 0/4) h (2/5 2/4 0/6)~")
 
@@ -136,6 +138,15 @@ strings, keep clear of one another and of the line above:
 #tab(```
 e 5/3h7 7/3p5 5/2h7 7/2p5 5/1h7 7/1p5 5/3h7 7/3p5
 | e 2/6h4 4/6p2 3/5h5 5/5p3 12/1h14 14/1p12 7/4h9 9/4p7 |.
+```)
+
+Written with no target fret a link runs to the *next event* that plays the
+string, so the two notes keep their own values — and a run of them is one
+gesture and takes one slur over the whole of it. A shift slide ends the run,
+its target being picked again:
+
+#tab(```
+s 7/1h 8/1p 7/1s 5/1 q r r r | s 7/1h 8/1p 7/1S 5/1 q r r r |.
 ```)
 
 Stacked numbers cannot attach at the top — the arc would run into the number

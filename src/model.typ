@@ -436,11 +436,28 @@
 
 /// Whether a note's fret number is set in parentheses.
 ///
-/// Two different things print the same way: a ghost note, struck but barely
-/// sounded, and the far end of a tie, which is not struck at all. The tie's arc
-/// is what tells them apart on the page — the same ambiguity the published
-/// sheets carry. A note that is both still gets one pair of parentheses.
-#let is-parenthesised(n) = has-technique(n, "ghost") or n.at("tied-in", default: false)
+/// A ghost note is struck but barely sounded, and the brackets are the whole of
+/// how a tab sheet says so.
+#let is-parenthesised(n) = has-technique(n, "ghost")
+
+/// Whether a note's fret number is printed at all.
+///
+/// The far end of a tie is not struck: the string is still sounding the note
+/// before it, and there is no second attack to write down. Songsterr — the
+/// reference for how this package sets ties, since it too renders tablature with
+/// no notation staff beside it — draws the arc alone and prints no number there,
+/// and the arc is then the whole of what says the note is held. Hal Leonard
+/// parenthesises it instead, but it has a notation staff carrying the tie and
+/// can afford the redundancy; alone on a tab staff a bracketed digit reads as a
+/// second, quieter attack, which is exactly what a ghost note is — so the two
+/// printed alike left the reader no way to tell them apart.
+///
+/// Nothing else about the note changes: the event keeps its slot in the rhythm
+/// lane, so the held note still has a written duration and the tie still has
+/// somewhere to land. A note that is both tied into and ghosted prints nothing,
+/// the tie being the stronger statement — it says the string was never struck
+/// again at all.
+#let prints-fret(n) = not n.at("tied-in", default: false)
 
 /// The time signature in force at a measure index, as a `(beats, unit)` pair.
 ///

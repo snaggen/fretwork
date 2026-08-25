@@ -385,12 +385,13 @@ E|----------(12)---<12>-----------------|
 )
 
 #note[
-  Both print the same, in brackets — the arc is what separates them, as it does
-  on a published sheet — so the reading matters to what the piece *means* rather
-  than to how it looks. A note struck in between ends what the first was
-  sounding, which is why the `(0)` above is a ghost note and not a tie. A tie is
-  read across a barline but not across the end of a block, the reading being made
-  row by row like every other mark that joins two notes.
+  Both are written the same, in brackets, so the reading is what separates them —
+  and it is set back out differently: a ghost note keeps its brackets, a tie's
+  far end prints no number at all and is carried by the arc alone. A note struck
+  in between ends what the first was sounding, which is why the `(0)` above is a
+  ghost note and not a tie. A tie is read across a barline but not across the end
+  of a block, the reading being made row by row like every other mark that joins
+  two notes.
 ]
 
 #heading-style("Barlines, repeats and endings")
