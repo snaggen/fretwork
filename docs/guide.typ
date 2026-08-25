@@ -262,7 +262,7 @@
   row("Double, final", "5/3 5/3 || 7/3 7/3 |."),
   row("A repeat", "|: q 5/3 5/3 7/3 7/3 :|"),
   row("…a given number of times", "|: q 5/3 5/3 7/3 7/3 :|x4"),
-  row("First and second endings", "|: q 5/3 5/3 {V1: q 7/3 7/3 :|} {V2: q 8/3 8/3 |.}"),
+  row("First and second endings", "|: q 5/3 5/3 | {V1: q 7/3 7/3 :|} {V2: q 8/3 8/3 |.}"),
   row("A time signature", "[3/4] q 5/3 5/3 5/3"),
   row("…changing mid-piece", "[3/4] q 5/3 5/3 5/3 | [4/4] q 5/3 5/3 5/3 5/3"),
   row("A count-in row", "q 5/3 5/3 5/3 5/3", count-in: true),
