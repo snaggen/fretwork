@@ -556,6 +556,15 @@ Looking good is a stated goal, so it is specified as testable requirements.
    marks are in different bars. Marks of one kind move together, so every palm
    mute in a system stays at one height; when two kinds do collide, the one that
    belongs closer to the staff wins the lower level.
+
+   **Except where a kind is in its own way.** A `let ring` label is three staff
+   spaces wide, so two spans a sixteenth apart have labels wider than the room
+   between them and no single height holds both. The kind is then split into the
+   fewest runs whose members clear each other — by start, each mark taking the
+   first run it fits in — and each run placed as a unit. So a kind still occupies
+   one level wherever it can and gains a second only across the stretch where it
+   must. Measured only against *other* kinds, as it was, two such labels simply
+   printed on top of each other.
 6. **`TAB` is stacked vertically** at the start of every system.
 7. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair. `theme(repeat-style: "ornate")` gives the

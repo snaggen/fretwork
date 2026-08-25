@@ -33,6 +33,16 @@ q 12/3* 5/3PH 5/3AH | q 7/3HH 7/3TH r
 {PM: q 0/6 0/6 0/6 0/6} | q "Harm." 12/3* 12/4* 12/5* 12/6*
 ```)
 
+// Two spans of one kind a sixteenth apart. A `let ring` label is three staff
+// spaces wide and there is about one between them, so no single height holds
+// both and the kind gains a second level across exactly that stretch. The pair
+// in the second bar clears itself and stays on one, which is what says the
+// split follows the room rather than the kind.
+#tab(theme: vt, ```
+s {LR: 7/1 } 8/1 {LR: 9/1 } 10/1 q r r r
+| {PM: q 0/6 0/6 } {LR: 3/6 5/6 }
+```)
+
 // An instruction is a phrase rather than a word, and an imported score carries
 // whole sentences. One too wide for the room beside its note is set within the
 // system instead of running off the edge of it — wrapped where even that is not

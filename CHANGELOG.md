@@ -69,6 +69,15 @@
 
 ### Fixed
 
+- **Two marks of one kind no longer print on top of each other.** A group of
+  marks — every palm mute in a system, every bracketed span — moves as a unit so
+  that a kind keeps one height down the page, and it was only ever measured
+  against *other* groups; two of its own members in each other's way were never
+  noticed. A `let ring` label is three staff spaces wide, so two spans a
+  sixteenth apart came out as `let ringlet ring`. The kind is now split into the
+  fewest runs whose members clear each other, and each run placed as a unit, so
+  it still occupies one level wherever it can and gains a second only across the
+  stretch where it must.
 - **A word the system break cuts in two keeps its hyphen**, set at the end of the
   line. Only the second half showed the break before, and the first half read as
   a word that ended there.

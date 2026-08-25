@@ -101,6 +101,37 @@
   )
 }
 
+/// Whether a mark clears every mark already on a level.
+#let _clears(m, level, pad) = level.all(o => m.x1 + pad <= o.x0 or m.x0 >= o.x1 + pad)
+
+/// Split a group into as few runs as its own members' overlaps allow.
+///
+/// A group is one kind of mark — every palm mute in the system, every bracketed
+/// span — and it moves as a unit so that a kind keeps one height down the page.
+/// Two members of it can still be in each other's way, though, and then no
+/// single height exists: a `let ring` label is about three staff spaces wide, so
+/// two spans a sixteenth apart have labels far wider than the room between them.
+/// Left as one group they printed on top of each other, since a group was only
+/// ever measured against *other* groups.
+///
+/// The split is by start, taking each mark onto the first run it clears, which
+/// is the fewest runs there can be. So a kind still occupies one level wherever
+/// it can, and gains a second only across the stretch where it must.
+#let _partition(group, pad) = {
+  let runs = ()
+  for m in group.sorted(key: it => it.x0) {
+    let target = none
+    for (i, run) in runs.enumerate() {
+      if _clears(m, run, pad) {
+        target = i
+        break
+      }
+    }
+    if target == none { runs.push((m,)) } else { runs.at(target) = runs.at(target) + (m,) }
+  }
+  runs
+}
+
 /// Pack groups of marks into as few levels as the horizontal room allows.
 ///
 /// Published sheets pack sideways: a mark sits as close to the staff as it fits,
@@ -108,27 +139,29 @@
 /// a level per kind for the whole system instead makes a system taller than it
 /// needs to be whenever two marks are in different bars.
 ///
-/// A whole group moves together, so every palm mute in a system stays at one
-/// height. Groups are offered the levels in the order they arrive in, so when
-/// two do collide the closer-to-the-staff kind wins the lower level.
+/// A group moves together, so every palm mute in a system stays at one height —
+/// except where its own members collide, which `_partition` splits off into a
+/// run of their own. Groups are offered the levels in the order they arrive in,
+/// so when two do collide the closer-to-the-staff kind wins the lower level.
 ///
 /// `pad` is the least horizontal air between two marks sharing a level; without
 /// it, two that merely fit end up touching.
 #let pack(groups, pad) = {
   let levels = ()
   for group in groups {
-    let target = none
-    for (i, level) in levels.enumerate() {
-      let clear = group.all(m => level.all(o => m.x1 + pad <= o.x0 or m.x0 >= o.x1 + pad))
-      if clear {
-        target = i
-        break
+    for run in _partition(group, pad) {
+      let target = none
+      for (i, level) in levels.enumerate() {
+        if run.all(m => _clears(m, level, pad)) {
+          target = i
+          break
+        }
       }
-    }
-    if target == none {
-      levels.push(group)
-    } else {
-      levels.at(target) = levels.at(target) + group
+      if target == none {
+        levels.push(run)
+      } else {
+        levels.at(target) = levels.at(target) + run
+      }
     }
   }
   levels
