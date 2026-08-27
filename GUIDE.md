@@ -83,7 +83,7 @@ awkward — building the source in code, for instance.
 running head on continuation pages and the copyright line at the foot. Applied
 once at the top of a document, everything after it is the music.
 
-```
+````
 #show: song.with(
   title: "Twelve Past Nine",
   subtitle: "from the first record",
@@ -91,15 +91,14 @@ once at the top of a document, everything after it is the music.
   music: "A. Guitarist",
   tempo: 132,
   tempo-words: "Driving Rock",
-  paper: "a6",
 )
 
 #section("Main Riff")
 
 #tab(```
-|: @E5 q 0/6 0/6 @G5 3/6 3/6 :|
+|: @E5 q 0/6 0/6 @G5 3/6 3/6 | @A5 q 5/6 5/6 @G5 3/6 3/6 :|
 ```)
-```
+````
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/02-000-page.svg"><img alt="what fretwork draws from the tab above" src="docs/guide/img/02-000-page.svg"></picture>
 
@@ -184,11 +183,11 @@ Note values are sticky: one holds until another is written.
 
 | What it is | Syntax | |
 |---|---|---|
-| Whole, half, quarter | `w 5/3 \| h 5/3 5/3 \| q 5/3 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-008-dark.svg"><img alt="what fretwork draws from w 5/3 | h 5/3 5/3 | q 5/3 5/3 5/3 5/3" src="docs/guide/img/03-008-light.svg"></picture> |
+| Whole, half, quarter | `w 5/3 \| h 5/3 5/3 \| q 5/3 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-008-dark.svg"><img alt="what fretwork draws from w 5/3 \| h 5/3 5/3 \| q 5/3 5/3 5/3 5/3" src="docs/guide/img/03-008-light.svg"></picture> |
 | Eighth, sixteenth, thirty-second | `e 5/3 5/3 s 5/3 5/3 5/3 5/3 t 5/3 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-009-dark.svg"><img alt="what fretwork draws from e 5/3 5/3 s 5/3 5/3 5/3 5/3 t 5/3 5/3 5/3 5/3" src="docs/guide/img/03-009-light.svg"></picture> |
 | Values are sticky until changed | `e 5/3 5/3 q 7/3 7/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-010-dark.svg"><img alt="what fretwork draws from e 5/3 5/3 q 7/3 7/3" src="docs/guide/img/03-010-light.svg"></picture> |
 | Dotted, doubly dotted | `q. 5/3 e 5/3 h.. 7/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-011-dark.svg"><img alt="what fretwork draws from q. 5/3 e 5/3 h.. 7/3" src="docs/guide/img/03-011-light.svg"></picture> |
-| Every rest value, whole to thirty-second | `w r \| h r \| q r \| e r \| s r \| t r` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-012-dark.svg"><img alt="what fretwork draws from w r | h r | q r | e r | s r | t r" src="docs/guide/img/03-012-light.svg"></picture> |
+| Every rest value, whole to thirty-second | `w r \| h r \| q r \| e r \| s r \| t r` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-012-dark.svg"><img alt="what fretwork draws from w r \| h r \| q r \| e r \| s r \| t r" src="docs/guide/img/03-012-light.svg"></picture> |
 | Rests take the value in force | `h r q r e r r` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-013-dark.svg"><img alt="what fretwork draws from h r q r e r r" src="docs/guide/img/03-013-light.svg"></picture> |
 | A tuplet | `{3: e 5/3 7/3 8/3} q 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-014-dark.svg"><img alt="what fretwork draws from {3: e 5/3 7/3 8/3} q 5/3" src="docs/guide/img/03-014-light.svg"></picture> |
 | …with an explicit ratio | `{5/4: s 5/3 7/3 8/3 7/3 5/3}` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-015-dark.svg"><img alt="what fretwork draws from {5/4: s 5/3 7/3 8/3 7/3 5/3}" src="docs/guide/img/03-015-light.svg"></picture> |
@@ -215,7 +214,7 @@ Note values are sticky: one holds until another is written.
 | Legato slide — target not struck | `5/3s7` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-026-dark.svg"><img alt="what fretwork draws from 5/3s7" src="docs/guide/img/03-026-light.svg"></picture> |
 | Shift slide — target struck | `5/3S7` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-027-dark.svg"><img alt="what fretwork draws from 5/3S7" src="docs/guide/img/03-027-light.svg"></picture> |
 | Chained | `5/3h7p5` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-028-dark.svg"><img alt="what fretwork draws from 5/3h7p5" src="docs/guide/img/03-028-light.svg"></picture> |
-| …to the next note instead, across a bar | `h 10/3s 5/1 \| h 3/3 5/1` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-029-dark.svg"><img alt="what fretwork draws from h 10/3s 5/1 | h 3/3 5/1" src="docs/guide/img/03-029-light.svg"></picture> |
+| …to the next note instead, across a bar | `h 10/3s 5/1 \| h 3/3 5/1` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-029-dark.svg"><img alt="what fretwork draws from h 10/3s 5/1 \| h 3/3 5/1" src="docs/guide/img/03-029-light.svg"></picture> |
 | Slide out of the note, up or down | `h 15/1sU 15/1sN` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-030-dark.svg"><img alt="what fretwork draws from h 15/1sU 15/1sN" src="docs/guide/img/03-030-light.svg"></picture> |
 | Tie — the far end is not struck | `5/3~ 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-031-dark.svg"><img alt="what fretwork draws from 5/3~ 5/3" src="docs/guide/img/03-031-light.svg"></picture> |
 | …on a whole chord | `(5/1 5/2 5/3)~ (5/1 5/2 5/3)` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-032-dark.svg"><img alt="what fretwork draws from (5/1 5/2 5/3)~ (5/1 5/2 5/3)" src="docs/guide/img/03-032-light.svg"></picture> |
@@ -300,15 +299,15 @@ sf sfz fp`.
 
 | What it is | Syntax | |
 |---|---|---|
-| A barline | `5/3 5/3 \| 7/3 7/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-073-dark.svg"><img alt="what fretwork draws from 5/3 5/3 | 7/3 7/3" src="docs/guide/img/03-073-light.svg"></picture> |
-| Double, final | `5/3 5/3 \|\| 7/3 7/3 \|.` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-074-dark.svg"><img alt="what fretwork draws from 5/3 5/3 || 7/3 7/3 |." src="docs/guide/img/03-074-light.svg"></picture> |
-| A repeat | `\|: q 5/3 5/3 7/3 7/3 :\|` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-075-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/03-075-light.svg"></picture> |
-| …a given number of times | `\|: q 5/3 5/3 7/3 7/3 :\|x4` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-076-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|x4" src="docs/guide/img/03-076-light.svg"></picture> |
-| First and second endings | `\|: q 5/3 5/3 \| {V1: q 7/3 7/3 :\|} {V2: q 8/3 8/3 \|.}` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-077-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 | {V1: q 7/3 7/3 :|} {V2: q 8/3 8/3 |.}" src="docs/guide/img/03-077-light.svg"></picture> |
+| A barline | `5/3 5/3 \| 7/3 7/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-073-dark.svg"><img alt="what fretwork draws from 5/3 5/3 \| 7/3 7/3" src="docs/guide/img/03-073-light.svg"></picture> |
+| Double, final | `5/3 5/3 \|\| 7/3 7/3 \|.` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-074-dark.svg"><img alt="what fretwork draws from 5/3 5/3 \|\| 7/3 7/3 \|." src="docs/guide/img/03-074-light.svg"></picture> |
+| A repeat | `\|: q 5/3 5/3 7/3 7/3 :\|` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-075-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/03-075-light.svg"></picture> |
+| …a given number of times | `\|: q 5/3 5/3 7/3 7/3 :\|x4` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-076-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|x4" src="docs/guide/img/03-076-light.svg"></picture> |
+| First and second endings | `\|: q 5/3 5/3 \| {V1: q 7/3 7/3 :\|} {V2: q 8/3 8/3 \|.}` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-077-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 \| {V1: q 7/3 7/3 :\|} {V2: q 8/3 8/3 \|.}" src="docs/guide/img/03-077-light.svg"></picture> |
 | A time signature | `[3/4] q 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-078-dark.svg"><img alt="what fretwork draws from [3/4] q 5/3 5/3 5/3" src="docs/guide/img/03-078-light.svg"></picture> |
-| …changing mid-piece | `[3/4] q 5/3 5/3 5/3 \| [4/4] q 5/3 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-079-dark.svg"><img alt="what fretwork draws from [3/4] q 5/3 5/3 5/3 | [4/4] q 5/3 5/3 5/3 5/3" src="docs/guide/img/03-079-light.svg"></picture> |
+| …changing mid-piece | `[3/4] q 5/3 5/3 5/3 \| [4/4] q 5/3 5/3 5/3 5/3` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-079-dark.svg"><img alt="what fretwork draws from [3/4] q 5/3 5/3 5/3 \| [4/4] q 5/3 5/3 5/3 5/3" src="docs/guide/img/03-079-light.svg"></picture> |
 | A count-in row | `q 5/3 5/3 5/3 5/3` `count-in: true` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-080-dark.svg"><img alt="what fretwork draws from q 5/3 5/3 5/3 5/3" src="docs/guide/img/03-080-light.svg"></picture> |
-| A pick-up bar before the first full one | `q 5/3 \| q 7/3 7/3 7/3 7/3` `anacrusis: true` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-081-dark.svg"><img alt="what fretwork draws from q 5/3 | q 7/3 7/3 7/3 7/3" src="docs/guide/img/03-081-light.svg"></picture> |
+| A pick-up bar before the first full one | `q 5/3 \| q 7/3 7/3 7/3 7/3` `anacrusis: true` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/03-081-dark.svg"><img alt="what fretwork draws from q 5/3 \| q 7/3 7/3 7/3 7/3" src="docs/guide/img/03-081-light.svg"></picture> |
 
 ## Tunings and capo
 
@@ -391,9 +390,9 @@ whole sheet without the proportions drifting.
 
 | What it is | Syntax | |
 |---|---|---|
-| The default, 2.9 mm | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme()` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-000-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/05-000-light.svg"></picture> |
-| Smaller | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(staff-space: 2.2mm)` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-001-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/05-001-light.svg"></picture> |
-| Larger | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(staff-space: 4mm)` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-002-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/05-002-light.svg"></picture> |
+| The default, 2.9 mm | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme()` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-000-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/05-000-light.svg"></picture> |
+| Smaller | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(staff-space: 2.2mm)` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-001-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/05-001-light.svg"></picture> |
+| Larger | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(staff-space: 4mm)` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-002-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/05-002-light.svg"></picture> |
 
 ### Repeat signs
 
@@ -402,8 +401,8 @@ whole sheet without the proportions drifting.
 
 | What it is | Syntax | |
 |---|---|---|
-| Plain, the default | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme()` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-003-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/05-003-light.svg"></picture> |
-| Ornate | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(repeat-style: "ornate")` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-004-dark.svg"><img alt="what fretwork draws from |: q 5/3 5/3 7/3 7/3 :|" src="docs/guide/img/05-004-light.svg"></picture> |
+| Plain, the default | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme()` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-003-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/05-003-light.svg"></picture> |
+| Ornate | `\|: q 5/3 5/3 7/3 7/3 :\|` `theme: theme(repeat-style: "ornate")` | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/guide/img/05-004-dark.svg"><img alt="what fretwork draws from \|: q 5/3 5/3 7/3 7/3 :\|" src="docs/guide/img/05-004-light.svg"></picture> |
 
 ### Fret numbers on the lines
 

@@ -12,13 +12,12 @@ once at the top of a document, everything after it is the music.
   music: "A. Guitarist",
   tempo: 132,
   tempo-words: "Driving Rock",
-  paper: "a6",
 )
 
 #section("Main Riff")
 
 #tab(```
-|: @E5 q 0/6 0/6 @G5 3/6 3/6 :|
+|: @E5 q 0/6 0/6 @G5 3/6 3/6 | @A5 q 5/6 5/6 @G5 3/6 3/6 :|
 ```)
 ```
 

@@ -86,11 +86,12 @@ def typst_string(s):
 class Example:
     """One rendered example: the source, how to render it, and where it lands."""
 
-    def __init__(self, ident, src, args, kind):
+    def __init__(self, ident, src, args, kind, in_table=False):
         self.ident = ident
         self.src = src
         self.args = args.strip()
         self.kind = kind  # "tab", "ascii" or "doc"
+        self.in_table = in_table
 
     def call(self):
         fn = "ascii-tab" if self.kind == "ascii" else "tab"
@@ -140,6 +141,11 @@ class Example:
         light = f"docs/guide/img/{self.ident}-{mode}.svg"
         dark = f"docs/guide/img/{self.ident}-{'page' if self.kind == 'doc' else 'dark'}.svg"
         alt = html.escape(self.alt(), quote=True)
+        # A cell is split on pipes before any of it is read as HTML, so a
+        # barline in the alt text ends the cell and spills the tag onto the page
+        # as words. Markdown's own escape survives into the attribute.
+        if self.in_table:
+            alt = alt.replace("|", "\\|")
         return (
             f'<picture><source media="(prefers-color-scheme: dark)" srcset="{dark}">'
             f'<img alt="{alt}" src="{light}"></picture>'
@@ -184,7 +190,12 @@ def scan(text, stem):
             if ex.args:
                 out.append(f"`{ex.args}`")
                 out.append("")
-            out += ["```", src, "```", "", f"@@{ex.ident}@@", ""]
+            # A document example contains raw blocks of its own, so the fence
+            # around it has to be longer than the longest run of backticks in
+            # it — three inside three closes the block early.
+            fence_len = max(3, max((len(m) for m in re.findall(r"`+", src)), default=0) + 1)
+            bars = "`" * fence_len
+            out += [bars, src, bars, "", f"@@{ex.ident}@@", ""]
             i = end + 1
             continue
 
@@ -204,7 +215,7 @@ def scan(text, stem):
                 if span is None:
                     raise SystemExit(f"{stem}: table row with no syntax at line {i + 1}")
                 src = span.group(1).replace("\\|", "|")
-                ex = Example(ident(), src, args.group(1) if args else "", "tab")
+                ex = Example(ident(), src, args.group(1) if args else "", "tab", in_table=True)
                 examples.append(ex)
                 cell = body.rstrip().rstrip("|").rstrip()
                 # The arguments are shown, not hidden: a row rendered with a
@@ -346,6 +357,32 @@ def crop(svg, box):
     return svg
 
 
+def check_tables(guide):
+    """Every row of a table must have as many cells as its header.
+
+    A pipe that Markdown was not told to ignore ends the cell it is in, and the
+    rest of the row lands on the page as words — which is how a barline inside an
+    image's alt text once spilled an `<img` tag into the guide. The rows are
+    written by this script, so it is the script that has to notice.
+    """
+    run, start = [], 0
+    for number, line in enumerate(guide.splitlines() + [""], 1):
+        if line.startswith("|"):
+            if not run:
+                start = number
+            run.append((number, len(CELL.findall(line))))
+            continue
+        if run:
+            width = run[0][1]
+            for number, cells in run:
+                if cells != width:
+                    raise SystemExit(
+                        f"GUIDE.md:{number}: row has {cells} cells, but the table "
+                        f"opened at line {start} has {width} — an unescaped pipe?"
+                    )
+        run = []
+
+
 def main():
     chapters = sorted(CHAPTERS.glob("*.md"))
     if not chapters:
@@ -366,6 +403,7 @@ def main():
     left = re.findall(r"@@[\w-]+@@", guide)
     if left:
         raise SystemExit(f"unresolved example placeholders: {left}")
+    check_tables(guide)
     OUT.write_text(guide)
 
     size = sum(f.stat().st_size for f in IMG.glob("*.svg"))
