@@ -21,11 +21,15 @@ will do, and the Fonts section below covers the default.
 
 That whole sheet is one `song` show rule and four `tab` calls.
 
-### → [Read the user guide](https://github.com/snaggen/fretwork/blob/v0.4.0/GUIDE.md)
+## User guide
 
-Every construct the package understands, with what each one draws set beside it,
-and a chapter on reading pasted ASCII tab. Each row is rendered from the same
-string it documents, so none of them can be out of date.
+The sections below are a tour — enough of each feature to see what the package
+does with it. The guide is the reference: every construct the tab syntax
+understands with what each one draws set beside it, and a chapter on reading tab
+pasted from the web. Every example in it is rendered from the same string it
+documents, so nothing there can fall out of date.
+
+### → [Read the user guide](https://github.com/snaggen/fretwork/blob/v0.4.0/GUIDE.md)
 
 ## Quick start
 
