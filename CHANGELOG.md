@@ -26,11 +26,6 @@
   quoted — including the syntax, which is what a reader arrives looking for. Only
   the staff is an image now, one cropped SVG per example.
 
-  Typst's HTML export is not what does it and cannot be: GitHub shows an `.html`
-  file as source, and the link from Typst Universe lands on the repository. For
-  the record, the export also drops `tab` entirely, `layout` being ignored during
-  it.
-
   The chapters in `docs/guide/` are the source, and `docs/build-guide.py` renders
   the examples out of them. `docs/guide.typ` used each string twice, once set as
   code and once handed to `tab`, so that a row could not drift from what it
