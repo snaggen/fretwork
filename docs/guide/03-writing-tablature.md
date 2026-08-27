@@ -133,16 +133,6 @@ all three are drawn, stacked outward from the staff.
 | A free instruction | `"w/ bar" 7/3V 5/3` |
 | A chord name | `@E5 (2/5 2/4 0/6) @"C#m7" (4/5 4/4 4/3)` |
 
-### Lyrics
-
-<!-- fretwork-table -->
-| What it is | Syntax |
-|---|---|
-| One syllable per sung note | `q 5/3 7/3 8/3 7/3` | <!-- lyrics: "one two three four" -->
-| A word broken in two | `q 5/3 7/3 8/3 7/3` | <!-- lyrics: "Twist- ing the night" -->
-| A word held — `_` spends a note | `q 5/3 7/3 8/3 7/3` | <!-- lyrics: "held _ and gone" -->
-| Rests and ties are passed over | `q 5/3 r 8/3~ 8/3` | <!-- lyrics: "not sung" -->
-
 ### Dynamics
 
 A dynamic holds until the next one. The set is closed: `ppp pp p mp mf f ff fff
