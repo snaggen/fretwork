@@ -7,6 +7,38 @@
 - **`tunings.drop-c`** — standard down a whole step with the sixth dropped
   another, `D4 A3 F3 C3 G2 C2`. The tuning most often asked for after Drop D,
   and the one a great deal of the music this package is aimed at is written in.
+- **The user guide covers the package and not only the notation.** Six chapters
+  where there were none: getting started, the song sheet and every argument
+  `song` takes, tunings and capo, appearance, lyrics beyond the syntax table,
+  and diagnostics — followed by a reference listing every exported name with its
+  arguments. `theme`'s eight options, the twelve tunings, `lyric-at`,
+  `verse-labels` and the derived metrics a theme carries were documented
+  nowhere at all before, the guide having been a table of the tab syntax.
+- Small syntax gaps in that table, found by auditing it against `SPEC.md`: the
+  `//` comment, nested groups, bare `(…)A` and `(…)R`, `(…)Ru`, the dynamics
+  written out, `anacrusis`, and a note carrying a length mark, an attack mark
+  and a stroke direction at once.
+
+### Changed
+
+- **`GUIDE.md` is Markdown rather than thirteen page images.** Every word of the
+  guide used to be inside a PNG, so nothing in it could be searched, linked to or
+  quoted — including the syntax, which is what a reader arrives looking for. Only
+  the staff is an image now, one cropped SVG per example.
+
+  Typst's HTML export is not what does it and cannot be: GitHub shows an `.html`
+  file as source, and the link from Typst Universe lands on the repository. For
+  the record, the export also drops `tab` entirely, `layout` being ignored during
+  it.
+
+  The chapters in `docs/guide/` are the source, and `docs/build-guide.py` renders
+  the examples out of them. `docs/guide.typ` used each string twice, once set as
+  code and once handed to `tab`, so that a row could not drift from what it
+  documents; the chapters hold the string once, so there is nothing left to drift
+  from. Losing the typeset document also loses the constraints it worked under —
+  the page, the table column, and the staff space chosen to fit that column.
+- The README points at the guide from a section of its own before the quick
+  start, rather than from a paragraph near the foot of the file.
 
 ### Fixed
 
