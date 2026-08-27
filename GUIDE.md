@@ -330,14 +330,24 @@ what the bends measure against, and what `song` prints under the credits.
 
 ### The built-in tunings
 
-| Name | Strings | Name | Strings |
-|---|---|---|---|
-| `tunings.standard` | E4 B3 G3 D3 A2 E2 | `tunings.drop-d` | E4 B3 G3 D3 A2 D2 |
-| `tunings.drop-c` | D4 A3 F3 C3 G2 C2 | `tunings.half-step-down` | E♭4 B♭3 G♭3 D♭3 A♭2 E♭2 |
-| `tunings.full-step-down` | D4 A3 F3 C3 G2 D2 | `tunings.open-g` | D4 B3 G3 D3 G2 D2 |
-| `tunings.open-d` | D4 A3 F♯3 D3 A2 D2 | `tunings.dadgad` | D4 A3 G3 D3 A2 D2 |
-| `tunings.seven-string` | E4 B3 G3 D3 A2 E2 B1 | `tunings.bass` | G2 D2 A1 E1 |
-| `tunings.bass-5` | G2 D2 A1 E1 B0 | `tunings.ukulele` | A4 E4 C4 G4 |
+`tuning` takes the pitches **highest string first** — string 1 first, which is
+the order the tab staff is written in, top row to bottom. A guitarist says a
+tuning the other way round, lowest string first, so both are given here.
+
+| Name | Highest string first | Low to high |
+|---|---|---|
+| `tunings.standard` | `E4 B3 G3 D3 A2 E2` | E–A–D–G–B–E |
+| `tunings.drop-d` | `E4 B3 G3 D3 A2 D2` | D–A–D–G–B–E |
+| `tunings.drop-c` | `D4 A3 F3 C3 G2 C2` | C–G–C–F–A–D |
+| `tunings.half-step-down` | `Eb4 Bb3 Gb3 Db3 Ab2 Eb2` | E♭–A♭–D♭–G♭–B♭–E♭ |
+| `tunings.full-step-down` | `D4 A3 F3 C3 G2 D2` | D–G–C–F–A–D |
+| `tunings.open-g` | `D4 B3 G3 D3 G2 D2` | D–G–D–G–B–D |
+| `tunings.open-d` | `D4 A3 F#3 D3 A2 D2` | D–A–D–F♯–A–D |
+| `tunings.dadgad` | `D4 A3 G3 D3 A2 D2` | D–A–D–G–A–D |
+| `tunings.seven-string` | `E4 B3 G3 D3 A2 E2 B1` | B–E–A–D–G–B–E |
+| `tunings.bass` | `G2 D2 A1 E1` | E–A–D–G |
+| `tunings.bass-5` | `G2 D2 A1 E1 B0` | B–E–A–D–G |
+| `tunings.ukulele` | `A4 E4 C4 G4` | G–C–E–A |
 
 Drop D and Drop C keep the sixth string tuned below the fifth, which is what
 lets a power chord be one finger across three strings — and what makes a `0/6`
@@ -349,7 +359,8 @@ tuning is the one that says nothing.
 
 ### Writing your own
 
-`tuning` takes the pitches highest string first, as scientific pitch names.
+`tuning` takes the pitches highest string first, as scientific pitch names —
+the same order as the table above, and the order the tab staff is written in.
 A name and string labels are optional; without labels the staff is unlabelled,
 which is what the built-in tunings other than standard and Drop D do.
 
