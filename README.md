@@ -21,6 +21,12 @@ will do, and the Fonts section below covers the default.
 
 That whole sheet is one `song` show rule and four `tab` calls.
 
+### → [Read the user guide](https://github.com/snaggen/fretwork/blob/v0.4.0/GUIDE.md)
+
+Every construct the package understands, with what each one draws set beside it,
+and a chapter on reading pasted ASCII tab. Each row is rendered from the same
+string it documents, so none of them can be out of date.
+
 ## Quick start
 
 ```typst
@@ -287,12 +293,6 @@ Montserrat ships as a variable font, which is why the manifest requires Typst
 0.15: earlier versions load it but ignore the requested weight, setting the fret
 numbers as thin outlines. Music symbols are unaffected either way — they are
 vectors, not glyphs.
-
-## The whole syntax
-
-[`GUIDE.md`](https://github.com/snaggen/fretwork/blob/v0.4.0/GUIDE.md) is a
-table of every construct the package understands, with what each one draws set
-beside it — rendered from the same string, so a row cannot be out of date.
 
 ## Scope
 
