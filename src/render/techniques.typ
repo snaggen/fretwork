@@ -7,7 +7,12 @@
 //
 // Marks of one kind move together, so every palm mute in a system stays at one
 // height. When two kinds do collide the order decides, closest to the staff
-// first: articulations, vibrato, trills and scrapes, free text, spans.
+// first: articulations, vibrato, trills and scrapes, free text, spans. The
+// articulations are three kinds rather than one — a length mark, an attack mark
+// and a stroke direction — so a note may carry one of each and have all three
+// drawn. The first two belong to their note and are packed by depth, so each
+// note's stack falls towards the staff on its own; the stroke direction is a
+// row read across the system and keeps one height.
 //
 // The division of labour with `tabstaff.typ` is by what a mark is positioned
 // against: anything anchored to a *string* — the second number of a hammer-on,
@@ -45,7 +50,62 @@
   own + ev.notes.map(n => get-technique(n, kind)).filter(t => t != none)
 }
 
-#let _ARTICULATIONS = ("accent", "marcato", "staccato", "tenuto", "stroke")
+/// The articulations that stack against the note, nearest the staff first: a
+/// length mark, then an attack mark. That is an engraver's order against a
+/// notehead, the staccato dot sitting closer than the accent.
+///
+/// Within a kind the marks are alternatives — nothing is both staccato and
+/// tenuto — so a kind contributes at most one glyph to an event.
+///
+/// The stroke direction is deliberately not here. `⊓` and `∨` are the bowing
+/// marks: they are set clear of every other articulation and level with each
+/// other down the system, so they are packed as one kind of their own.
+#let _ARTICULATION-KINDS = (
+  ("staccato", "tenuto"),
+  ("accent", "marcato"),
+)
+
+/// Air kept under a stroke direction, on top of the packer's own level gap.
+#let _STROKE-CLEARANCE = 0.30
+
+/// The room one articulation is given: the tallest of the glyphs.
+///
+/// Every row of them is therefore the same height, and a mark is set on its
+/// row's *floor* rather than centred in it — a staccato dot is a quarter the
+/// height of an accent, and centring left it hanging a third of a staff space
+/// clear of the staff while the accent beside it nearly touched.
+///
+/// Measured from the glyphs rather than written down, so a redrawn mark cannot
+/// leave a constant here saying something that is no longer true.
+#let _articulation-box(theme) = {
+  let sp = theme.staff-space
+  calc.max(
+    g.accent(sp).height,
+    g.marcato(sp).height,
+    g.staccato(sp).height,
+    g.tenuto(sp).height,
+    g.downstroke(sp).height,
+    g.upstroke(sp).height,
+  )
+}
+
+/// The glyph one articulation prints as.
+#let _articulation-glyph(theme, t) = {
+  let sp = theme.staff-space
+  if t.kind == "accent" {
+    g.accent(sp, fill: theme.color)
+  } else if t.kind == "marcato" {
+    g.marcato(sp, fill: theme.color)
+  } else if t.kind == "staccato" {
+    g.staccato(sp, fill: theme.color)
+  } else if t.kind == "tenuto" {
+    g.tenuto(sp, fill: theme.color)
+  } else if t.dir == "down" {
+    g.downstroke(sp, fill: theme.color)
+  } else {
+    g.upstroke(sp, fill: theme.color)
+  }
+}
 
 /// Marks that print as a word followed by a wavy line running over the event.
 ///
@@ -101,46 +161,73 @@
 /// staff the kind wants to sit — which is the order the packer tries them in.
 ///
 /// `width` is the system's own width, which only a free instruction needs: it is
-/// the one mark that can be wider than the music it belongs to.
+/// the one mark that can be wider than the music it belongs to. `reserved` is
+/// room the staff below needs back at named stretches — an ornate repeat's
+/// serifs — held as marks with nothing to draw, so the packer treats them like
+/// any other obstacle instead of the lane being pushed clear of them.
 ///
 /// Must be called from a context: labels are measured.
-#let _marks(theme, placed, width) = {
+#let _marks(theme, system, width, reserved: ()) = {
   let sp = theme.staff-space
+  let placed = marks.flatten(system)
   let groups = ()
 
-  // --- articulations, one glyph per event ---
-  let artic = ()
-  for pe in placed {
-    for n in pe.event.notes {
-      let glyph = none
-      for t in n.techniques {
-        glyph = if t.kind == "accent" {
-          g.accent(sp, fill: theme.color)
-        } else if t.kind == "marcato" {
-          g.marcato(sp, fill: theme.color)
-        } else if t.kind == "staccato" {
-          g.staccato(sp, fill: theme.color)
-        } else if t.kind == "tenuto" {
-          g.tenuto(sp, fill: theme.color)
-        } else if t.kind == "stroke" and t.dir == "down" {
-          g.downstroke(sp, fill: theme.color)
-        } else if t.kind == "stroke" {
-          g.upstroke(sp, fill: theme.color)
-        } else { none }
-        if glyph != none { break }
-      }
-      if glyph == none { continue }
-      let x = pe.x - glyph.width / 2
-      artic.push((
-        x0: x,
-        x1: x + glyph.width,
-        height: 0.85 * sp,
-        draw: y => place(top + left, dx: x, dy: y + (0.85 * sp - glyph.height) / 2, glyph.body),
-      ))
-      break
-    }
+  // First, so it takes the level against the staff and everything else packs
+  // around it. It draws nothing: it is the serif itself, already on the page.
+  if reserved.len() > 0 {
+    groups.push(reserved.map(r => (x0: r.x0, x1: r.x1, height: r.height, draw: y => none)))
   }
-  if artic.len() > 0 { groups.push(artic) }
+
+  let box = _articulation-box(theme)
+  // `pad` is air kept *under* the glyph, carried in the mark's own height so the
+  // packer knows about it. Only the stroke direction asks for any.
+  let artic-mark(pe, t, pad: 0pt) = {
+    let glyph = _articulation-glyph(theme, t)
+    let x = pe.x - glyph.width / 2
+    (
+      x0: x,
+      x1: x + glyph.width,
+      height: box + pad,
+      draw: y => place(top + left, dx: x, dy: y + box - glyph.height, glyph.body),
+    )
+  }
+  let carried(ev, kinds) = ev.notes.map(n => n.techniques.filter(t => t.kind in kinds)).flatten()
+
+  // --- articulations, stacked against the note ---
+  //
+  // Grouped by *depth* rather than by kind: group `i` holds every event's `i`-th
+  // mark, so the only marks that can collide are the ones over the same note and
+  // each event's stack falls as far towards the staff as its own contents allow.
+  // An accent with nothing under it therefore sits against the staff rather than
+  // floating at the height of one that has a staccato dot beneath it, which is
+  // how an engraver sets articulations against a notehead — they belong to their
+  // note, not to a row running through the system.
+  let stacks = placed.map(pe => (pe: pe, marks: _ARTICULATION-KINDS
+    .map(kinds => carried(pe.event, kinds))
+    .filter(hits => hits.len() > 0)
+    .map(hits => hits.first())))
+  for depth in range(stacks.fold(0, (acc, s) => calc.max(acc, s.marks.len()))) {
+    let row = stacks.filter(s => s.marks.len() > depth).map(s => artic-mark(s.pe, s.marks.at(depth)))
+    if row.len() > 0 { groups.push(row) }
+  }
+
+  // --- the stroke direction, one row for the whole system ---
+  //
+  // A kind of its own, and pushed after the articulations so it takes a level
+  // clear of them: bowing marks are read as a row telling the picking hand what
+  // to do, and one that fell towards the staff wherever the note under it was
+  // unmarked would say the pattern changes where only the articulation does.
+  //
+  // It keeps air under it, which no other articulation does. `⊓` and `∨` are
+  // open shapes as wide as they are tall, and set at the packer's ordinary gap
+  // they read as resting on whatever is beneath — the top string line where the
+  // note is otherwise unmarked, an accent where it is not.
+  let strokes = ()
+  for pe in placed {
+    let found = carried(pe.event, ("stroke",))
+    if found.len() > 0 { strokes.push(artic-mark(pe, found.first(), pad: _STROKE-CLEARANCE * sp)) }
+  }
+  if strokes.len() > 0 { groups.push(strokes) }
 
   // --- a letter over the note: the bass right hand, and tapping ---
   let letters = ()
@@ -278,18 +365,34 @@
 }
 
 /// The marks builder for a lane of the given width, in the form the packer takes.
-#let _builder(width) = (thm, placed) => _marks(thm, placed, width)
+#let _builder(width, reserved) = (thm, sys) => _marks(thm, sys, width, reserved: reserved)
 
 /// The levels of the technique lane.
-#let _levels(theme, system, width) = levels-of(theme, system, _builder(width))
+#let _levels(theme, system, width, reserved: ()) = levels-of(
+  theme,
+  system,
+  _builder(width, reserved),
+)
 
 /// Total height of the lane.
-#let height(theme, system, width) = marks.stack-height(theme, _levels(theme, system, width))
+#let height(theme, system, width, reserved: ()) = marks.stack-height(
+  theme,
+  _levels(theme, system, width, reserved: reserved),
+)
 
 /// Draw the technique lane for one placed system.
-#let draw(theme, system, width, levels: none) = {
-  draw-levels(theme, if levels != none { levels } else { _levels(theme, system, width) }, width)
+#let draw(theme, system, width, levels: none, reserved: ()) = {
+  draw-levels(
+    theme,
+    if levels != none { levels } else { _levels(theme, system, width, reserved: reserved) },
+    width,
+  )
 }
 
 /// The technique lane, collapsing when nothing needs it.
-#let lane-for(theme, system, width) = marks.lane-of(theme, system, width, _builder(width))
+#let lane-for(theme, system, width, reserved: ()) = marks.lane-of(
+  theme,
+  system,
+  width,
+  _builder(width, reserved),
+)

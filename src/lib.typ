@@ -1,6 +1,6 @@
 // Public API of the `fretwork` package.
 //
-//   #import "@local/fretwork:0.3.0": *
+//   #import "@local/fretwork:0.4.0": *
 //
 //   #show: song.with(title: "Twelve Past Nine", tempo: 132)
 //   #section("Main Riff")
@@ -219,17 +219,24 @@
       // pushed a row further out for every verse, until `mf` no longer read as
       // belonging to anything. Lyrics are running text and belong at the foot
       // of the system for the same reason a caption does.
+      // Bends and slurs are anchored to their own string and reach above the top
+      // line by an amount that depends on which string that is, and a fret
+      // number on the lowest string hangs below it. The staff lane reserves both
+      // rather than overflowing into its neighbours.
+      //
+      // An ornate repeat's serifs are the one thing it does *not* reserve. They
+      // stand at a barline rather than over the music, so the technique lane
+      // holds room for them where they are and packs its marks around them —
+      // reserved here they lifted every mark in the system instead.
+      let over = tabstaff.overflow-above(thm, sys)
+      let under = tabstaff.overflow-below(thm, strings, sys)
+      let serifs = tabstaff.repeat-serif-spans(thm, sys, above: over)
+
       let lanes = (
         voltas.lane-for(thm, sys, w),
         chordnames.lane-for(thm, sys, w),
-        techniques.lane-for(thm, sys, w),
+        techniques.lane-for(thm, sys, w, reserved: serifs),
         {
-          // Bends and slurs are anchored to their own string and reach above the
-          // top line by an amount that depends on which string that is, and a
-          // fret number on the lowest string hangs below it. The staff lane
-          // reserves both rather than overflowing into its neighbours.
-          let over = tabstaff.overflow-above(thm, sys)
-          let under = tabstaff.overflow-below(thm, strings, sys)
           lane(over + tabstaff.height(thm, strings) + under, () => tabstaff.draw(
             thm,
             strings,

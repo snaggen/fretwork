@@ -169,7 +169,7 @@
 
 /// The levels of a system, each with the height it needs.
 #let levels-of(theme, system, marks) = {
-  pack(marks(theme, flatten(system)), 0.35 * theme.staff-space).map(level => (
+  pack(marks(theme, system), 0.35 * theme.staff-space).map(level => (
     marks: level,
     height: level.fold(0pt, (acc, m) => calc.max(acc, m.height)),
   ))
@@ -187,6 +187,13 @@
 /// `inward` names which edge of the lane is nearest the staff, since level 0
 /// belongs against it: `"bottom"` for a lane above the staff, `"top"` for one
 /// below.
+///
+/// A level is as tall as its tallest member, and every mark is set against the
+/// level's *inward* edge rather than filling that height — so one tall member
+/// raises the level without lifting the short marks sharing it away from the
+/// staff. A mark is handed the `y` at which drawing its own height lands it on
+/// that edge, which for a lane above the staff means the top of its own box, not
+/// the top of the level's.
 #let draw-levels(theme, levels, width, inward: "bottom") = {
   let total = stack-height(theme, levels)
   if levels.len() == 0 { return box(width: width, height: 0pt) }
@@ -197,7 +204,7 @@
     for level in levels {
       let y = if inward == "bottom" { edge - level.height } else { edge }
       for m in level.marks {
-        (m.draw)(y)
+        (m.draw)(if inward == "bottom" { y + level.height - m.height } else { y })
       }
       edge = if inward == "bottom" { y - gap } else { y + level.height + gap }
     }

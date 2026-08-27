@@ -36,7 +36,7 @@ so it is styleable, autocompleting and type-checked. Note-level content is a
 compact string, because writing a riff as nested function calls is unbearable.
 
 ```typst
-#import "@preview/fretwork:0.3.0": *
+#import "@preview/fretwork:0.4.0": *
 
 #show: song.with(
   title: "Twelve Past Nine",
@@ -565,6 +565,58 @@ Looking good is a stated goal, so it is specified as testable requirements.
    one level wherever it can and gains a second only across the stretch where it
    must. Measured only against *other* kinds, as it was, two such labels simply
    printed on top of each other.
+
+   **And except for the articulations, which belong to their note.** A note may
+   be short, accented and struck downward all at once — `(10/1 10/2)!>n` — and
+   the three marks stack rather than compete for one slot, ordered as an engraver
+   orders them against a notehead: the length mark (staccato, tenuto) closest to
+   the staff, the attack mark (accent, marcato) outside it. Within a kind the
+   marks are alternatives — nothing is both staccato and tenuto — so each
+   contributes at most one glyph. Drawn as a single kind, as they were, only the
+   first written survived, and which of the three that was came down to the order
+   the suffixes happened to be typed in.
+
+   They are packed by **depth rather than by kind**: the marks that can collide
+   are only ever the ones over the same note, so each note's stack falls as far
+   towards the staff as its own contents allow. An accent with nothing under it
+   sits against the staff rather than holding the height of one that has a
+   staccato dot beneath it — a row of marks running level through the system is
+   what a *span* looks like, and these belong to single notes. A mark is set on
+   its row's floor rather than centred in it, for the same reason: a staccato dot
+   is a quarter the height of an accent, and centred it hung a third of a staff
+   space clear of the staff while the accent beside it nearly touched.
+
+   The **stroke direction is the exception to the exception**, and stays one row
+   for the whole system, clear of everything else. `⊓` and `∨` are the bowing
+   marks: they are read as a row telling the picking hand what to do, and one
+   that fell towards the staff wherever the note under it happened to be
+   unmarked would say the picking pattern changes where only the articulation
+   does. It also keeps air under it, which no other articulation does: `⊓` and
+   `∨` are open shapes as wide as they are tall, and at the packer's ordinary gap
+   they read as resting on whatever is beneath them.
+
+   **A level is as tall as its tallest member, and every mark sits on the
+   level's inward edge** rather than filling that height. One tall member raises
+   the level without lifting the short marks that share it away from the staff —
+   which is what lets a stretch of reserved room stand in a level beside the
+   marks that pack around it.
+
+   **An ornate repeat's serifs are reserved as marks, not as a band.** They
+   flare past the staff at both ends of a bar, and reserving their reach in
+   `overflow-above` lifted every mark in the system by 1.15 staff spaces — an
+   accent in the middle of a bar was raised by a serif standing on the barline.
+   The lane holds room for them at the two stretches where they actually are and
+   packs around them, so only a mark genuinely over a serif moves. Below the
+   staff the room is still reserved as a band: what sits there is the rhythm
+   lane, whose stems stand where the notes do and cannot pack around anything.
+
+   **A fret number is centred on its line**, so half of one on the top string
+   stands above the staff, and that much is reserved — measured per string for
+   the same reason a bend is, since on an inner string the number is inside the
+   staff and asks for nothing. It is the mirror of the room already kept below
+   for the lowest string, and it went missing for a long time behind the serifs'
+   1.15 staff spaces: an accent over a note on string 1 printed on top of its own
+   fret number.
 6. **`TAB` is stacked vertically** at the start of every system.
 7. **Barlines are heavier than string lines**; closing and repeat forms use the
    conventional thin-then-thick pair. `theme(repeat-style: "ornate")` gives the

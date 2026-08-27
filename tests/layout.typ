@@ -284,9 +284,19 @@
     tabstaff.slur-apex(thm, span, side: true) < thm.staff-space,
     "…and below the line one space up, which is what it has to clear",
   )
+  // A fret number is centred on its line, so half of one on the top string
+  // stands above the staff and the lane above has to clear it. Lower down the
+  // number is inside the staff and asks for nothing.
+  ok(over("q 5/1 0/6 0/6 0/6") > 0pt, "a number on the top string stands above the staff")
+  eq(over("q 5/2 0/6 0/6 0/6"), 0pt, "…and one a string down does not")
+
   // A tie is drawn under its line, so it reserves nothing above — and below only
   // when it is on the lowest string, where it leaves the staff.
-  eq(over("q 5/1~ 5/1 0/6 0/6"), 0pt, "a tie asks for no room above the staff")
+  eq(
+    over("q 5/1~ 5/1 0/6 0/6"),
+    over("q 5/1 5/1 0/6 0/6"),
+    "a tie asks for no room above the staff",
+  )
   eq(
     under("q 5/1~ 5/1 0/6 0/6"),
     under("q 5/1 5/1 0/6 0/6"),
@@ -383,27 +393,52 @@
     "a ghost note claims the width of its parentheses",
   )
 
-  // An ornate repeat sign's serifs reach past the staff at both ends, so the
-  // lane has to reserve room for them too.
+  // An ornate repeat sign's serifs reach past the staff at both ends. Above, the
+  // room is reserved by the lane at the two stretches where they stand, not by
+  // the staff across the whole system — a serif on a barline must not lift a
+  // mark in the middle of the bar.
   let ornate = theme(staff-space: 3mm, repeat-style: "ornate")
   let ornate-system(src) = {
     let part = parse(src)
     let widths = part.measures.map(m => m.events.map(ev => tabstaff.event-metrics(ornate, ev)))
     layout-part(ornate, part, widths, 120mm, ornate.tab-mark-width).first()
   }
+  let repeated = ornate-system("|: q 0/6 0/6 0/6 0/6 :|")
+  eq(
+    tabstaff.overflow-above(ornate, repeated),
+    0pt,
+    "an ornate repeat reserves no room above the staff itself",
+  )
+
+  let spans = tabstaff.repeat-serif-spans(ornate, repeated)
+  eq(spans.len(), 2, "it reserves a span in the lane at each of its two serifs")
+  ok(spans.all(s => s.x1 > s.x0 and s.height > 0pt), "…each with room to stand in")
   ok(
-    tabstaff.overflow-above(ornate, ornate-system("|: q 0/6 0/6 0/6 0/6 :|")) > 0pt,
-    "an ornate repeat reserves room above the staff",
+    spans.first().x1 <= spans.last().x0,
+    "…one at the opening barline and one at the closing barline",
   )
   eq(
-    tabstaff.overflow-above(ornate, ornate-system("q 0/6 0/6 0/6 0/6")),
-    0pt,
-    "…but only where there is a repeat to draw",
+    tabstaff.repeat-serif-spans(ornate, ornate-system("q 0/6 0/6 0/6 0/6")).len(),
+    0,
+    "…and none where there is no repeat to draw",
   )
+  eq(
+    tabstaff.repeat-serif-spans(thm, ornate-system("|: q 0/6 0/6 0/6 0/6 :|")).len(),
+    0,
+    "…nor for a plain repeat sign, which has no serifs",
+  )
+  eq(
+    tabstaff.repeat-serif-spans(ornate, repeated, above: 10 * ornate.staff-space).len(),
+    0,
+    "…nor where the staff has already reserved past the serif's reach",
+  )
+
+  // Below the staff there is no lane that can pack around them, so the room is
+  // reserved as it always was.
   ok(
-    tabstaff.overflow-below(ornate, 6, ornate-system("|: q 0/6 0/6 0/6 0/6 :|"))
+    tabstaff.overflow-below(ornate, 6, repeated)
       > tabstaff.overflow-below(thm, 6, system("|: q 0/6 0/6 0/6 0/6 :|")),
-    "and room below, which the plain style does not need",
+    "room below is reserved by the staff, which the plain style does not need",
   )
 }
 

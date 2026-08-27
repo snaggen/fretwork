@@ -109,3 +109,22 @@ q x/2PS1 x/2PS12 h x/2PS1 | q x/6PS3 5/6 x/3PS r
 #tab(theme: vt, ```
 q 7/3T 12/3T 7/3 12/3T | e 5/3T 7/3T 12/3T 5/3T q 7/3T 12/3
 ```)
+
+// A note may carry a length mark, an attack mark and a stroke direction at
+// once, and all three are drawn — the staccato dot nearest the staff, the accent
+// outside it, the stroke outside both. The chain's order decides what a note
+// carries, not what is drawn, so `!>n` and `>n!` come out alike.
+//
+// The first two are packed by depth, so a stack falls as far as its own contents
+// allow: the fourth event's bare accent and the third's bare dot both sit on the
+// staff, level with the *dots* under the accents beside them rather than with
+// the accents. The strokes are the exception and hold one row throughout, which
+// is why the last event of the second bar carries its `⊓` three marks clear of a
+// staff it has nothing else over.
+//
+// A dot is a quarter the height of an accent, and each is set on its row's floor
+// rather than centred in it, so the two start the same distance from the staff.
+#tab(theme: vt, ```
+q (5/5 5/4)!>n (5/5 5/4)>n! (5/5 5/4)n! 5/3>
+| q 7/3!>n 7/3-^u 7/3n 7/3
+```)

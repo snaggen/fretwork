@@ -768,6 +768,31 @@
     .any(m => m.measure.start-repeat or m.measure.end-repeat)
 }
 
+/// Where an ornate repeat's serifs reach above the staff, as lane marks.
+///
+/// A serif flares from the heavy bar's outer edge and is drawn at both ends of
+/// the staff, so it needs room above the top string line at exactly these
+/// stretches — and nowhere else. The lane above reserves them as marks of its
+/// own and packs around them, which is why this is a list of spans rather than a
+/// height: a serif standing on a barline has no business lifting an accent in
+/// the middle of the bar, which is what reserving it in `overflow-above` did.
+///
+/// `above` is the room the staff already reserves over the top string line, and
+/// is subtracted: a bend that has lifted the lane clear of the serif leaves it
+/// nothing to reserve.
+#let repeat-serif-spans(theme, system, above: 0pt) = {
+  if not _has-repeat(theme, system) { return () }
+  let height = calc.max(0pt, repeat-serif-reach(theme) - above)
+  if height == 0pt { return () }
+  let reach = repeat-serif-reach(theme)
+  let spans = ()
+  for m in system.measures {
+    if m.measure.start-repeat { spans.push((x0: m.start, x1: m.start + reach, height: height)) }
+    if m.measure.end-repeat { spans.push((x0: m.end - reach, x1: m.end, height: height)) }
+  }
+  spans
+}
+
 /// How far the drawing reaches above the top string line.
 ///
 /// Bends and slurs are anchored to their own string, so how much room they need
@@ -776,14 +801,27 @@
 /// relying on the box not clipping — is what keeps a bend from colliding with
 /// the rhythm lane above it.
 ///
+/// An ornate repeat's serifs are *not* counted. They stand at a barline rather
+/// than over the music, and reserved here they raised every mark in the system
+/// by the serif's full reach — so the lane above reserves them instead, at the
+/// two stretches where they actually are. See `repeat-serif-spans`.
+///
 /// Must be called from a context: the bend label is measured.
 #let overflow-above(theme, system) = {
   let sp = theme.staff-space
-  let over = if _has-repeat(theme, system) { repeat-serif-reach(theme) } else { 0pt }
+  let over = 0pt
   let placed = system.measures.map(m => m.events).flatten()
   for (i, pe) in placed.enumerate() {
     for n in pe.event.notes {
       let y = string-y(theme, n.string)
+      // A fret number is centred on its line, so half of one on the top string
+      // stands above the staff — the mirror of what `overflow-below` reserves
+      // for the lowest string, and measured per string for the same reason a
+      // bend is: on string 3 the number is inside the staff and reserves
+      // nothing. Until the serifs stopped reserving 1.15 staff spaces for every
+      // system that had a repeat, this was hidden behind them: an accent over a
+      // note on string 1 printed on top of its own fret number.
+      over = calc.max(over, measure(fret-label(theme, n.fret)).height / 2 + 0.15 * sp - y)
       let bend = get-technique(n, "bend")
       if bend != none {
         let head = bend-head-y(theme, y)

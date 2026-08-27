@@ -42,8 +42,9 @@
 /// belongs on the far side of both.
 ///
 /// Must be called from a context: labels are measured.
-#let _marks(theme, placed) = {
+#let _marks(theme, system) = {
   let sp = theme.staff-space
+  let placed = marks.flatten(system)
   let groups = ()
 
   let levels = ()

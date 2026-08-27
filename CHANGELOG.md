@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.0 — unreleased
+
+### Fixed
+
+- **A note may be short, accented and struck downward at once.** All three marks
+  are drawn, where before only the first written survived — `(10/1 10/2)!>n` gave
+  the staccato dot and dropped the accent and the stroke, and `)>n!` gave the
+  accent and dropped the other two, so which mark reached the page came down to
+  the order the suffixes happened to be typed in. The three are now separate
+  kinds and stack: the length mark closest to the staff, the attack mark outside
+  it, the stroke direction outside both — an engraver's order against a notehead,
+  `⊓` and `∨` being the bowing marks, which are set clear of every other
+  articulation and keep one row down the system.
+
+  The length and attack marks are packed **by depth rather than by kind**, so
+  each note's stack falls as far towards the staff as its own contents allow: an
+  accent with nothing under it sits against the staff instead of holding the
+  height of one that has a staccato dot beneath it. A row running level through
+  the system is what a span looks like, and these belong to single notes.
+- **A staccato dot no longer floats above the staff.** Every articulation was
+  centred in a box sized for the tallest of them, so a dot — a quarter the height
+  of an accent — hung about a third of a staff space clear of the staff while the
+  accent beside it nearly touched. They now sit on their row's floor, and the box
+  is measured from the glyphs rather than written down.
+
+  More generally, a mark now sits on the inward edge of the level it is on rather
+  than filling the level's height, so one tall member no longer lifts the short
+  marks sharing it away from the staff.
+- **An ornate repeat no longer lifts every mark in the system.** The serifs flare
+  past the staff at both ends of a bar, and their reach was reserved as a band
+  across the whole system: with `repeat-style: "ornate"` every accent, dot and
+  stroke sat 1.15 staff spaces higher than with `"plain"`, however far from a
+  barline it was. The lane now reserves the serifs at the two stretches where
+  they stand and packs its marks around them. Below the staff the room is still
+  reserved as a band — the rhythm lane's stems stand where the notes do and
+  cannot pack around anything.
+- **A stroke direction keeps air under it.** `⊓` and `∨` are open shapes as wide
+  as they are tall, and at the packer's ordinary gap they read as resting on
+  whatever is beneath — the top string line where the note is otherwise unmarked,
+  an accent where it is not.
+- **A mark over a note on the top string no longer prints on its fret number.**
+  A number is centred on its line, so half of one on string 1 stands above the
+  staff; the room below for the lowest string was reserved and the room above was
+  not. It went unnoticed because an ornate repeat's serifs happened to reserve
+  more than enough, and showed up as soon as they stopped.
+
 ## 0.3.0 — 2026-08-25
 
 ### Added
