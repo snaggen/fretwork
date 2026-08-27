@@ -50,7 +50,7 @@ Every name the package exports.
 
 | Name | Signature |
 |---|---|
-| `tunings` | the eleven built-in tunings — see [Tunings and capo](#tunings-and-capo) |
+| `tunings` | the twelve built-in tunings — see [Tunings and capo](#tunings-and-capo) |
 | `tuning` | `tuning(pitches, name:, labels:)` — pitches highest string first, as `"E4 B3 G3 D3 A2 E2"` |
 | `string-count` | `string-count(t)` |
 | `to-pitch` | `to-pitch(t, string, fret, capo: 0)` — the MIDI number a fret sounds |

@@ -41,6 +41,12 @@
 #eq(string-count(tunings.standard), 6, "standard tuning has six strings")
 #eq(to-pitch(tunings.standard, 6, 0), 40, "open sixth string is low E")
 #eq(to-pitch(tunings.standard, 1, 0), 64, "open first string is high e")
+#eq(to-pitch(tunings.drop-c, 6, 0), 36, "Drop C's open sixth string is C2")
+#eq(
+  to-pitch(tunings.drop-c, 5, 0) - to-pitch(tunings.drop-c, 6, 0),
+  7,
+  "…a fifth under the fifth string, as a dropped tuning is",
+)
 #eq(to-pitch(tunings.standard, 5, 2), 47, "fifth string, second fret is B2")
 #eq(to-pitch(tunings.drop-d, 6, 0), 38, "drop D lowers the sixth string a whole step")
 #eq(to-pitch(tunings.standard, 6, 0, capo: 2), 42, "a capo transposes upwards")

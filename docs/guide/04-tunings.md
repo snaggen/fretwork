@@ -23,11 +23,15 @@ what the bends measure against, and what `song` prints under the credits.
 | Name | Strings | Name | Strings |
 |---|---|---|---|
 | `tunings.standard` | E4 B3 G3 D3 A2 E2 | `tunings.drop-d` | E4 B3 G3 D3 A2 D2 |
-| `tunings.half-step-down` | E♭4 B♭3 G♭3 D♭3 A♭2 E♭2 | `tunings.full-step-down` | D4 A3 F3 C3 G2 D2 |
-| `tunings.open-g` | D4 B3 G3 D3 G2 D2 | `tunings.open-d` | D4 A3 F♯3 D3 A2 D2 |
-| `tunings.dadgad` | D4 A3 G3 D3 A2 D2 | `tunings.seven-string` | E4 B3 G3 D3 A2 E2 B1 |
-| `tunings.bass` | G2 D2 A1 E1 | `tunings.bass-5` | G2 D2 A1 E1 B0 |
-| `tunings.ukulele` | A4 E4 C4 G4 | | |
+| `tunings.drop-c` | D4 A3 F3 C3 G2 C2 | `tunings.half-step-down` | E♭4 B♭3 G♭3 D♭3 A♭2 E♭2 |
+| `tunings.full-step-down` | D4 A3 F3 C3 G2 D2 | `tunings.open-g` | D4 B3 G3 D3 G2 D2 |
+| `tunings.open-d` | D4 A3 F♯3 D3 A2 D2 | `tunings.dadgad` | D4 A3 G3 D3 A2 D2 |
+| `tunings.seven-string` | E4 B3 G3 D3 A2 E2 B1 | `tunings.bass` | G2 D2 A1 E1 |
+| `tunings.bass-5` | G2 D2 A1 E1 B0 | `tunings.ukulele` | A4 E4 C4 G4 |
+
+Drop D and Drop C keep the sixth string tuned below the fifth, which is what
+lets a power chord be one finger across three strings — and what makes a `0/6`
+in them sound a tone or a fourth below the same `0/6` in standard.
 
 `song` prints the tuning's name as a performance note under the credits, unless
 it is standard — which is what a published sheet does, and why the standard

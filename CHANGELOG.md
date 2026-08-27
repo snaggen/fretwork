@@ -2,6 +2,12 @@
 
 ## 0.4.0 — unreleased
 
+### Added
+
+- **`tunings.drop-c`** — standard down a whole step with the sixth dropped
+  another, `D4 A3 F3 C3 G2 C2`. The tuning most often asked for after Drop D,
+  and the one a great deal of the music this package is aimed at is written in.
+
 ### Fixed
 
 - **A note may be short, accented and struck downward at once.** All three marks

@@ -70,6 +70,9 @@
 #let tunings = (
   standard: tuning("E4 B3 G3 D3 A2 E2", name: "Standard", labels: ("e", "B", "G", "D", "A", "E")),
   drop-d: tuning("E4 B3 G3 D3 A2 D2", name: "Drop D", labels: ("e", "B", "G", "D", "A", "D")),
+  // Standard down a whole step with the sixth dropped another: the metal
+  // tuning, and the one most often asked for after Drop D.
+  drop-c: tuning("D4 A3 F3 C3 G2 C2", name: "Drop C"),
   half-step-down: tuning("Eb4 Bb3 Gb3 Db3 Ab2 Eb2", name: "Eb Standard"),
   full-step-down: tuning("D4 A3 F3 C3 G2 D2", name: "D Standard"),
   open-g: tuning("D4 B3 G3 D3 G2 D2", name: "Open G"),
